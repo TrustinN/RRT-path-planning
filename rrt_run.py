@@ -11,7 +11,6 @@ import utils.maps as maps
 # Sampling                                                                    #
 ###############################################################################
 
-from rrt_methods.rrt_utils import Map
 from rrt_methods.rrt_utils import find_bounding_box
 
 ###############################################################################
@@ -37,22 +36,19 @@ from rrt_methods.quick_rrt_star import rrt_run
 # Generate Regions                                                            #
 ###############################################################################
 
-start_pos, end_pos, region, obstacles = maps.race_map()
-# start_pos, end_pos, region, obstacles = maps.square_obs_map(14, 100)
+# start_pos, end_pos, region, obstacles = maps.race_map()
+map = maps.square_obs_map(14, 100)
 # start_pos, end_pos, region, obstacles = maps.make_maze(20)
 
-map = Map(region=region, obstacles=obstacles)
-map.add_path([start_pos, end_pos])
-
-box_scope = find_bounding_box(region)
+box_scope = find_bounding_box(map.region)
 map.sample_init("box", box_scope)
 
 start = timeit.default_timer()
-path = rrt_run(start_pos, end_pos,
+path = rrt_run(map.path[0], map.path[1],
                map,
                50,
                1000,
-               plot_tree=False)
+               plot_tree=True)
 stop = timeit.default_timer()
 
 print('Time: ', stop - start)

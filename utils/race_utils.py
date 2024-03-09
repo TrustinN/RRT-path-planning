@@ -212,7 +212,6 @@ class RaceTrack(object):
         for i in range(len(path)):
             pygame.draw.circle(self.screen, (0, velocities[i]*9, 0), path[i], self.POINT_RADIUS)
 
-
     def draw_blue_cones(self):
         # Draw the path
         if len(self.left_cones) >= 2:

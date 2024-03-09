@@ -2,7 +2,6 @@ from .rrt_utils import vertex
 from .rrt_utils import graph_init
 from .rrt_utils import Sampler
 from .rrt_utils import closest_point
-from .rrt_utils import normalize
 from .rrt_utils import intersects_objects
 from .rrt_utils import in_free_space
 
@@ -15,10 +14,10 @@ from .rrt_utils import in_free_space
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(start, end, map, step_size, max_iter):
+def rrt_run(start, end, map, step_size, max_iter, plot_tree=True):
 
     sampler = Sampler(map)
-    v_start, v_end, graph, _ = graph_init(start, end)
+    v_start, v_end, graph, _ = graph_init(start, end, plot_tree=plot_tree)
 
     iter = 0
     while v_end.num_neighbors < 1 and iter < max_iter:
@@ -28,8 +27,7 @@ def rrt_run(start, end, map, step_size, max_iter):
 
         v_near = closest_point(p_rand, graph.vertices)
         p_near = v_near.value
-        # p_step = step_size * normalize(p_rand - p_near)
-        # p_new = p_near + p_step
+
         if in_free_space(p_rand, map.region, map.obstacles):
             if not intersects_objects(map.region, map.obstacles, p_rand, p_near):
                 v_new = vertex(value=p_rand,
@@ -37,6 +35,7 @@ def rrt_run(start, end, map, step_size, max_iter):
                                position=0,
                                parent=None,
                                plots=[],
+                               enable_plotting=plot_tree,
                                )
                 v_near.add_neighbor(v_new)
                 graph.add_vertex(v_new)

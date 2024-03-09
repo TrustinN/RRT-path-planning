@@ -1,7 +1,5 @@
 import timeit
-from rrt_methods.rrt_utils import Map
 from rrt_methods.rrt_utils import find_bounding_box
-import utils.maps as maps
 # from rrt_methods.rrt import rrt_run
 # from rrt_methods.rrt_connect import rrt_run
 # from rrt_methods.rrt_star import rrt_run
@@ -12,7 +10,7 @@ from rrt_methods.quick_rrt_star import rrt_run
 # from rrt_methods.ep_rrt_star import rrt_run
 
 
-def planner():
+def make_plan(map):
     """plans a path through the track given the blue and yellow cones.
 
     Args:
@@ -28,21 +26,18 @@ def planner():
     # as described in the docstring above
     start = timeit.default_timer()
 
-    start_pos, end_pos, region, obstacles = maps.race_map()
-    map = Map(region=region, obstacles=obstacles)
-    map.add_path([start_pos, end_pos])
-
-    box_scope = find_bounding_box(region)
+    box_scope = find_bounding_box(map.region)
     map.sample_init("box", box_scope)
 
-    path = rrt_run(start_pos, end_pos,
+    path = rrt_run(map.path[0], map.path[1],
                    map,
                    50,
                    1000,
-                   plot_tree=False)
+                   plot_tree=True)
 
     stop = timeit.default_timer()
     print('Time: ', stop - start)
+    print(path)
     return path
 
 

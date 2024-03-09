@@ -3,6 +3,7 @@ import numpy as np
 from .make_race import new_race
 from .map_utils import plot_poly
 from .map_utils import ray_cast
+from rrt_methods.rrt_utils import Map
 
 
 def make_rect_region(min_x, max_x, max_y, min_y):
@@ -33,8 +34,11 @@ def expand_obstacle(p0, p1, r):
     return [t_l, b_l, b_r, t_r]
 
 
-def race_map():
-    blue_cones, yellow_cones = new_race()
+def race_map(racetrack=None, n=20):
+    if not racetrack:
+        racetrack = new_race()
+    midpoints = racetrack.generate_race_course_midpath(n)
+    blue_cones, yellow_cones = racetrack.generate_left_and_right_cones()
 
     plot_poly(blue_cones, c="#e13c41")
     plot_poly(yellow_cones, c="#e13c41")
@@ -57,8 +61,10 @@ def race_map():
             )
 
     obstacles = [blue_cones, obs1, obs2]
+    map = Map(region=yellow_cones, obstacles=obstacles)
+    map.add_path([start_pos, end_pos])
 
-    return start_pos, end_pos, yellow_cones, obstacles
+    return map
 
 
 def square_obs_map(n, size):
@@ -84,12 +90,14 @@ def square_obs_map(n, size):
             obstacles.append(o)
             n -= 1
 
+    plot_poly(region, c="#e13c41")
     for o in obstacles:
         plot_poly(o, c="#e13c41")
 
-    plot_poly(region, c="#e13c41")
+    map = Map(region=region, obstacles=obstacles)
+    map.add_path([start_pos, end_pos])
 
-    return start_pos, end_pos, region, obstacles
+    return map
 
 
 # Grid is the number of divisions of our maze we want from
@@ -126,7 +134,10 @@ def make_maze(grid):
             plot_poly(rect_obs, c="#e13c41")
             return_obstacles.append(rect_obs)
 
-    return start_pos, end_pos, region, return_obstacles
+    map = Map(region=region, obstacles=return_obstacles)
+    map.add_path([start_pos, end_pos])
+
+    return map
 
 
 

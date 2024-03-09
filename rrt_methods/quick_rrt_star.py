@@ -41,7 +41,7 @@ def rrt_run(start, end, map, step_size, max_iter, plot_tree=True):
                            dist_to_root=math.inf,
                            enable_plotting=plot_tree,
                            )
-            # plt.scatter(p_new[0], p_new[1])
+            plt.scatter(p_new[0], p_new[1])
             if v_start.equals(v_near):
                 if not intersects_objects(map.region, map.obstacles, v_start.value, v_new.value):
                     v_start.add_neighbor(v_new)

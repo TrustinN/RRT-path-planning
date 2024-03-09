@@ -1,7 +1,9 @@
+from random import randrange
 import pygame
 import sys
-from path_utils import RaceTrack
-from gui import planner
+from planner import make_plan
+from utils.make_race import new_race
+from utils.maps import race_map
 
 
 def main():
@@ -21,10 +23,16 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Path Planning Simulator")
 
-    racetrack = RaceTrack(SCREEN_WIDTH, SCREEN_HEIGHT, POINT_RADIUS, screen,  POINT_COLOR=POINT_COLOR, LINE_COLOR=LINE_COLOR, ROAD_THICKNESS=ROAD_THICKNESS, seed=42)
+    racetrack = new_race(SCREEN_WIDTH,
+                         SCREEN_HEIGHT,
+                         POINT_RADIUS,
+                         screen,
+                         POINT_COLOR,
+                         LINE_COLOR,
+                         ROAD_THICKNESS,
+                         randrange(1000))
 
     planner_path = []
-    velocities = []
 
     # Main loop
     running = True
@@ -34,7 +42,7 @@ def main():
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    planner_path = planner()
+                    planner_path = make_plan(race_map(racetrack=racetrack, n=20))
 
         screen.fill(BACKGROUND_COLOR)
         # racetrack.draw_midpoints()
@@ -50,6 +58,7 @@ def main():
     sys.exit()
 
 if __name__ == '__main__': main()
+
 
 
 
