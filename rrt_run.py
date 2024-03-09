@@ -48,7 +48,7 @@ path = rrt_run(map.path[0], map.path[1],
                map,
                50,
                1000,
-               plot_tree=True)
+               )
 stop = timeit.default_timer()
 
 print('Time: ', stop - start)

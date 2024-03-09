@@ -18,10 +18,10 @@ from .rrt_utils import rrt_q_rewire
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(start, end, map, step_size, max_iter, plot_tree=True):
+def rrt_run(start, end, map, step_size, max_iter):
 
     sampler = Sampler(map)
-    v_start, v_end, graph, _ = graph_init(start, end, plot_tree=plot_tree)
+    v_start, v_end, graph, _ = graph_init(start, end)
 
     iter = 0
     while iter < max_iter:
@@ -39,7 +39,6 @@ def rrt_run(start, end, map, step_size, max_iter, plot_tree=True):
                            parent=None,
                            plots=[],
                            dist_to_root=math.inf,
-                           enable_plotting=plot_tree,
                            )
             plt.scatter(p_new[0], p_new[1])
             if v_start.equals(v_near):

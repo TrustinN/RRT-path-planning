@@ -76,7 +76,6 @@ class vertex(object):
                  parent=None,
                  dist_to_root=0,
                  plots=[],
-                 enable_plotting=True,
                  ):
         self.value = value
         self.neighbors = neighbors
@@ -85,7 +84,6 @@ class vertex(object):
         self.parent = parent
         self.dist_to_root = dist_to_root
         self.plots = plots
-        self.enable_plotting = enable_plotting
 
     def equals(self, other):
         return np.array_equal(self.value, other.value)
@@ -105,20 +103,18 @@ class vertex(object):
 
             other.dist_to_root = self.dist_to_root + self.dist_to(other)
 
-            if self.enable_plotting:
-                p = plt.plot(
-                    [self.value[0], other.value[0]],
-                    [self.value[1], other.value[1]],
-                    c="#7dafe6",
-                    )
-                self.plots.append(p)
+            p = plt.plot(
+                [self.value[0], other.value[0]],
+                [self.value[1], other.value[1]],
+                c="#7dafe6",
+                )
+            self.plots.append(p)
 
     def remove_neighbor(self, other_pos):
-        if self.enable_plotting:
-            c = self.plots[other_pos]
-            for handle in c:
-                handle.remove()
-            self.plots.pop(other_pos)
+        c = self.plots[other_pos]
+        for handle in c:
+            handle.remove()
+        self.plots.pop(other_pos)
 
         self.neighbors.pop(other_pos)
         self.num_neighbors -= 1
@@ -140,69 +136,6 @@ class vertex(object):
 
     def __repr__(self):
         return f"(value:{self.value})"
-
-
-# class vertex(object):
-#     def __init__(self, value=np.array([]),
-#                  neighbors=set(),
-#                  parent=None,
-#                  dist_to_root=0,
-#                  plots=[],
-#                  enable_plotting=True,
-#                  ):
-#         self.value = value
-#         self.neighbors = neighbors
-#         self.parent = parent
-#         self.dist_to_root = dist_to_root
-#         self.plots = plots
-#         self.enable_plotting = enable_plotting
-#
-#     def equals(self, other):
-#         return np.array_equal(self.value, other.value)
-#
-#     def dist_to(self, other):
-#         if type(other) is vertex:
-#             return np.linalg.norm(self.value - other.value)
-#         elif type(other) is np.ndarray:
-#             return np.linalg.norm(self.value - other)
-#
-#     def add_neighbor(self, other):
-#         if type(other) is vertex:
-#             other.parent = self
-#             self.neighbors.add(other)
-#
-#             other.dist_to_root = self.dist_to_root + self.dist_to(other)
-#
-#             if self.enable_plotting:
-#                 p = plt.plot(
-#                     [self.value[0], other.value[0]],
-#                     [self.value[1], other.value[1]],
-#                     c="#7dafe6",
-#                     )
-#                 self.plots.append(p)
-#
-#     def remove_neighbor(self, v):
-#         # if self.enable_plotting:
-#         #     c = self.plots[other_pos]
-#         #     for handle in c:
-#         #         handle.remove()
-#         #     self.plots.pop(other_pos)
-#
-#         self.neighbors.remove(v)
-#
-#     def remove_parent(self):
-#         if self.parent:
-#             self.parent.remove_neighbor(self)
-#             self.parent = None
-#
-#     def clear_plots(self):
-#         for c in self.plots:
-#             for handle in c:
-#                 handle.remove()
-#         self.plots = []
-#
-#     def __repr__(self):
-#         return f"(value:{self.value})"
 
 
 class Ellipse(object):
@@ -539,13 +472,13 @@ def expected_num(area, density):
 ###############################################################################
 
 
-def graph_init(start, end, connect=False, plot_tree=True):
-    v_start = vertex(value=start, neighbors=[], plots=[], enable_plotting=plot_tree)
+def graph_init(start, end, connect=False):
+    v_start = vertex(value=start, neighbors=[], plots=[])
     v_end = vertex()
     if connect:
-        v_end = vertex(value=end, neighbors=[], plots=[], dist_to_root=0, enable_plotting=plot_tree)
+        v_end = vertex(value=end, neighbors=[], plots=[], dist_to_root=0)
     else:
-        v_end = vertex(value=end, neighbors=[], plots=[], dist_to_root=math.inf, enable_plotting=plot_tree)
+        v_end = vertex(value=end, neighbors=[], plots=[], dist_to_root=math.inf)
     graph0 = Graph(vertices=[v_start])
     graph1 = Graph(vertices=[v_end])
     return v_start, v_end, graph0, graph1

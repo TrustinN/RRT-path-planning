@@ -14,10 +14,10 @@ from .rrt_utils import in_free_space
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(start, end, map, step_size, max_iter, plot_tree=True):
+def rrt_run(start, end, map, step_size, max_iter):
 
     sampler = Sampler(map)
-    v_start, v_end, graph, _ = graph_init(start, end, plot_tree=plot_tree)
+    v_start, v_end, graph, _ = graph_init(start, end)
 
     iter = 0
     while v_end.num_neighbors < 1 and iter < max_iter:
@@ -35,7 +35,6 @@ def rrt_run(start, end, map, step_size, max_iter, plot_tree=True):
                                position=0,
                                parent=None,
                                plots=[],
-                               enable_plotting=plot_tree,
                                )
                 v_near.add_neighbor(v_new)
                 graph.add_vertex(v_new)
