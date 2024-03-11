@@ -16,14 +16,24 @@ def rrt_run(start, end, map, step_size, max_iter):
 
     # Find a path first
     path = rrt_connect.rrt_run(start, end, map, step_size, max_iter, clear=True)
-    path_length = 0
-    for i in range(len(path) - 1):
-        path_length += np.linalg.norm(path[i] - path[i + 1])
+    d_worst = 0
+    for i in range(len(path) - 2):
+        p = path[i + 1]
+        curr_dist = np.linalg.norm(p - start) + np.linalg.norm(p - end)
+        if curr_dist > d_worst:
+            d_worst = curr_dist
+
+    # for i in range(len(path) - 1):
+    #     path_length += np.linalg.norm(path[i] - path[i + 1])
 
     # start informed rrt sampling
-    ellipse_scope = Ellipse(start, end, path_length)
+    ellipse_scope = Ellipse(start, end, d_worst)
     map.add_path([start, end])
     map.sample_init("ellipse", ellipse_scope)
+
+    # sample number of points proportional to area of ellipse
+    scale = d_worst / np.linalg.norm(start - end)
+    max_iter = max_iter * scale / 1.5
 
     return rrt_star.rrt_run(start, end, map, step_size, max_iter)
 

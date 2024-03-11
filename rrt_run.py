@@ -27,8 +27,8 @@ from utils.map_utils import plot_path
 # from rrt_methods.rrt_connect import rrt_run
 # from rrt_methods.rrt_star import rrt_run
 # from rrt_methods.rrt_star_connect import rrt_run
-# from rrt_methods.informed_rrt_star import rrt_run
 from rrt_methods.quick_rrt_star import rrt_run
+# from rrt_methods.informed_rrt_star import rrt_run
 # from rrt_methods.informed_rrt_star_connect import rrt_run
 # from rrt_methods.ep_rrt_star import rrt_run
 
@@ -37,7 +37,7 @@ from rrt_methods.quick_rrt_star import rrt_run
 ###############################################################################
 
 # start_pos, end_pos, region, obstacles = maps.race_map()
-map = maps.square_obs_map(14, 100)
+map = maps.square_obs_map(7, 100)
 # start_pos, end_pos, region, obstacles = maps.make_maze(20)
 
 box_scope = find_bounding_box(map.region)
@@ -56,6 +56,8 @@ print('Time: ', stop - start)
 
 plot_path(path, c="#000000")
 plt.axis("equal")
+
+
 
 
 
