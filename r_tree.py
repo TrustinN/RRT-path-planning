@@ -1,5 +1,7 @@
 import math
+import random
 import numpy as np
+import matplotlib.pyplot as plt
 import textwrap
 
 
@@ -12,6 +14,7 @@ class Bound(object):
         self.length = self.max_x - self.min_x
         self.width = self.max_x - self.min_x
         self.area = self.width * self.length
+        self.p_obj = None
 
     # returns bounds and area
     def expand(self, other):
@@ -24,6 +27,17 @@ class Bound(object):
     def combine(self, other):
         bounds = self.expand(other)
         return Bound(bounds)
+
+    def plot(self):
+        self.p_obj = plt.plot([self.min_x, self.min_x, self.max_x, self.max_x, self.min_x],
+                              [self.min_y, self.max_y, self.max_y, self.min_y, self.min_y],
+                              c="#ff0000", linewidth=.5)
+
+    def rm_plot(self):
+        if self.p_obj:
+            for handle in self.p_obj:
+                handle.remove()
+        self.p_obj = None
 
     def __repr__(self):
         return f"{[self.min_x, self.max_x, self.max_y, self.min_y]}"
@@ -42,9 +56,15 @@ class IndexPointer(object):
     def __init__(self, bound, pointer):
         self.bound = bound
         self.pointer = pointer
+        self.bound.plot()
+
+    def combine_bound(self, bound):
+        self.bound.rm_plot()
+        self.bound = self.bound.combine(bound)
+        self.bound.plot()
 
     def __repr__(self):
-        return f"(pt -> {self.pointer})"
+        return "pt" + f"{self.bound} -> {self.pointer}"
 
 
 class BranchNode(object):
@@ -58,23 +78,32 @@ class BranchNode(object):
         string = ""
         for i in self.items:
             string += str(i) + "\n"
-        return "Branch:\n" + textwrap.indent(string, "    ")
+        return "Branch (\n" + textwrap.indent(string, "    ") + ")"
 
 
 class LeafNode(object):
     def __init__(self, indices=[], covering=Bound()):
         self.covering = covering
         self.items = indices
+        self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
+        self.points = []
+        for i in self.items:
+            self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
     def add_entry(self, entry):
         self.items.append(entry)
         self.covering = self.covering.combine(entry.bound)
+        self.points.append(plt.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
+
+    def rm_plot(self):
+        for h in self.points:
+            h.remove()
 
     def __repr__(self):
         string = ""
         for i in self.items:
             string += str(i) + "\n"
-        return "Leaf\n" + textwrap.indent(string, "    ")
+        return "Leaf" + f"{self.covering} (" + "\n" + textwrap.indent(string, "    ") + ")"
 
 
 class RTree(object):
@@ -103,18 +132,21 @@ class RTree(object):
 
                 # if node is too big, split leaf node and add the entry to
                 # both each of the splits
+                node.rm_plot()
                 l1, l2, b1, b2 = self.SplitNode(node, self.min_num)
                 n1 = LeafNode(indices=l1, covering=b1)
                 n2 = LeafNode(indices=l2, covering=b2)
                 n1.add_entry(index_entry)
                 n2.add_entry(index_entry)
+                b1 = n1.covering
+                b2 = n2.covering
         else:
 
             # choosing parent of entry to insert
             min_expansion = math.inf
             min_area = math.inf
-            child_node = None
-            child_node_idx = 0
+            idx_pointer = None
+            idx_pointer_pos = 0
             items = node.items
             for i in range(len(items)):
                 curr_node = node.items[i]
@@ -125,21 +157,21 @@ class RTree(object):
                 if diff <= min_expansion:
                     min_expansion = diff
                     if curr_area < min_area:
-                        child_node = curr_node
-                        child_node_idx = i
+                        idx_pointer = curr_node
+                        idx_pointer_pos = i
                         min_area = curr_area
 
-            # child_node.pointer is the pointer of one of node's children
-            n1, n2, b1, b2 = self.ChooseLeaf(child_node.pointer, index_entry)
+            # index.pointer is the pointer of one of node's children
+            n1, n2, b1, b2 = self.ChooseLeaf(idx_pointer.pointer, index_entry)
 
             # update bound
-            child_node.bound = child_node.bound.combine(index_entry.bound)
+            idx_pointer.combine_bound(index_entry.bound)
 
             if n2:
 
                 # Should be creating new indexpointers for each split created
                 # These indexpointers will lie in our current node.
-                node.items[child_node_idx] = IndexPointer(b2, n2)
+                node.items[idx_pointer_pos] = IndexPointer(b2, n2)
                 pointer_1 = IndexPointer(b1, n1)
                 node.add_entry(pointer_1)
                 n2 = None
@@ -252,21 +284,26 @@ class RTree(object):
 ###############################################################################
 
 
-rtree = RTree(50)
-for i in range(4000):
-    b1 = Bound([0, i, i, 0])
-    ti1 = np.array([.5 * i, .5 * i])
+def sample_point(bounds):
+    rand_x = math.floor((bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0])
+    rand_y = math.floor((bounds[2] - bounds[3]) * np.random.random_sample() + bounds[3])
+    return rand_x, rand_y
+
+
+ax = plt.gca()
+ax.set_xlim([-10, 810])
+ax.set_ylim([-10, 810])
+
+rtree = RTree(200)
+for i in range(2000):
+    x, y = sample_point([0, 800, 800, 0])
+    ti1 = np.array([x, y])
+    b1 = Bound([x - 10, x + 10, y + 10, y - 10])
     i1 = IndexRecord(b1, ti1)
     rtree.insert(i1)
 
 print(rtree)
 print("Done!")
-
-
-
-
-
-
 
 
 
