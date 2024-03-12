@@ -95,15 +95,22 @@ class RTree(object):
         n1, n2, b1, b2 = None, None, None, None
         if type(node) is LeafNode:
             if len(node.items) < self.max_num:
-                node.items.append(index_entry)
-                node.covering = node.covering.combine(index_entry.bound)
+
+                # if we can add the entry without exceeding leaf size
+                # then add it
+                node.add_entry(index_entry)
             else:
+
+                # if node is too big, split leaf node and add the entry to
+                # both each of the splits
                 l1, l2, b1, b2 = self.SplitNode(node, self.min_num)
                 n1 = LeafNode(indices=l1, covering=b1)
                 n2 = LeafNode(indices=l2, covering=b2)
                 n1.add_entry(index_entry)
                 n2.add_entry(index_entry)
         else:
+
+            # choosing parent of entry to insert
             min_expansion = math.inf
             min_area = math.inf
             child_node = None
@@ -129,22 +136,24 @@ class RTree(object):
             child_node.bound = child_node.bound.combine(index_entry.bound)
 
             if n2:
+
                 # Should be creating new indexpointers for each split created
                 # These indexpointers will lie in our current node.
-
-                # in general, n2 might not be a leaf node, so what do we mean
-                # by covering fix this part.
                 node.items[child_node_idx] = IndexPointer(b2, n2)
                 pointer_1 = IndexPointer(b1, n1)
                 node.add_entry(pointer_1)
                 n2 = None
 
             if len(node.items) > self.max_num:
+
+                # If the branch node has too many items split
                 l1, l2, b1, b2 = self.SplitNode(node, self.min_num)
                 n1 = BranchNode(indices=l1)
                 n2 = BranchNode(indices=l2)
                 return n1, n2, b1, b2
 
+        # returns either split leaf nodes, or branch nodes, depending on
+        # which one is at the highest level of tree
         return n1, n2, b1, b2
 
     # takes in a node to split, and minimum number of entries
@@ -186,6 +195,8 @@ class RTree(object):
             remaining.remove(r_new)
         return n1, n2, b1, b2
 
+    # when splitting the node, picks the first elements for
+    # our new list. These are the ones that are furthest apart
     def PickSeeds(self, entries):
         iefficieny = -math.inf
         length = len(entries)
@@ -202,6 +213,8 @@ class RTree(object):
                     r2 = entries[i + j + 1]
         return r1, r2
 
+    # picks next entry to add to our split nodes based on which point
+    # has the most preference for a node
     def PickNext(self, entries, b1, b2):
         max_diff = -1
         r = None
@@ -223,8 +236,8 @@ class RTree(object):
                 r_pref = pref
         return r, r_pref
 
-    # def AdjustTree(self, node):
-
+    # inserts entry with propagation of changes upwards until root node
+    # if root node is too big, we split
     def insert(self, index_entry):
         n1, n2, b1, b2 = self.ChooseLeaf(self.root, index_entry)
         if n2:
@@ -239,7 +252,7 @@ class RTree(object):
 ###############################################################################
 
 
-rtree = RTree(5)
+rtree = RTree(50)
 for i in range(4000):
     b1 = Bound([0, i, i, 0])
     ti1 = np.array([.5 * i, .5 * i])
