@@ -14,3 +14,4 @@ env.bak/
 venv.bak/
 lib/
 bin/
+pyvenv.cfg
