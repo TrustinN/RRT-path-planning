@@ -48,8 +48,11 @@ class IndexPointer(object):
 
 
 class BranchNode(object):
-    def __init__(self, index_pointers=[]):
-        self.items = index_pointers
+    def __init__(self, indices=[]):
+        self.items = indices
+
+    def add_entry(self, entry):
+        self.items.append(entry)
 
     def __repr__(self):
         string = ""
@@ -59,13 +62,13 @@ class BranchNode(object):
 
 
 class LeafNode(object):
-    def __init__(self, index_records=[]):
-        self.covering = Bound()
-        self.items = index_records
+    def __init__(self, indices=[], covering=Bound()):
+        self.covering = covering
+        self.items = indices
 
-    def add_record(self, record):
-        self.items.append(record)
-        self.covering = record.bound.combine(self.covering)
+    def add_entry(self, entry):
+        self.items.append(entry)
+        self.covering = self.covering.combine(entry.bound)
 
     def __repr__(self):
         string = ""
@@ -81,7 +84,7 @@ class RTree(object):
     ###########################################################################
 
     def __init__(self, M):
-        self.root = LeafNode(index_records=[])
+        self.root = LeafNode(indices=[], covering=Bound())
         self.max_num = M
         self.min_num = math.floor(M // 2)
 
@@ -92,11 +95,14 @@ class RTree(object):
         n1, n2, b1, b2 = None, None, None, None
         if type(node) is LeafNode:
             if len(node.items) < self.max_num:
-                node.add_record(index_entry)
+                node.items.append(index_entry)
+                node.covering = node.covering.combine(index_entry.bound)
             else:
-                n1, n2, b1, b2 = self.SplitNode(node, self.min_num)
-                n1.add_record(index_entry)
-                n2.add_record(index_entry)
+                l1, l2, b1, b2 = self.SplitNode(node, self.min_num)
+                n1 = LeafNode(indices=l1, covering=b1)
+                n2 = LeafNode(indices=l2, covering=b2)
+                n1.add_entry(index_entry)
+                n2.add_entry(index_entry)
         else:
             min_expansion = math.inf
             min_area = math.inf
@@ -116,7 +122,7 @@ class RTree(object):
                         child_node_idx = i
                         min_area = curr_area
 
-            # next node.pointer is the pointer of one of node's children
+            # child_node.pointer is the pointer of one of node's children
             n1, n2, b1, b2 = self.ChooseLeaf(child_node.pointer, index_entry)
 
             # update bound
@@ -130,74 +136,52 @@ class RTree(object):
                 # by covering fix this part.
                 node.items[child_node_idx] = IndexPointer(b2, n2)
                 pointer_1 = IndexPointer(b1, n1)
-                node.items.append(pointer_1)
+                node.add_entry(pointer_1)
                 n2 = None
 
-        if len(node.items) > self.max_num:
-            n1, n2, b1, b2 = self.SplitNode(node, self.min_num)
-            if type(n1) is LeafNode:
-                n1.add_record(index_entry)
-                n2.add_record(index_entry)
+            if len(node.items) > self.max_num:
+                l1, l2, b1, b2 = self.SplitNode(node, self.min_num)
+                n1 = BranchNode(indices=l1)
+                n2 = BranchNode(indices=l2)
+                return n1, n2, b1, b2
 
         return n1, n2, b1, b2
 
-    # fix splitnode to return different node based on node split
-    # we want to split non leaf nodes also
+    # takes in a node to split, and minimum number of entries
+    # required in each new node.
+    # Returns two lists of nodes split from node.items
+    # along with their bounding box.
     def SplitNode(self, node, m):
         remaining = set(node.items)
 
-        n1, n2 = None, None
-        if type(node) is LeafNode:
-            n1, n2 = LeafNode(index_records=[]), LeafNode(index_records=[])
-        else:
-            n1, n2 = BranchNode(index_pointers=[]), BranchNode(index_pointers=[])
-
+        # pick first element of our each new group
+        n1, n2, b1, b2 = [], [], Bound(), Bound()
         r1, r2 = self.PickSeeds(node.items)
-
-        if type(node) is LeafNode:
-            n1.add_record(r1), n2.add_record(r2)
-        else:
-            n1.items.append(r1), n2.items.append(r2)
+        n1.append(r1), n2.append(r2)
 
         remaining.remove(r1), remaining.remove(r2)
         b1, b2 = r1.bound, r2.bound
         while True:
             if len(remaining) == 0:
                 break
-            if len(n1.items) >= m:
+            if len(n1) >= m:
                 for s in remaining:
-                    if type(node) is LeafNode:
-                        n2.add_record(s)
-                        b2 = b2.combine(s.bound)
-                    else:
-                        n2.items.append(s)
-                        b2 = b2.combine(s.bound)
+                    n2.append(s)
+                    b2 = b2.combine(s.bound)
                 break
-            if len(n2.items) >= m:
+            if len(n2) >= m:
                 for s in remaining:
-                    if type(node) is LeafNode:
-                        n1.add_record(s)
-                        b1 = b1.combine(s.bound)
-                    else:
-                        n1.items.append(s)
-                        b1 = b1.combine(s.bound)
+                    n1.append(s)
+                    b1 = b1.combine(s.bound)
                 break
 
             r_new, pref = self.PickNext(remaining, b1, b2)
             if pref == 1:
-                if type(node) is LeafNode:
-                    n1.add_record(r_new)
-                    b1 = b1.combine(r_new.bound)
-                else:
-                    n1.items.append(r_new)
-                    b1 = b1.combine(r_new.bound)
+                n1.append(r_new)
+                b1 = b1.combine(r_new.bound)
             else:
-                if type(node) is LeafNode:
-                    n2.add_record(r_new)
-                    b2 = b2.combine(r_new.bound)
-                else:
-                    n2.items.append(r_new)
-                    b2 = b2.combine(r_new.bound)
+                n2.append(r_new)
+                b2 = b2.combine(r_new.bound)
 
             remaining.remove(r_new)
         return n1, n2, b1, b2
@@ -244,28 +228,19 @@ class RTree(object):
     def insert(self, index_entry):
         n1, n2, b1, b2 = self.ChooseLeaf(self.root, index_entry)
         if n2:
-            if type(self.root) is LeafNode:
-                self.root = BranchNode(index_pointers=[])
-                p1 = IndexPointer(b1, pointer=n1)
-                p2 = IndexPointer(b2, pointer=n2)
-                self.root.items.append(p1)
-                self.root.items.append(p2)
-            if len(self.root.items) > self.max_num:
-                # reset root if root is split
-                n1, n2, b1, b2 = self.SplitNode(self.root, self.min_num)
-                self.root = BranchNode(index_pointers=[])
-                p1 = IndexPointer(b1, pointer=n1)
-                p2 = IndexPointer(b2, pointer=n2)
-                self.root.items.append(p1)
-                self.root.items.append(p2)
+            self.root = BranchNode(indices=[])
+            p1 = IndexPointer(b1, pointer=n1)
+            p2 = IndexPointer(b2, pointer=n2)
+            self.root.add_entry(p1)
+            self.root.add_entry(p2)
 
 ###############################################################################
 # Testing                                                                     #
 ###############################################################################
 
 
-rtree = RTree(140)
-for i in range(10000):
+rtree = RTree(5)
+for i in range(4000):
     b1 = Bound([0, i, i, 0])
     ti1 = np.array([.5 * i, .5 * i])
     i1 = IndexRecord(b1, ti1)
@@ -273,6 +248,7 @@ for i in range(10000):
 
 print(rtree)
 print("Done!")
+
 
 
 
