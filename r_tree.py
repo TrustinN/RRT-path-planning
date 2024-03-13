@@ -28,10 +28,10 @@ class Bound(object):
         bounds = self.expand(other)
         return Bound(bounds)
 
-    def plot(self):
+    def plot(self, c):
         self.p_obj = plt.plot([self.min_x, self.min_x, self.max_x, self.max_x, self.min_x],
                               [self.min_y, self.max_y, self.max_y, self.min_y, self.min_y],
-                              c="#ff0000", linewidth=.5)
+                              c=c, linewidth=.5)
 
     def rm_plot(self):
         if self.p_obj:
@@ -56,12 +56,12 @@ class IndexPointer(object):
     def __init__(self, bound, pointer):
         self.bound = bound
         self.pointer = pointer
-        self.bound.plot()
+        # self.bound.plot("#ff0000")
 
-    def combine_bound(self, bound):
-        self.bound.rm_plot()
-        self.bound = self.bound.combine(bound)
-        self.bound.plot()
+    def update(self, bound):
+        # self.bound.rm_plot()
+        self.bound = Bound.combine(self.bound, bound)
+        # self.bound.plot("#ff0000")
 
     def __repr__(self):
         return "pt" + f"{self.bound} -> {self.pointer}"
@@ -84,7 +84,10 @@ class BranchNode(object):
 class LeafNode(object):
     def __init__(self, indices=[], covering=Bound()):
         self.covering = covering
+        if self.covering:
+            covering.plot("#009b00")
         self.items = indices
+        self.overlap = 0
         self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
         self.points = []
         for i in self.items:
@@ -92,7 +95,12 @@ class LeafNode(object):
 
     def add_entry(self, entry):
         self.items.append(entry)
-        self.covering = self.covering.combine(entry.bound)
+        if self.covering:
+            self.covering.rm_plot()
+            self.covering = Bound.combine(self.covering, entry.bound)
+            self.covering.plot("#009b00")
+        else:
+            self.covering = entry.bound
         self.points.append(plt.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
     def rm_plot(self):
@@ -133,6 +141,7 @@ class RTree(object):
                 # if node is too big, split leaf node and add the entry to
                 # both each of the splits
                 node.rm_plot()
+                node.covering.rm_plot()
                 l1, l2, b1, b2 = self.SplitNode(node, self.min_num)
                 n1 = LeafNode(indices=l1, covering=b1)
                 n2 = LeafNode(indices=l2, covering=b2)
@@ -165,7 +174,7 @@ class RTree(object):
             n1, n2, b1, b2 = self.ChooseLeaf(idx_pointer.pointer, index_entry)
 
             # update bound
-            idx_pointer.combine_bound(index_entry.bound)
+            idx_pointer.update(index_entry.bound)
 
             if n2:
 
@@ -290,11 +299,12 @@ def sample_point(bounds):
     return rand_x, rand_y
 
 
+np.random.seed(123)
 ax = plt.gca()
 ax.set_xlim([-10, 810])
 ax.set_ylim([-10, 810])
 
-rtree = RTree(70)
+rtree = RTree(100)
 for i in range(1000):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
@@ -304,6 +314,7 @@ for i in range(1000):
 
 print(rtree)
 print("Done!")
+
 
 
 
