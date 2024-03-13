@@ -12,7 +12,7 @@ class Bound(object):
         self.max_y = bounds[2]
         self.min_y = bounds[3]
         self.length = self.max_x - self.min_x
-        self.width = self.max_x - self.min_x
+        self.width = self.max_y - self.min_y
         self.area = self.width * self.length
         self.p_obj = None
 
@@ -274,8 +274,8 @@ class RTree(object):
         n1, n2, b1, b2 = self.ChooseLeaf(self.root, index_entry)
         if n2:
             self.root = BranchNode(indices=[])
-            p1 = IndexPointer(b1, pointer=n1)
-            p2 = IndexPointer(b2, pointer=n2)
+            p1 = IndexPointer(bound=b1, pointer=n1)
+            p2 = IndexPointer(bound=b2, pointer=n2)
             self.root.add_entry(p1)
             self.root.add_entry(p2)
 
@@ -294,16 +294,17 @@ ax = plt.gca()
 ax.set_xlim([-10, 810])
 ax.set_ylim([-10, 810])
 
-rtree = RTree(200)
-for i in range(2000):
+rtree = RTree(70)
+for i in range(1000):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
-    b1 = Bound([x - 10, x + 10, y + 10, y - 10])
+    b1 = Bound([x, x, y, y])
     i1 = IndexRecord(b1, ti1)
     rtree.insert(i1)
 
 print(rtree)
 print("Done!")
+
 
 
 
