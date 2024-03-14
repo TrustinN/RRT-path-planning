@@ -222,6 +222,7 @@ class RTree(object):
         # Choose axis that will give us the lowest goodness value
         # calculated by the margin of the bounds
         g_value = math.inf
+        axis = "x"
 
         # x-axis calculation
         # sort by lower value of bounding box
@@ -229,15 +230,15 @@ class RTree(object):
 
         # x-axis calculation
         # sort by upper value f bounding box
-        x_u_sort = sorted(node.items, key=lambda x: x.bound.max_x)
+        x_u_sort = sorted(node.items, key=lambda x: x.bound.max_x, reverse=True)
 
         # y-axis calculation
         # sort by upper value f bounding box
-        y_l_sort = sorted(node.items, key=lambda x: x.bound.min_x)
+        y_l_sort = sorted(node.items, key=lambda x: x.bound.min_y)
 
         # y-axis calculation
         # sort by upper value f bounding box
-        y_u_sort = sorted(node.items, key=lambda x: x.bound.max_x)
+        y_u_sort = sorted(node.items, key=lambda x: x.bound.max_y, reverse=True)
 
         for i in range(self.max_num - 2 * self.min_num + 1):
 
@@ -251,7 +252,9 @@ class RTree(object):
             margin_2 = max_y_2 - min_y_2 + xl2[-1].bound.min_x - xl2[0].bound.min_x
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
+                g_value = curr_g
                 node.items = x_l_sort
+                axis = "x"
 
             xu1 = x_u_sort[:self.min_num + i]
             xu2 = x_u_sort[self.min_num + i:]
@@ -259,11 +262,13 @@ class RTree(object):
             min_y_2 = min([i.bound.min_y for i in xu2])
             max_y_1 = max([i.bound.max_y for i in xu1])
             max_y_2 = max([i.bound.max_y for i in xu2])
-            margin_1 = max_y_1 - min_y_1 + xu1[-1].bound.min_x - xu1[0].bound.min_x
-            margin_2 = max_y_2 - min_y_2 + xu2[-1].bound.min_x - xu2[0].bound.min_x
+            margin_1 = max_y_1 - min_y_1 + xu1[0].bound.max_x - xu1[-1].bound.max_x
+            margin_2 = max_y_2 - min_y_2 + xu2[0].bound.max_x - xu2[-1].bound.max_x
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
+                g_value = curr_g
                 node.items = x_u_sort
+                axis = "x"
 
             yl1 = y_l_sort[:self.min_num + i]
             yl2 = y_l_sort[self.min_num + i:]
@@ -275,7 +280,9 @@ class RTree(object):
             margin_2 = max_x_2 - min_x_2 + yl2[-1].bound.min_y - yl2[0].bound.min_y
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
+                g_value = curr_g
                 node.items = y_l_sort
+                axis = "y"
 
             yu1 = y_u_sort[:self.min_num + i]
             yu2 = y_u_sort[self.min_num + i:]
@@ -283,11 +290,14 @@ class RTree(object):
             min_x_2 = min([i.bound.min_x for i in yu2])
             max_x_1 = max([i.bound.max_x for i in yu1])
             max_x_2 = max([i.bound.max_x for i in yu2])
-            margin_1 = max_x_1 - min_x_1 + yu1[-1].bound.min_y - yu1[0].bound.min_y
-            margin_2 = max_x_2 - min_x_2 + yu2[-1].bound.min_y - yu2[0].bound.min_y
+            margin_1 = max_x_1 - min_x_1 + yu1[0].bound.max_y - yu1[-1].bound.max_y
+            margin_2 = max_x_2 - min_x_2 + yu2[0].bound.max_y - yu2[-1].bound.max_y
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
+                g_value = curr_g
                 node.items = y_u_sort
+                axis = "y"
+        return axis
 
     def ChooseSplitIndex(self, items):
         l1, l2, b1, b2 = None, None, None, None
@@ -318,7 +328,8 @@ class RTree(object):
         return l1, l2, b1, b2
 
     def Split(self, node):
-        self.ChooseSplitAxis(node)
+        axis = self.ChooseSplitAxis(node)
+        print(axis)
         return self.ChooseSplitIndex(node.items)
 
     def OverflowTreatment(self, node, index_entry, level):
@@ -327,9 +338,9 @@ class RTree(object):
             self.Reinsert(node)
             return None, None, None, None
         else:
+            l1, l2, b1, b2 = self.Split(node)
             node.rm_plot()
             node.covering.rm_plot()
-            l1, l2, b1, b2 = self.Split(node)
             n1 = LeafNode(indices=l1, covering=b1, level=level)
             n2 = LeafNode(indices=l2, covering=b2, level=level)
             b1 = n1.covering
@@ -421,7 +432,7 @@ ax = plt.gca()
 ax.set_xlim([-10, 810])
 ax.set_ylim([-10, 810])
 
-rtree = RTree(20)
+rtree = RTree(50)
 for i in range(400):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
@@ -432,10 +443,6 @@ for i in range(400):
 # Find out why it is always choosing the y-axis to split
 print(rtree)
 print("Done!")
-
-
-
-
 
 
 
