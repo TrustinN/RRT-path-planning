@@ -6,15 +6,18 @@ import textwrap
 
 
 class Bound(object):
-    def __init__(self, bounds=[0, 0, 0, 0]):
-        self.min_x = bounds[0]
-        self.max_x = bounds[1]
-        self.max_y = bounds[2]
-        self.min_y = bounds[3]
-        self.length = self.max_x - self.min_x
-        self.width = self.max_y - self.min_y
-        self.area = self.width * self.length
-        self.p_obj = None
+    def __init__(self, bounds=[]):
+        if bounds:
+            self.min_x = bounds[0]
+            self.max_x = bounds[1]
+            self.max_y = bounds[2]
+            self.min_y = bounds[3]
+            self.length = self.max_x - self.min_x
+            self.width = self.max_y - self.min_y
+            self.area = self.width * self.length
+            self.center_x = self.min_x + self.length / 2
+            self.center_y = self.min_y + self.width / 2
+            self.p_obj = None
 
     # returns bounds and area
     def expand(self, other):

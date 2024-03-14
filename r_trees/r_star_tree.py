@@ -6,30 +6,45 @@ import textwrap
 
 
 class Bound(object):
-    def __init__(self, bounds=[0, 0, 0, 0]):
-        self.min_x = bounds[0]
-        self.max_x = bounds[1]
-        self.max_y = bounds[2]
-        self.min_y = bounds[3]
-        self.length = self.max_x - self.min_x
-        self.width = self.max_y - self.min_y
-        self.area = self.width * self.length
-        self.margin = 2 * (self.length + self.width)
-        self.center_x = self.min_x + self.length / 2
-        self.center_y = self.min_y + self.width / 2
-        self.p_obj = None
+    def __init__(self, bounds=[]):
+        self.bounds = bounds
+        if bounds:
+            self.min_x = bounds[0]
+            self.max_x = bounds[1]
+            self.max_y = bounds[2]
+            self.min_y = bounds[3]
+            self.length = self.max_x - self.min_x
+            self.width = self.max_y - self.min_y
+            self.area = self.width * self.length
+            self.center_x = self.min_x + self.length / 2
+            self.center_y = self.min_y + self.width / 2
+            self.p_obj = None
+
+    # returns perimeter
+    def margin(self):
+        return 2 * (self.length + self.width)
 
     # returns bounds and area
     def expand(b1, b2):
-        min_x = min(b1.min_x, b2.min_x)
-        max_x = max(b1.max_x, b2.max_x)
-        max_y = max(b1.max_y, b2.max_y)
-        min_y = min(b1.min_y, b2.min_y)
-        return [min_x, max_x, max_y, min_y]
+        if b1.bounds and b2.bounds:
+            min_x = min(b1.min_x, b2.min_x)
+            max_x = max(b1.max_x, b2.max_x)
+            max_y = max(b1.max_y, b2.max_y)
+            min_y = min(b1.min_y, b2.min_y)
+            return [min_x, max_x, max_y, min_y]
+        elif b1.bound:
+            return [b1.min_x, b1.max_x, b1.max_y, b1.min_y]
+        elif b2.bound:
+            return [b2.min_x, b2.max_x, b2.max_y, b2.min_y]
 
     def combine(b1, b2):
-        bounds = Bound.expand(b1, b2)
-        return Bound(bounds)
+        if b1.bounds and b2.bounds:
+            bounds = Bound.expand(b1, b2)
+            return Bound(bounds)
+        elif b1.bounds:
+            return Bound(b1.bounds)
+        elif b2.bounds:
+            return Bound(b2.bounds)
 
     # returns overlap area of two bounds
     def overlap(b1, b2):
@@ -138,7 +153,7 @@ class RTree(object):
     def __init__(self, M):
         self.root = LeafNode(indices=[], covering=None)
         self.max_num = M
-        self.min_num = math.floor(M // 2)
+        self.min_num = math.floor(M * .4)
 
     def __repr__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
@@ -162,6 +177,8 @@ class RTree(object):
     # choosing parent of entry to insert
     def ChooseSubTree(self, node, index_entry):
 
+        # remember to fix this algorithm to be faster
+        # currently, it runs at quadratic complexity
         min_exp, min_area = math.inf, math.inf
         idx_ptr, idx_ptr_pos = None, 0
         items = node.items
@@ -174,16 +191,125 @@ class RTree(object):
             else:
                 curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
 
-            if diff <= min_exp:
+            if diff < min_exp:
                 min_exp = diff
-
+                idx_ptr = curr_ptr
+                idx_ptr_pos = i
                 if curr_area < min_area:
+                    min_area = curr_area
 
+            elif diff == min_exp:
+                if curr_area < min_area:
                     idx_ptr = curr_ptr
                     idx_ptr_pos = i
                     min_area = curr_area
 
         return idx_ptr, idx_ptr_pos
+
+    # takes in node, could be either leafnode or branchnode
+    # and finds the axis to split along based on their items
+    def ChooseSplitAxis(self, node):
+        # Choose axis that will give us the lowest goodness value
+        # calculated by the margin of the bounds
+        g_value = math.inf
+
+        # x-axis calculation
+        # sort by lower value of bounding box
+        x_l_sort = sorted(node.items, key=lambda x: x.bound.min_x)
+
+        # x-axis calculation
+        # sort by upper value f bounding box
+        x_u_sort = sorted(node.items, key=lambda x: x.bound.max_x)
+
+        # y-axis calculation
+        # sort by upper value f bounding box
+        y_l_sort = sorted(node.items, key=lambda x: x.bound.min_x)
+
+        # y-axis calculation
+        # sort by upper value f bounding box
+        y_u_sort = sorted(node.items, key=lambda x: x.bound.max_x)
+
+        for i in range(self.max_num - 2 * self.min_num + 1):
+
+            xl1 = x_l_sort[:self.min_num + i]
+            xl2 = x_l_sort[self.min_num + i:]
+            min_y_1 = min([i.bound.min_y for i in xl1])
+            min_y_2 = min([i.bound.min_y for i in xl2])
+            max_y_1 = max([i.bound.max_y for i in xl1])
+            max_y_2 = max([i.bound.max_y for i in xl2])
+            margin_1 = max_y_1 - min_y_1 + xl1[-1].bound.min_x - xl1[0].bound.min_x
+            margin_2 = max_y_2 - min_y_2 + xl2[-1].bound.min_x - xl2[0].bound.min_x
+            curr_g = margin_1 + margin_2
+            if curr_g < g_value:
+                node.items = x_l_sort
+
+            xu1 = x_u_sort[:self.min_num + i]
+            xu2 = x_u_sort[self.min_num + i:]
+            min_y_1 = min([i.bound.min_y for i in xu1])
+            min_y_2 = min([i.bound.min_y for i in xu2])
+            max_y_1 = max([i.bound.max_y for i in xu1])
+            max_y_2 = max([i.bound.max_y for i in xu2])
+            margin_1 = max_y_1 - min_y_1 + xu1[-1].bound.min_x - xu1[0].bound.min_x
+            margin_2 = max_y_2 - min_y_2 + xu2[-1].bound.min_x - xu2[0].bound.min_x
+            curr_g = margin_1 + margin_2
+            if curr_g < g_value:
+                node.items = x_u_sort
+
+            yl1 = y_l_sort[:self.min_num + i]
+            yl2 = y_l_sort[self.min_num + i:]
+            min_x_1 = min([i.bound.min_x for i in yl1])
+            min_x_2 = min([i.bound.min_x for i in yl2])
+            max_x_1 = max([i.bound.max_x for i in yl1])
+            max_x_2 = max([i.bound.max_x for i in yl2])
+            margin_1 = max_x_1 - min_x_1 + yl1[-1].bound.min_y - yl1[0].bound.min_y
+            margin_2 = max_x_2 - min_x_2 + yl2[-1].bound.min_y - yl2[0].bound.min_y
+            curr_g = margin_1 + margin_2
+            if curr_g < g_value:
+                node.items = y_l_sort
+
+            yu1 = y_u_sort[:self.min_num + i]
+            yu2 = y_u_sort[self.min_num + i:]
+            min_x_1 = min([i.bound.min_x for i in yu1])
+            min_x_2 = min([i.bound.min_x for i in yu2])
+            max_x_1 = max([i.bound.max_x for i in yu1])
+            max_x_2 = max([i.bound.max_x for i in yu2])
+            margin_1 = max_x_1 - min_x_1 + yu1[-1].bound.min_y - yu1[0].bound.min_y
+            margin_2 = max_x_2 - min_x_2 + yu2[-1].bound.min_y - yu2[0].bound.min_y
+            curr_g = margin_1 + margin_2
+            if curr_g < g_value:
+                node.items = y_u_sort
+
+    def ChooseSplitIndex(self, items):
+        l1, l2, b1, b2 = None, None, None, None
+        min_overlap = math.inf
+        min_area = math.inf
+        for i in range(self.max_num - 2 * self.min_num + 1):
+            r1 = items[:self.min_num + i]
+            r2 = items[self.min_num + i:]
+            tmp_b1, tmp_b2 = Bound(), Bound()
+            for b in r1:
+                tmp_b1 = Bound.combine(tmp_b1, b.bound)
+            for b in r2:
+                tmp_b2 = Bound.combine(tmp_b2, b.bound)
+            curr_overlap = Bound.overlap(tmp_b1, tmp_b2)
+            if curr_overlap <= min_overlap:
+                curr_area = tmp_b1.area + tmp_b2.area
+                if curr_overlap == min_overlap:
+                    if curr_area < min_area:
+                        l1, l2 = r1, r2
+                        min_area = curr_area
+                        b1, b2 = tmp_b1, tmp_b2
+                else:
+                    if curr_area < min_area:
+                        min_area = curr_area
+                    min_overlap = curr_overlap
+                    l1, l2 = r1, r2
+                    b1, b2 = tmp_b1, tmp_b2
+        return l1, l2, b1, b2
+
+    def Split(self, node):
+        self.ChooseSplitAxis(node)
+        return self.ChooseSplitIndex(node.items)
 
     def ChooseLeaf(self, node, index_entry):
         n1, n2, b1, b2 = None, None, None, None
@@ -199,7 +325,7 @@ class RTree(object):
                 # both each of the splits
                 node.rm_plot()
                 node.covering.rm_plot()
-                l1, l2, b1, b2 = self.SplitNode(node, self.min_num)
+                l1, l2, b1, b2 = self.Split(node)
                 n1 = LeafNode(indices=l1, covering=b1)
                 n2 = LeafNode(indices=l2, covering=b2)
                 n1.add_entry(index_entry)
@@ -228,7 +354,7 @@ class RTree(object):
             if len(node.items) > self.max_num:
 
                 # If the branch node has too many items split
-                l1, l2, b1, b2 = self.SplitNode(node, self.min_num)
+                l1, l2, b1, b2 = self.Split(node)
                 n1 = BranchNode(indices=l1)
                 n2 = BranchNode(indices=l2)
                 return n1, n2, b1, b2
@@ -354,12 +480,9 @@ for i in range(1000):
     i1 = IndexRecord(b1, ti1)
     rtree.insert(i1)
 
+# Find out why it is always choosing the y-axis to split
 print(rtree)
 print("Done!")
-
-
-
-
 
 
 
