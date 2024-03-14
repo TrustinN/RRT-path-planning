@@ -103,18 +103,22 @@ class BranchNode(object):
     def __init__(self, indices=[], covering=Bound(), level=0):
         self.level = level
         self.covering = covering
+        if self.covering:
+            covering.plot("#ff0000")
         self.items = indices
 
     def add_entry(self, entry):
         self.items.append(entry)
         if self.covering:
+            self.covering.rm_plot()
             self.covering = Bound.combine(self.covering, entry.bound)
+            self.covering.plot("#ff0000")
 
     def __repr__(self):
         string = ""
         for i in self.items:
             string += str(i) + "\n"
-        return "Branch " + f"{self.covering} " + "(\n" + textwrap.indent(string, "    ") + ")"
+        return "Branch " + f"{self.level} " + "(\n" + textwrap.indent(string, "    ") + ")"
 
 
 class LeafNode(object):
@@ -126,6 +130,10 @@ class LeafNode(object):
         self.items = indices
         self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
         self.points = []
+        for i in self.items:
+            self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
+
+    def plot(self):
         for i in self.items:
             self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
@@ -148,7 +156,7 @@ class LeafNode(object):
         string = ""
         for i in self.items:
             string += str(i) + "\n"
-        return "Leaf" + f"{self.covering} (" + "\n" + textwrap.indent(string, "    ") + ")"
+        return "Leaf" + f"{self.level} (" + "\n" + textwrap.indent(string, "    ") + ")"
 
 
 class RTree(object):
@@ -196,17 +204,16 @@ class RTree(object):
         for i in range(len(items)):
 
             curr_ptr = node.items[i]
-            if type(curr_ptr.pointer) is LeafNode:
-                curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
-            else:
-                curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
+            # if type(curr_ptr.pointer) is LeafNode:
+            curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
+            # else:
+            #     curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
 
             if diff < min_exp:
                 min_exp = diff
                 idx_ptr = curr_ptr
                 idx_ptr_pos = i
-                if curr_area < min_area:
-                    min_area = curr_area
+                min_area = curr_area
 
             elif diff == min_exp:
                 if curr_area < min_area:
@@ -222,7 +229,6 @@ class RTree(object):
         # Choose axis that will give us the lowest goodness value
         # calculated by the margin of the bounds
         g_value = math.inf
-        axis = "x"
 
         # x-axis calculation
         # sort by lower value of bounding box
@@ -254,7 +260,6 @@ class RTree(object):
             if curr_g < g_value:
                 g_value = curr_g
                 node.items = x_l_sort
-                axis = "x"
 
             xu1 = x_u_sort[:self.min_num + i]
             xu2 = x_u_sort[self.min_num + i:]
@@ -268,7 +273,6 @@ class RTree(object):
             if curr_g < g_value:
                 g_value = curr_g
                 node.items = x_u_sort
-                axis = "x"
 
             yl1 = y_l_sort[:self.min_num + i]
             yl2 = y_l_sort[self.min_num + i:]
@@ -282,7 +286,6 @@ class RTree(object):
             if curr_g < g_value:
                 g_value = curr_g
                 node.items = y_l_sort
-                axis = "y"
 
             yu1 = y_u_sort[:self.min_num + i]
             yu2 = y_u_sort[self.min_num + i:]
@@ -296,8 +299,6 @@ class RTree(object):
             if curr_g < g_value:
                 g_value = curr_g
                 node.items = y_u_sort
-                axis = "y"
-        return axis
 
     def ChooseSplitIndex(self, items):
         l1, l2, b1, b2 = None, None, None, None
@@ -328,8 +329,7 @@ class RTree(object):
         return l1, l2, b1, b2
 
     def Split(self, node):
-        axis = self.ChooseSplitAxis(node)
-        print(axis)
+        self.ChooseSplitAxis(node)
         return self.ChooseSplitIndex(node.items)
 
     def OverflowTreatment(self, node, index_entry, level):
@@ -355,6 +355,7 @@ class RTree(object):
         node.covering = Bound()
         for n in node.items:
             node.covering = Bound.combine(node.covering, n.bound)
+        node.plot()
         to_insert = sort_dist[:self.p][::-1]
         for n in to_insert:
             self.insert(n)
@@ -382,7 +383,9 @@ class RTree(object):
 
             # update bound
             idx_pointer.update(index_entry.bound)
+            node.covering.rm_plot()
             node.covering = Bound.combine(node.covering, index_entry.bound)
+            node.covering.plot("#ff0000")
 
             if n2:
 
@@ -397,6 +400,7 @@ class RTree(object):
 
                 # If the branch node has too many items split
                 l1, l2, b1, b2 = self.Split(node)
+                node.covering.rm_plot()
                 n1 = BranchNode(indices=l1, covering=b1, level=level)
                 n2 = BranchNode(indices=l2, covering=b2, level=level)
 
@@ -432,22 +436,22 @@ ax = plt.gca()
 ax.set_xlim([-10, 810])
 ax.set_ylim([-10, 810])
 
-rtree = RTree(50)
-for i in range(400):
+rtree = RTree(40)
+for i in range(10000):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
     b1 = Bound([x, x, y, y])
     i1 = IndexRecord(b1, ti1)
     rtree.insert(i1)
 
-# Find out why it is always choosing the y-axis to split
+# Fix overflow treatment
+# Work on bound setting for branch nodes
+# that don't point to leaf nodes
+# Bad performance when there are more than 2
+# layers to tree
+print(rtree.overflow_levels)
 print(rtree)
 print("Done!")
-
-
-
-
-
 
 
 
