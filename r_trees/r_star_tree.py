@@ -207,10 +207,10 @@ class RTree(object):
         for i in range(len(items)):
 
             curr_ptr = items[i]
-            # if type(curr_ptr.pointer) is LeafNode:
-            curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
-            # else:
-            #     curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
+            if type(curr_ptr.pointer) is LeafNode:
+                curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
+            else:
+                curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
 
             if diff < min_exp:
                 min_exp = diff
@@ -253,71 +253,79 @@ class RTree(object):
 
             xl1 = x_l_sort[:self.min_num + i]
             xl2 = x_l_sort[self.min_num + i:]
-            min_y_1 = min([i.bound.min_y for i in xl1])
-            max_y_1 = max([i.bound.max_y for i in xl1])
-            min_y_2 = min([i.bound.min_y for i in xl2])
-            max_y_2 = max([i.bound.max_y for i in xl2])
-            max_x_1 = max([i.bound.max_x for i in xl1])
-            min_x_1 = xl1[0].bound.min_x
-            max_x_2 = max([i.bound.max_x for i in xl2])
-            min_x_2 = xl2[0].bound.min_x
-            margin_1 = max_y_1 - min_y_1 + max_x_1 - min_x_1
-            margin_2 = max_y_2 - min_y_2 + max_x_2 - min_x_2
+            mb1 = Bound()
+            for b in xl1:
+                mb1 = Bound.combine(mb1, b.bound)
+            mb2 = Bound()
+            for b in xl2:
+                mb2 = Bound.combine(mb2, b.bound)
+            # mb1.plot("#0000ff")
+            # mb2.plot("#0000ff")
+            margin_1 = mb1.margin()
+            margin_2 = mb1.margin()
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
                 g_value = curr_g
                 node.items = x_l_sort
+            # mb1.rm_plot()
+            # mb2.rm_plot()
 
             xu1 = x_u_sort[:self.min_num + i]
             xu2 = x_u_sort[self.min_num + i:]
-            min_y_1 = min([i.bound.min_y for i in xu1])
-            max_y_1 = max([i.bound.max_y for i in xu1])
-            min_y_2 = min([i.bound.min_y for i in xu2])
-            max_y_2 = max([i.bound.max_y for i in xu2])
-            max_x_1 = xu1[0].bound.max_x
-            min_x_1 = min([i.bound.min_x for i in xu1])
-            max_x_2 = xu2[0].bound.max_x
-            min_x_2 = min([i.bound.min_x for i in xu2])
-            margin_1 = max_y_1 - min_y_1 + max_x_1 - min_x_1
-            margin_2 = max_y_2 - min_y_2 + max_x_2 - min_x_2
+            mb1 = Bound()
+            for b in xu1:
+                mb1 = Bound.combine(mb1, b.bound)
+            mb2 = Bound()
+            for b in xu2:
+                mb2 = Bound.combine(mb2, b.bound)
+            # mb1.plot("#0000ff")
+            # mb2.plot("#0000ff")
+            margin_1 = mb1.margin()
+            margin_2 = mb1.margin()
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
                 g_value = curr_g
                 node.items = x_u_sort
+            # mb1.rm_plot()
+            # mb2.rm_plot()
 
             yl1 = y_l_sort[:self.min_num + i]
             yl2 = y_l_sort[self.min_num + i:]
-            min_x_1 = min([i.bound.min_x for i in yl1])
-            max_x_1 = max([i.bound.max_x for i in yl1])
-            min_x_2 = min([i.bound.min_x for i in yl2])
-            max_x_2 = max([i.bound.max_x for i in yl2])
-            max_y_1 = max([i.bound.max_y for i in yl1])
-            min_y_1 = yl1[0].bound.min_y
-            max_y_2 = max([i.bound.max_y for i in yl2])
-            min_y_2 = yl2[0].bound.min_y
-            margin_1 = max_x_1 - min_x_1 + max_y_1 - min_y_1
-            margin_2 = max_x_2 - min_x_2 + max_y_2 - min_y_2
+            mb1 = Bound()
+            for b in yl1:
+                mb1 = Bound.combine(mb1, b.bound)
+            mb2 = Bound()
+            for b in yl2:
+                mb2 = Bound.combine(mb2, b.bound)
+            # mb1.plot("#0000ff")
+            # mb2.plot("#0000ff")
+            margin_1 = mb1.margin()
+            margin_2 = mb1.margin()
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
                 g_value = curr_g
                 node.items = y_l_sort
+            # mb1.rm_plot()
+            # mb2.rm_plot()
 
             yu1 = y_u_sort[:self.min_num + i]
             yu2 = y_u_sort[self.min_num + i:]
-            min_x_1 = min([i.bound.min_x for i in yu1])
-            max_x_1 = max([i.bound.max_x for i in yu1])
-            min_x_2 = min([i.bound.min_x for i in yu2])
-            max_x_2 = max([i.bound.max_x for i in yu2])
-            max_y_1 = yu1[0].bound.max_y
-            min_y_1 = min([i.bound.min_y for i in yu1])
-            max_y_2 = yu2[0].bound.max_y
-            min_y_2 = min([i.bound.min_y for i in yu2])
-            margin_1 = max_x_1 - min_x_1 + max_y_1 - min_y_1
-            margin_2 = max_x_2 - min_x_2 + max_y_2 - min_y_2
+            mb1 = Bound()
+            for b in yu1:
+                mb1 = Bound.combine(mb1, b.bound)
+            mb2 = Bound()
+            for b in yu2:
+                mb2 = Bound.combine(mb2, b.bound)
+            # mb1.plot("#0000ff")
+            # mb2.plot("#0000ff")
+            margin_1 = mb1.margin()
+            margin_2 = mb1.margin()
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
                 g_value = curr_g
                 node.items = y_u_sort
+            # mb1.rm_plot()
+            # mb2.rm_plot()
 
     def ChooseSplitIndex(self, items):
         l1, l2, b1, b2 = None, None, None, None
@@ -351,19 +359,20 @@ class RTree(object):
         return self.ChooseSplitIndex(node.items)
 
     def OverflowTreatment(self, node, index_entry, level):
-        if self.root.level > 0 and not node.has_overflown:
-            self.overflow_levels.add(self.root.level)
-            node.has_overflown = True
-            return None, None, None, None
-        else:
-            l1, l2, b1, b2 = self.Split(node)
-            node.rm_plot()
-            node.covering.rm_plot()
-            n1 = LeafNode(indices=l1, covering=b1, level=level)
-            n2 = LeafNode(indices=l2, covering=b2, level=level)
-            b1 = n1.covering
-            b2 = n2.covering
-            return n1, n2, b1, b2
+        # if self.root.level > 0 and not node.has_overflown:
+        #     self.overflow_levels.add(self.root.level)
+        #     node.has_overflown = True
+        #     self.Reinsert(node)
+        #     return None, None, None, None
+        # else:
+        l1, l2, b1, b2 = self.Split(node)
+        node.rm_plot()
+        node.covering.rm_plot()
+        n1 = LeafNode(indices=l1, covering=b1, level=level)
+        n2 = LeafNode(indices=l2, covering=b2, level=level)
+        b1 = n1.covering
+        b2 = n2.covering
+        return n1, n2, b1, b2
 
     def Reinsert(self, node):
         node.rm_plot()
@@ -454,22 +463,31 @@ ax = plt.gca()
 ax.set_xlim([-10, 810])
 ax.set_ylim([-10, 810])
 
-rtree = RTree(50)
+rtree = RTree(10)
 for i in range(1200):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
     b1 = Bound([x, x, y, y])
     i1 = IndexRecord(b1, ti1)
+    # i == 641
     rtree.insert(i1)
 
-# Fix overflow treatment
-# Work on bound setting for branch nodes
-# that don't point to leaf nodes
+# Fix overflow treatment not actually updating
+# main tree
 # Bad performance when there are more than 2
 # layers to tree
 print(rtree.overflow_levels)
 print(rtree)
 print("Done!")
+
+
+
+
+
+
+
+
+
 
 
 
