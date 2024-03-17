@@ -3,6 +3,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import textwrap
+import timeit
 
 
 class Bound(object):
@@ -47,6 +48,19 @@ class Bound(object):
         elif b2.bounds:
             return Bound(b2.bounds)
 
+    def combine_l(bounds):
+        min_x, max_x, max_y, min_y = math.inf, -math.inf, -math.inf, math.inf
+        for b in bounds:
+            if b.min_x < min_x:
+                min_x = b.min_x
+            if b.max_x > max_x:
+                max_x = b.max_x
+            if b.max_y > max_y:
+                max_y = b.max_y
+            if b.min_y < min_y:
+                min_y = b.min_y
+        return [min_x, max_x, max_y, min_y]
+
     # returns overlap area of two bounds
     def overlap(b1, b2):
         l_sum = .5 * (b1.length + b2.length)
@@ -88,12 +102,9 @@ class IndexPointer(object):
     def __init__(self, bound, pointer):
         self.bound = bound
         self.pointer = pointer
-        # self.bound.plot("#ff0000")
 
     def update(self, bound):
-        # self.bound.rm_plot()
         self.bound = Bound.combine(self.bound, bound)
-        # self.bound.plot("#ff0000")
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
@@ -172,7 +183,7 @@ class RTree(object):
         self.max_num = M
         self.min_num = math.floor(M * .4)
         self.height = 0
-        self.p = min(math.floor(M), 32)
+        self.p = min(math.floor(M * .3), 32)
         self.overflow_levels = set()
 
     def __repr__(self):
@@ -249,20 +260,20 @@ class RTree(object):
         # sort by upper value f bounding box
         y_u_sort = sorted(node.items, key=lambda x: x.bound.max_y, reverse=True)
 
+        mb1, mb2 = None, None
+
         for i in range(self.max_num - 2 * self.min_num + 1):
 
-            xl1 = x_l_sort[:self.min_num + i]
-            xl2 = x_l_sort[self.min_num + i:]
-            mb1 = Bound()
-            for b in xl1:
-                mb1 = Bound.combine(mb1, b.bound)
-            mb2 = Bound()
-            for b in xl2:
-                mb2 = Bound.combine(mb2, b.bound)
+            sb1, sb2 = [], []
+            for j in range(self.min_num + i):
+                sb1.append(x_l_sort[j].bound)
+            mb1 = Bound(Bound.combine_l(sb1))
+            for j in range(len(x_l_sort) - self.min_num - i):
+                sb2.append(x_l_sort[j + self.min_num + i].bound)
+            mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
-            margin_1 = mb1.margin()
-            margin_2 = mb1.margin()
+            margin_1, margin_2 = mb1.margin(), mb2.margin()
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
                 g_value = curr_g
@@ -270,18 +281,16 @@ class RTree(object):
             # mb1.rm_plot()
             # mb2.rm_plot()
 
-            xu1 = x_u_sort[:self.min_num + i]
-            xu2 = x_u_sort[self.min_num + i:]
-            mb1 = Bound()
-            for b in xu1:
-                mb1 = Bound.combine(mb1, b.bound)
-            mb2 = Bound()
-            for b in xu2:
-                mb2 = Bound.combine(mb2, b.bound)
+            sb1, sb2 = [], []
+            for j in range(self.min_num + i):
+                sb1.append(x_u_sort[j].bound)
+            mb1 = Bound(Bound.combine_l(sb1))
+            for j in range(len(x_u_sort) - self.min_num - i):
+                sb2.append(x_u_sort[j + self.min_num + i].bound)
+            mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
-            margin_1 = mb1.margin()
-            margin_2 = mb1.margin()
+            margin_1, margin_2 = mb1.margin(), mb2.margin()
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
                 g_value = curr_g
@@ -289,18 +298,16 @@ class RTree(object):
             # mb1.rm_plot()
             # mb2.rm_plot()
 
-            yl1 = y_l_sort[:self.min_num + i]
-            yl2 = y_l_sort[self.min_num + i:]
-            mb1 = Bound()
-            for b in yl1:
-                mb1 = Bound.combine(mb1, b.bound)
-            mb2 = Bound()
-            for b in yl2:
-                mb2 = Bound.combine(mb2, b.bound)
+            sb1, sb2 = [], []
+            for j in range(self.min_num + i):
+                sb1.append(y_l_sort[j].bound)
+            mb1 = Bound(Bound.combine_l(sb1))
+            for j in range(len(y_l_sort) - self.min_num - i):
+                sb2.append(y_l_sort[j + self.min_num + i].bound)
+            mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
-            margin_1 = mb1.margin()
-            margin_2 = mb1.margin()
+            margin_1, margin_2 = mb1.margin(), mb2.margin()
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
                 g_value = curr_g
@@ -308,18 +315,16 @@ class RTree(object):
             # mb1.rm_plot()
             # mb2.rm_plot()
 
-            yu1 = y_u_sort[:self.min_num + i]
-            yu2 = y_u_sort[self.min_num + i:]
-            mb1 = Bound()
-            for b in yu1:
-                mb1 = Bound.combine(mb1, b.bound)
-            mb2 = Bound()
-            for b in yu2:
-                mb2 = Bound.combine(mb2, b.bound)
+            sb1, sb2 = [], []
+            for j in range(self.min_num + i):
+                sb1.append(y_u_sort[j].bound)
+            mb1 = Bound(Bound.combine_l(sb1))
+            for j in range(len(y_u_sort) - self.min_num - i):
+                sb2.append(y_u_sort[j + self.min_num + i].bound)
+            mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
-            margin_1 = mb1.margin()
-            margin_2 = mb1.margin()
+            margin_1, margin_2 = mb1.margin(), mb2.margin()
             curr_g = margin_1 + margin_2
             if curr_g < g_value:
                 g_value = curr_g
@@ -328,19 +333,22 @@ class RTree(object):
             # mb2.rm_plot()
 
     def ChooseSplitIndex(self, items):
+
         l1, l2, b1, b2 = None, None, None, None
         min_overlap = math.inf
         min_area = math.inf
+
         for i in range(self.max_num - 2 * self.min_num + 1):
-            r1 = items[:self.min_num + i]
-            r2 = items[self.min_num + i:]
             tmp_b1, tmp_b2 = Bound(), Bound()
-            for b in r1:
-                tmp_b1 = Bound.combine(tmp_b1, b.bound)
-            for b in r2:
-                tmp_b2 = Bound.combine(tmp_b2, b.bound)
+            for j in range(self.min_num + i):
+                tmp_b1 = Bound.combine(tmp_b1, items[j].bound)
+            for j in range(len(items) - self.min_num - i):
+                tmp_b2 = Bound.combine(tmp_b2, items[self.min_num + i + j].bound)
+
             curr_overlap = Bound.overlap(tmp_b1, tmp_b2)
             if curr_overlap <= min_overlap:
+                r1 = items[:self.min_num + i]
+                r2 = items[self.min_num + i:]
                 curr_area = tmp_b1.area + tmp_b2.area
                 if curr_overlap == min_overlap:
                     if curr_area < min_area:
@@ -453,8 +461,8 @@ class RTree(object):
 
 
 def sample_point(bounds):
-    rand_x = math.floor((bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0])
-    rand_y = math.floor((bounds[2] - bounds[3]) * np.random.random_sample() + bounds[3])
+    rand_x = (bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0]
+    rand_y = (bounds[2] - bounds[3]) * np.random.random_sample() + bounds[3]
     return rand_x, rand_y
 
 
@@ -464,21 +472,36 @@ ax.set_xlim([-10, 810])
 ax.set_ylim([-10, 810])
 
 rtree = RTree(10)
-for i in range(1200):
+start = timeit.default_timer()
+for i in range(12000):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
     b1 = Bound([x, x, y, y])
     i1 = IndexRecord(b1, ti1)
-    # i == 641
+    # i == 120
     rtree.insert(i1)
+stop = timeit.default_timer()
 
-# Fix overflow treatment not actually updating
-# main tree
+print('Time: ', stop - start)
+
+# Fix overflow treatment: somehow duplicating pointers
+# This is probably because Split is called twice
+# when you overflow, you also want to reset directory page bound
+# once in the reinsert algorithm and another outside the reinsert
 # Bad performance when there are more than 2
 # layers to tree
-print(rtree.overflow_levels)
-print(rtree)
+# print(rtree)
 print("Done!")
+
+
+
+
+
+
+
+
+
+
 
 
 
