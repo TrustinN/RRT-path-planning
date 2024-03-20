@@ -26,6 +26,9 @@ class Bound(object):
     def margin(self):
         return 2 * (self.length + self.width)
 
+    def contains(self, other):
+        return (self.min_x <= other.min_x) and (self.max_x >= other.max_x) and (self.min_y <= other.min_y) and (self.max_y >= other.max_y)
+
     # returns bounds and area
     def expand(b1, b2):
         if b1.bounds and b2.bounds:
@@ -174,17 +177,17 @@ class LeafNode(object):
 
 class RTree(object):
 
+    root = LeafNode(indices=[], covering=None, level=0)
+
     ###########################################################################
     # Methods                                                                 #
     ###########################################################################
 
     def __init__(self, M):
-        self.root = LeafNode(indices=[], covering=None, level=0)
         self.max_num = M
         self.min_num = math.floor(M * .4)
         self.height = 0
         self.p = min(math.floor(M * .3), 32)
-        self.overflow_levels = set()
 
     def __repr__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
@@ -211,18 +214,31 @@ class RTree(object):
         # remember to fix this algorithm to be faster
         # currently, it runs at quadratic complexity
         min_exp, min_area = math.inf, math.inf
-        idx_ptr, idx_ptr_pos = None, 0
-        node.items = sorted(node.items, key=lambda x: self.FindAddedArea(x, index_entry)[1])
-        items = node.items[:self.p]
-
-        for i in range(len(items)):
-
-            curr_ptr = items[i]
-            if type(curr_ptr.pointer) is LeafNode:
-                curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
-            else:
-                curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
-
+        idx_ptr, idx_ptr_pos = node.items[0], 0
+        # if type(idx_ptr.pointer) is LeafNode:
+        #     node.items = sorted(node.items, key=lambda x: self.FindAddedArea(x, index_entry)[1])
+        #     items = node.items[:self.p]
+        #
+        #     for i in range(len(items)):
+        #
+        #         curr_ptr = items[i]
+        #         curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
+        #
+        #         if diff < min_exp:
+        #             min_exp = diff
+        #             idx_ptr = curr_ptr
+        #             idx_ptr_pos = i
+        #             min_area = curr_area
+        #
+        #         elif diff == min_exp:
+        #             if curr_area < min_area:
+        #                 idx_ptr = curr_ptr
+        #                 idx_ptr_pos = i
+        #                 min_area = curr_area
+        # else:
+        for i in range(len(node.items)):
+            curr_ptr = node.items[i]
+            curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
             if diff < min_exp:
                 min_exp = diff
                 idx_ptr = curr_ptr
@@ -264,12 +280,9 @@ class RTree(object):
 
         for i in range(self.max_num - 2 * self.min_num + 1):
 
-            sb1, sb2 = [], []
-            for j in range(self.min_num + i):
-                sb1.append(x_l_sort[j].bound)
+            sb1 = [x_l_sort[j].bound for j in range(self.min_num + i)]
             mb1 = Bound(Bound.combine_l(sb1))
-            for j in range(len(x_l_sort) - self.min_num - i):
-                sb2.append(x_l_sort[j + self.min_num + i].bound)
+            sb2 = [x_l_sort[j + self.min_num + i].bound for j in range(len(x_l_sort) - self.min_num - i)]
             mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
@@ -281,12 +294,9 @@ class RTree(object):
             # mb1.rm_plot()
             # mb2.rm_plot()
 
-            sb1, sb2 = [], []
-            for j in range(self.min_num + i):
-                sb1.append(x_u_sort[j].bound)
+            sb1 = [x_u_sort[j].bound for j in range(self.min_num + i)]
             mb1 = Bound(Bound.combine_l(sb1))
-            for j in range(len(x_u_sort) - self.min_num - i):
-                sb2.append(x_u_sort[j + self.min_num + i].bound)
+            sb2 = [x_u_sort[j + self.min_num + i].bound for j in range(len(x_u_sort) - self.min_num - i)]
             mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
@@ -298,12 +308,9 @@ class RTree(object):
             # mb1.rm_plot()
             # mb2.rm_plot()
 
-            sb1, sb2 = [], []
-            for j in range(self.min_num + i):
-                sb1.append(y_l_sort[j].bound)
+            sb1 = [y_l_sort[j].bound for j in range(self.min_num + i)]
             mb1 = Bound(Bound.combine_l(sb1))
-            for j in range(len(y_l_sort) - self.min_num - i):
-                sb2.append(y_l_sort[j + self.min_num + i].bound)
+            sb2 = [y_l_sort[j + self.min_num + i].bound for j in range(len(y_l_sort) - self.min_num - i)]
             mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
@@ -315,12 +322,9 @@ class RTree(object):
             # mb1.rm_plot()
             # mb2.rm_plot()
 
-            sb1, sb2 = [], []
-            for j in range(self.min_num + i):
-                sb1.append(y_u_sort[j].bound)
+            sb1 = [y_u_sort[j].bound for j in range(self.min_num + i)]
             mb1 = Bound(Bound.combine_l(sb1))
-            for j in range(len(y_u_sort) - self.min_num - i):
-                sb2.append(y_u_sort[j + self.min_num + i].bound)
+            sb2 = [y_u_sort[j + self.min_num + i].bound for j in range(len(y_u_sort) - self.min_num - i)]
             mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
@@ -338,14 +342,21 @@ class RTree(object):
         min_overlap = math.inf
         min_area = math.inf
 
+        tmp_b1, tmp_b2 = None, None
         for i in range(self.max_num - 2 * self.min_num + 1):
-            tmp_b1, tmp_b2 = Bound(), Bound()
+            s1, s2 = [], []
             for j in range(self.min_num + i):
-                tmp_b1 = Bound.combine(tmp_b1, items[j].bound)
+                s1.append(items[j].bound)
+            tmp_b1 = Bound(Bound.combine_l(s1))
+            # tmp_b1.plot("#0000ff")
             for j in range(len(items) - self.min_num - i):
-                tmp_b2 = Bound.combine(tmp_b2, items[self.min_num + i + j].bound)
+                s2.append(items[j + self.min_num + i].bound)
+            tmp_b2 = Bound(Bound.combine_l(s2))
+            # tmp_b2.plot("#0000ff")
 
             curr_overlap = Bound.overlap(tmp_b1, tmp_b2)
+            # tmp_b1.rm_plot()
+            # tmp_b2.rm_plot()
             if curr_overlap <= min_overlap:
                 r1 = items[:self.min_num + i]
                 r2 = items[self.min_num + i:]
@@ -366,9 +377,11 @@ class RTree(object):
         self.ChooseSplitAxis(node)
         return self.ChooseSplitIndex(node.items)
 
+    # def Split(self, node):
+    #     return self.NewLinear(node)
+
     def OverflowTreatment(self, node, index_entry, level):
         # if self.root.level > 0 and not node.has_overflown:
-        #     self.overflow_levels.add(self.root.level)
         #     node.has_overflown = True
         #     self.Reinsert(node)
         #     return None, None, None, None
@@ -473,12 +486,14 @@ ax.set_ylim([-10, 810])
 
 rtree = RTree(10)
 start = timeit.default_timer()
-for i in range(12000):
+for i in range(2000):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
     b1 = Bound([x, x, y, y])
     i1 = IndexRecord(b1, ti1)
     # i == 120
+    # LinearSplit = 57.65599879199999
+    # mlogm Split = 57.044133834000604
     rtree.insert(i1)
 stop = timeit.default_timer()
 
@@ -490,23 +505,9 @@ print('Time: ', stop - start)
 # once in the reinsert algorithm and another outside the reinsert
 # Bad performance when there are more than 2
 # layers to tree
+# Find added overlap operation is expensive also
 # print(rtree)
 print("Done!")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
