@@ -281,8 +281,8 @@ class RTree(object):
         for i in range(self.max_num - 2 * self.min_num + 1):
 
             sb1 = [x_l_sort[j].bound for j in range(self.min_num + i)]
-            mb1 = Bound(Bound.combine_l(sb1))
             sb2 = [x_l_sort[j + self.min_num + i].bound for j in range(len(x_l_sort) - self.min_num - i)]
+            mb1 = Bound(Bound.combine_l(sb1))
             mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
@@ -295,8 +295,8 @@ class RTree(object):
             # mb2.rm_plot()
 
             sb1 = [x_u_sort[j].bound for j in range(self.min_num + i)]
-            mb1 = Bound(Bound.combine_l(sb1))
             sb2 = [x_u_sort[j + self.min_num + i].bound for j in range(len(x_u_sort) - self.min_num - i)]
+            mb1 = Bound(Bound.combine_l(sb1))
             mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
@@ -309,8 +309,8 @@ class RTree(object):
             # mb2.rm_plot()
 
             sb1 = [y_l_sort[j].bound for j in range(self.min_num + i)]
-            mb1 = Bound(Bound.combine_l(sb1))
             sb2 = [y_l_sort[j + self.min_num + i].bound for j in range(len(y_l_sort) - self.min_num - i)]
+            mb1 = Bound(Bound.combine_l(sb1))
             mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
@@ -323,8 +323,8 @@ class RTree(object):
             # mb2.rm_plot()
 
             sb1 = [y_u_sort[j].bound for j in range(self.min_num + i)]
-            mb1 = Bound(Bound.combine_l(sb1))
             sb2 = [y_u_sort[j + self.min_num + i].bound for j in range(len(y_u_sort) - self.min_num - i)]
+            mb1 = Bound(Bound.combine_l(sb1))
             mb2 = Bound(Bound.combine_l(sb2))
             # mb1.plot("#0000ff")
             # mb2.plot("#0000ff")
@@ -338,47 +338,42 @@ class RTree(object):
 
     def ChooseSplitIndex(self, items):
 
-        l1, l2, b1, b2 = None, None, None, None
+        split_idx, b1, b2 = None, None, None
         min_overlap = math.inf
         min_area = math.inf
 
-        tmp_b1, tmp_b2 = None, None
         for i in range(self.max_num - 2 * self.min_num + 1):
-            s1, s2 = [], []
-            for j in range(self.min_num + i):
-                s1.append(items[j].bound)
+
+            s1 = [items[j].bound for j in range(self.min_num + i)]
+            s2 = [items[j + self.min_num + i].bound for j in range(len(items) - self.min_num - i)]
             tmp_b1 = Bound(Bound.combine_l(s1))
-            # tmp_b1.plot("#0000ff")
-            for j in range(len(items) - self.min_num - i):
-                s2.append(items[j + self.min_num + i].bound)
             tmp_b2 = Bound(Bound.combine_l(s2))
-            # tmp_b2.plot("#0000ff")
 
             curr_overlap = Bound.overlap(tmp_b1, tmp_b2)
-            # tmp_b1.rm_plot()
-            # tmp_b2.rm_plot()
+
             if curr_overlap <= min_overlap:
-                r1 = items[:self.min_num + i]
-                r2 = items[self.min_num + i:]
+
                 curr_area = tmp_b1.area + tmp_b2.area
+
                 if curr_overlap == min_overlap:
+
                     if curr_area < min_area:
-                        l1, l2 = r1, r2
+                        split_idx = self.min_num + i
                         min_area = curr_area
                         b1, b2 = tmp_b1, tmp_b2
+
                 else:
+
                     min_area = curr_area
                     min_overlap = curr_overlap
-                    l1, l2 = r1, r2
+                    split_idx = self.min_num + i
                     b1, b2 = tmp_b1, tmp_b2
-        return l1, l2, b1, b2
+
+        return items[:split_idx], items[split_idx:], b1, b2
 
     def Split(self, node):
         self.ChooseSplitAxis(node)
         return self.ChooseSplitIndex(node.items)
-
-    # def Split(self, node):
-    #     return self.NewLinear(node)
 
     def OverflowTreatment(self, node, index_entry, level):
         # if self.root.level > 0 and not node.has_overflown:
@@ -508,6 +503,7 @@ print('Time: ', stop - start)
 # Find added overlap operation is expensive also
 # print(rtree)
 print("Done!")
+
 
 
 
