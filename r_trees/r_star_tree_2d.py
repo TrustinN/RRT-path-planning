@@ -7,6 +7,7 @@ import timeit
 
 
 class Bound(object):
+
     def __init__(self, bounds=[]):
         self.bounds = bounds
         if bounds:
@@ -93,6 +94,7 @@ class Bound(object):
 
 
 class IndexRecord(object):
+
     def __init__(self, bound, tuple_identifier):
         self.bound = bound
         self.tuple_identifier = tuple_identifier
@@ -102,6 +104,7 @@ class IndexRecord(object):
 
 
 class IndexPointer(object):
+
     def __init__(self, bound, pointer):
         self.bound = bound
         self.pointer = pointer
@@ -114,6 +117,7 @@ class IndexPointer(object):
 
 
 class BranchNode(object):
+
     def __init__(self, indices=[], covering=Bound(), level=0, plotting=False):
         self.level = level
         self.covering = covering
@@ -220,9 +224,9 @@ class RTree(object):
     # returns current overlap area and the difference in overlap area when
     # adding new entry
     def FindAddedOverlap(self, ptr, ptrs, index_entry):
-        curr_overlap = sum([Bound.overlap(ptr.bound, ptrs[i].bound) for i in range(len(ptrs)) if ptrs[i] != ptr])
+        curr_overlap = sum([Bound.overlap(ptr.bound, p.bound) for p in ptrs if p != ptr])
         new_bound = Bound.combine(ptr.bound, index_entry.bound)
-        new_overlap = sum([Bound.overlap(new_bound, ptrs[i].bound) for i in range(len(ptrs)) if ptrs[i] != ptr])
+        new_overlap = sum([Bound.overlap(new_bound, p.bound) for p in ptrs if p != ptr])
         diff = new_overlap - curr_overlap
         return curr_overlap, diff
 
@@ -501,10 +505,10 @@ ax = plt.gca()
 ax.set_xlim([-10, 810])
 ax.set_ylim([-10, 810])
 
-rtree = RTree(100, plotting=False)
+rtree = RTree(20, plotting=True)
 start = timeit.default_timer()
 
-for i in range(2000):
+for i in range(5000):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
     b1 = Bound([x, x, y, y])
@@ -525,6 +529,9 @@ print('Time: ', stop - start)
 # print(rtree)
 
 print("Done!")
+
+
+
 
 
 

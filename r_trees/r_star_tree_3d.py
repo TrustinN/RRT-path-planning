@@ -119,9 +119,6 @@ class Bound(object):
                                      alpha=0.08,
                                      shade=False,
                                      )
-        # self.p_obj = plt.plot([self.min_x, self.min_x, self.max_x, self.max_x, self.min_x],
-        #                       [self.min_y, self.max_y, self.max_y, self.min_y, self.min_y],
-        #                       c=c, linewidth=.5)
 
     def rm_plot(self):
         if self.p_obj:
@@ -184,13 +181,13 @@ class BranchNode(object):
             self.covering.rm_plot()
             self.covering = Bound.combine(self.covering, entry.bound)
             if self.plotting:
-                self.covering.plot("#ff0000", ax)
+                self.covering.plot("#ff0000", self.ax)
 
     def update_bound(self, bound):
         self.covering.rm_plot()
         self.covering = Bound.combine(self.covering, bound)
         if self.plotting:
-            self.covering.plot("#ff0000", ax)
+            self.covering.plot("#ff0000", self.ax)
 
     def __str__(self):
         string = ""
@@ -203,6 +200,7 @@ class BranchNode(object):
         for i in self.items:
             string += str(i) + "\n"
         return "Branch " + f"{self.level} " + "(\n" + textwrap.indent(string, "    ") + ")"
+
 
 class LeafNode(object):
 
@@ -232,7 +230,7 @@ class LeafNode(object):
             self.covering.rm_plot()
             self.covering = Bound.combine(self.covering, entry.bound)
             if self.plotting:
-                self.covering.plot("#009b00", ax)
+                self.covering.plot("#009b00", self.ax)
         else:
             self.covering = entry.bound
         if self.plotting:
@@ -263,14 +261,17 @@ class RTree(object):
     # Methods                                                                 #
     ###########################################################################
 
-    def __init__(self, M, plotting=False, ax=None):
+    def __init__(self, M, plotting=False):
         self.max_num = M
         self.min_num = math.floor(M * .4)
         self.height = 0
         self.p = min(math.floor(M * .3), 32)
         self.plotting = plotting
-        self.ax = ax
-        self.root = LeafNode(indices=[], covering=None, level=0, ax=ax)
+        if plotting:
+            f = plt.figure()
+            ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
+            self.ax = ax
+        self.root = LeafNode(indices=[], covering=None, level=0, ax=self.ax)
 
     def __str__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
@@ -549,11 +550,20 @@ class RTree(object):
             self.root.add_entry(p1)
             self.root.add_entry(p2)
 
+    def plot(self):
+        self.ax.set_axis_off()
+        if self.plotting:
+            for angle in range(0, 1000, 1):
+                self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
+                plt.draw()
+                plt.pause(.001)
+
+            plt.show()
+
 
 ###############################################################################
 # Testing                                                                     #
 ###############################################################################
-
 
 def sample_point(bounds):
     rand_x = (bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0]
@@ -563,13 +573,11 @@ def sample_point(bounds):
 
 
 # np.random.seed(123)
-f = plt.figure()
-ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
 
-rtree = RTree(20, plotting=True, ax=ax)
+rtree = RTree(10, plotting=True)
 start = timeit.default_timer()
 
-for i in range(100):
+for i in range(150):
     x, y, z = sample_point([0, 800, 0, 800, 0, 800])
     ti1 = np.array([x, y, z])
     b1 = Bound([x, x, y, y, z, z])
@@ -578,12 +586,7 @@ for i in range(100):
 
 stop = timeit.default_timer()
 
-for angle in range(0, 500, 2):
-    ax.view_init(elev=30, azim=angle, roll=0)
-    plt.draw()
-    plt.pause(.001)
-
-plt.show()
+rtree.plot()
 
 print('Time: ', stop - start)
 
@@ -597,7 +600,6 @@ print('Time: ', stop - start)
 # print(rtree)
 
 print("Done!")
-
 
 
 
