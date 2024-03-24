@@ -451,33 +451,34 @@ class RTree(object):
         return self.ChooseSplitIndex(node.items)
 
     def OverflowTreatment(self, node, index_entry, level):
-        # if self.root.level > 0 and not node.has_overflown:
-        #     node.has_overflown = True
-        #     self.Reinsert(node)
-        #     return None, None, None, None
-        # else:
-        l1, l2, b1, b2 = self.Split(node)
+        if self.root.level > 0 and not node.has_overflown:
+            node.has_overflown = True
+            self.Reinsert(node, insert_level=level)
+            return None, None, None, None
+        else:
+            l1, l2, b1, b2 = self.Split(node)
+            node.rm_plot()
+            n1 = LeafNode(indices=l1, covering=b1, level=level, plotting=self.plotting)
+            n2 = LeafNode(indices=l2, covering=b2, level=level, plotting=self.plotting)
+            b1 = n1.covering
+            b2 = n2.covering
+            return n1, n2, b1, b2
+
+    def Reinsert(self, node, insert_level=0):
         node.rm_plot()
-        n1 = LeafNode(indices=l1, covering=b1, level=level, plotting=self.plotting)
-        n2 = LeafNode(indices=l2, covering=b2, level=level, plotting=self.plotting)
-        b1 = n1.covering
-        b2 = n2.covering
-        return n1, n2, b1, b2
 
-    # def Reinsert(self, node):
-    #     node.rm_plot()
-    #     node.covering.rm_plot()
-    #     sort_dist = sorted(node.items, key=lambda x: np.linalg.norm(node.covering.center - x.bound.center), reverse=True)
-    #     node.items = sort_dist[self.p:]
-    #     node.covering = Bound()
-    #     for n in node.items:
-    #         node.covering = Bound.combine(node.covering, n.bound)
-    #     node.plot()
-    #     to_insert = sort_dist[:self.p][::-1]
-    #     for n in to_insert:
-    #         self.Insert(n)
+        sort_dist = sorted(node.items, key=lambda x: np.linalg.norm(node.covering.center - x.bound.center))
+        node.items = sort_dist[:self.p]
 
-    def ChooseLeaf(self, node, index_entry, curr_level, insert_level=0):
+        node.update_bound(Bound(Bound.combine_l([n.bound for n in node.items])))
+        if type(node) is LeafNode:
+            node.plot()
+
+        to_insert = sort_dist[self.p:]
+        for n in to_insert:
+            self.Insert(n, insert_level=insert_level, overflow=True)
+
+    def ChooseLeaf(self, node, index_entry, curr_level, insert_level=0, overflow=False):
 
         n1, n2, b1, b2 = None, None, None, None
 
@@ -520,7 +521,7 @@ class RTree(object):
                 node.add_entry(pointer_1)
                 n2 = None
 
-            if len(node.items) > self.max_num:
+            if len(node.items) > self.max_num and overflow:
 
                 # If the branch node has too many items split
                 l1, l2, b1, b2 = self.Split(node)
@@ -534,12 +535,14 @@ class RTree(object):
 
     # inserts entry with propagation of changes upwards until root node
     # if root node is too big, we split
-    def Insert(self, entry, insert_level=0):
+    def Insert(self, entry, insert_level=0, overflow=False):
 
         n1, n2, b1, b2 = self.ChooseLeaf(node=self.root,
                                          index_entry=entry,
                                          curr_level=self.height,
-                                         insert_level=insert_level)
+                                         insert_level=insert_level,
+                                         overflow=overflow
+                                         )
 
         if n2:
 
@@ -627,11 +630,11 @@ ax = plt.gca()
 ax.set_xlim([-10, 810])
 ax.set_ylim([-10, 810])
 
-rtree = RTree(5, plotting=True)
+rtree = RTree(10, plotting=True)
 items = []
 start = timeit.default_timer()
 
-for i in range(200):
+for i in range(1000):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
     b1 = Bound([x, x, y, y])
@@ -639,11 +642,9 @@ for i in range(200):
     items.append(i1)
     rtree.Insert(entry=i1, insert_level=0)
 
-print(rtree)
-
-for i in range(len(items)):
-    rtree.Delete(items[i])
-    rtree.Insert(entry=items[i], insert_level=0)
+# for i in range(len(items)):
+#     rtree.Delete(items[i])
+#     rtree.Insert(entry=items[i], insert_level=0)
 
 stop = timeit.default_timer()
 
@@ -660,14 +661,6 @@ print(rtree)
 # print(rtree)
 
 print("Done!")
-
-
-
-
-
-
-
-
 
 
 
