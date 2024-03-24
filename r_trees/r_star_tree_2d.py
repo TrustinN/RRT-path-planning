@@ -92,6 +92,9 @@ class Bound(object):
     def __str__(self):
         return f"{[self.min_x, self.max_x, self.max_y, self.min_y]}"
 
+    def __repr__(self):
+        return f"{[self.min_x, self.max_x, self.max_y, self.min_y]}"
+
 
 class IndexRecord(object):
 
@@ -101,6 +104,18 @@ class IndexRecord(object):
 
     def __str__(self):
         return f"val: {self.tuple_identifier}"
+
+    def __repr__(self):
+        return f"val: {self.tuple_identifier}"
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__) and np.array_equal(self.tuple_identifier, other.tuple_identifier):
+            return True
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class IndexPointer(object):
@@ -113,6 +128,9 @@ class IndexPointer(object):
         self.bound = Bound.combine(self.bound, bound)
 
     def __str__(self):
+        return "pt " + f"{self.bound} -> {self.pointer}"
+
+    def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
 
 
@@ -139,11 +157,20 @@ class BranchNode(object):
 
     def update_bound(self, bound):
         self.covering.rm_plot()
-        self.covering = Bound.combine(self.covering, bound)
+        self.covering = bound
         if self.plotting:
             self.covering.plot("#ff0000")
 
+    def rm_plot(self):
+        self.covering.rm_plot()
+
     def __str__(self):
+        string = ""
+        for i in self.items:
+            string += str(i) + "\n"
+        return "Branch " + f"{self.level} " + "(\n" + textwrap.indent(string, "    ") + ")"
+
+    def __repr__(self):
         string = ""
         for i in self.items:
             string += str(i) + "\n"
@@ -183,6 +210,25 @@ class LeafNode(object):
         if self.plotting:
             self.points.append(plt.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
+    def rm_entry(self, entry):
+        for i in range(len(self.items)):
+            if entry == self.items[i]:
+
+                # Remove index_entry, adjust leaf covering
+                self.items.pop(i)
+                point_plot = self.points.pop(i)
+                point_plot.remove()
+                self.update_bound(Bound(Bound.combine_l([j.bound for j in self.items])))
+                return True
+
+        return False
+
+    def update_bound(self, bound):
+        self.covering.rm_plot()
+        self.covering = bound
+        if self.plotting:
+            self.covering.plot("#009b00")
+
     def rm_plot(self):
         if self.plotting:
             for h in self.points:
@@ -193,7 +239,13 @@ class LeafNode(object):
         string = ""
         for i in self.items:
             string += str(i) + "\n"
-        return "Leaf" + f"{self.level} (" + "\n" + textwrap.indent(string, "    ") + ")"
+        return "Leaf " + f"{self.level} (" + "\n" + textwrap.indent(string, "    ") + ")"
+
+    def __repr__(self):
+        string = ""
+        for i in self.items:
+            string += str(i) + "\n"
+        return "Leaf " + f"{self.level} (" + "\n" + textwrap.indent(string, "    ") + ")"
 
 
 class RTree(object):
@@ -212,6 +264,9 @@ class RTree(object):
         self.plotting = plotting
 
     def __str__(self):
+        return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
+
+    def __repr__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
 
     def FindAddedArea(self, ptr, index_entry):
@@ -419,13 +474,13 @@ class RTree(object):
     #     node.plot()
     #     to_insert = sort_dist[:self.p][::-1]
     #     for n in to_insert:
-    #         self.insert(n)
+    #         self.Insert(n)
 
-    def ChooseLeaf(self, node, index_entry, level):
+    def ChooseLeaf(self, node, index_entry, curr_level, insert_level=0):
 
         n1, n2, b1, b2 = None, None, None, None
 
-        if type(node) is LeafNode:
+        if curr_level == insert_level:
 
             if len(node.items) < self.max_num:
 
@@ -438,7 +493,7 @@ class RTree(object):
                 # if node is too big, split leaf node and add the entry to
                 # both each of the splits
                 node.add_entry(index_entry)
-                n1, n2, b1, b2 = self.OverflowTreatment(node, index_entry, level)
+                n1, n2, b1, b2 = self.OverflowTreatment(node, index_entry, curr_level)
 
         else:
 
@@ -446,11 +501,14 @@ class RTree(object):
             idx_pointer, idx_pointer_pos = self.ChooseSubTree(node, index_entry)
 
             # index.pointer is the pointer to one of node's children nodes
-            n1, n2, b1, b2 = self.ChooseLeaf(idx_pointer.pointer, index_entry, level - 1)
+            n1, n2, b1, b2 = self.ChooseLeaf(node=idx_pointer.pointer,
+                                             index_entry=index_entry,
+                                             curr_level=curr_level - 1,
+                                             insert_level=insert_level)
 
             # update bound
             idx_pointer.update(index_entry.bound)
-            node.update_bound(index_entry.bound)
+            node.update_bound(Bound.combine(node.covering, index_entry.bound))
 
             if n2:
 
@@ -466,8 +524,8 @@ class RTree(object):
                 # If the branch node has too many items split
                 l1, l2, b1, b2 = self.Split(node)
                 node.covering.rm_plot()
-                n1 = BranchNode(indices=l1, covering=b1, level=level, plotting=self.plotting)
-                n2 = BranchNode(indices=l2, covering=b2, level=level, plotting=self.plotting)
+                n1 = BranchNode(indices=l1, covering=b1, level=curr_level, plotting=self.plotting)
+                n2 = BranchNode(indices=l2, covering=b2, level=curr_level, plotting=self.plotting)
 
         # returns either split leaf nodes, or branch nodes, depending on
         # which one is at the highest level of tree
@@ -475,18 +533,82 @@ class RTree(object):
 
     # inserts entry with propagation of changes upwards until root node
     # if root node is too big, we split
-    def insert(self, index_entry):
+    def Insert(self, entry, insert_level=0):
 
-        n1, n2, b1, b2 = self.ChooseLeaf(self.root, index_entry, self.height)
+        n1, n2, b1, b2 = self.ChooseLeaf(node=self.root,
+                                         index_entry=entry,
+                                         curr_level=self.height,
+                                         insert_level=insert_level)
 
         if n2:
 
             self.height += 1
             p1 = IndexPointer(bound=b1, pointer=n1)
             p2 = IndexPointer(bound=b2, pointer=n2)
-            self.root = BranchNode(indices=[], covering=Bound.combine(b1, b2), level=self.height, plotting=self.plotting)
+            self.root = BranchNode(indices=[],
+                                   covering=Bound.combine(b1, b2),
+                                   level=self.height,
+                                   plotting=self.plotting
+                                   )
             self.root.add_entry(p1)
             self.root.add_entry(p2)
+
+    # removes entry from the tree
+    def Delete(self, entry):
+
+        def FindLeaf(node, index_entry, curr_level):
+
+            if curr_level == 0:
+
+                # returns whether entry is removed after attempting
+                # to remove it
+                return node.rm_entry(index_entry)
+
+            else:
+
+                # Set of index records to be readded in case of
+                # underfull node after deletion
+                q, rm_item, ins_level = [], False, 0
+
+                # Findleaf on all branches that might have index_entry
+                for i in range(len(node.items) - 1, -1, -1):
+
+                    curr_item = node.items[i]
+
+                    if curr_item.bound.contains(index_entry.bound):
+
+                        child_node = curr_item.pointer
+
+                        # If we found an entry and deleted it, do whats after
+                        if FindLeaf(child_node, index_entry, curr_level=curr_level - 1):
+                            rm_item = True
+
+                            # delete underfull leafnodes
+                            if len(child_node.items) < self.min_num:
+
+                                q += child_node.items
+                                ins_level = child_node.level
+                                child_node.rm_plot()
+                                child_node.covering.rm_plot()
+                                del node.items[i]
+
+                            else:
+
+                                # fix indexpointer covering
+                                curr_item.bound = child_node.covering
+
+                # points to branch, update bound if childpointer was changed
+                if rm_item:
+                    node.update_bound(Bound(Bound.combine_l([n.bound for n in node.items])))
+
+                # reinsert here
+                for elem in q:
+                    self.Insert(entry=elem, insert_level=ins_level)
+
+                return rm_item
+
+        # call recursive function
+        FindLeaf(self.root, index_entry=entry, curr_level=self.height)
 
 
 ###############################################################################
@@ -495,8 +617,8 @@ class RTree(object):
 
 
 def sample_point(bounds):
-    rand_x = (bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0]
-    rand_y = (bounds[2] - bounds[3]) * np.random.random_sample() + bounds[3]
+    rand_x = math.floor((bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0])
+    rand_y = math.floor((bounds[2] - bounds[3]) * np.random.random_sample() + bounds[3])
     return rand_x, rand_y
 
 
@@ -505,19 +627,25 @@ ax = plt.gca()
 ax.set_xlim([-10, 810])
 ax.set_ylim([-10, 810])
 
-rtree = RTree(20, plotting=True)
+rtree = RTree(5, plotting=True)
+items = []
 start = timeit.default_timer()
 
-for i in range(5000):
+for i in range(20):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
     b1 = Bound([x, x, y, y])
     i1 = IndexRecord(b1, ti1)
-    rtree.insert(i1)
+    items.append(i1)
+    rtree.Insert(entry=i1, insert_level=0)
+
+for i in items:
+    rtree.Delete(i)
 
 stop = timeit.default_timer()
 
 print('Time: ', stop - start)
+print(rtree)
 
 # Fix overflow treatment: somehow duplicating pointers
 # This is probably because Split is called twice
@@ -529,13 +657,6 @@ print('Time: ', stop - start)
 # print(rtree)
 
 print("Done!")
-
-
-
-
-
-
-
 
 
 
