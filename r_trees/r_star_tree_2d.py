@@ -235,6 +235,8 @@ class LeafNode(object):
                 h.remove()
             self.points = []
 
+            self.covering.rm_plot()
+
     def __str__(self):
         string = ""
         for i in self.items:
@@ -260,7 +262,7 @@ class RTree(object):
         self.max_num = M
         self.min_num = math.floor(M * .4)
         self.height = 0
-        self.p = min(math.floor(M * .3), 32)
+        self.p = min(max(math.floor(M * .3), 32), min(M, 32))
         self.plotting = plotting
 
     def __str__(self):
@@ -294,52 +296,52 @@ class RTree(object):
         min_exp, min_area = math.inf, math.inf
         idx_ptr, idx_ptr_pos = node.items[0], 0
 
-        # if type(idx_ptr.pointer) is LeafNode:
-        #
-        #     # sort by least area needed to expand and take first p entries
-        #     node.items = sorted(node.items, key=lambda x: self.FindAddedArea(x, index_entry)[1])
-        #     items = node.items[:self.p]
-        #
-        #     # find the expansion that results in least overlap
-        #     for i in range(len(items)):
-        #
-        #         curr_ptr = items[i]
-        #         curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
-        #
-        #         if diff < min_exp:
-        #             min_exp = diff
-        #             idx_ptr = curr_ptr
-        #             idx_ptr_pos = i
-        #             min_area = curr_area
-        #
-        #         # tiebreaker: choose smaller bounding box
-        #         elif diff == min_exp:
-        #             if curr_area < min_area:
-        #                 idx_ptr = curr_ptr
-        #                 idx_ptr_pos = i
-        #                 min_area = curr_area
-        # else:
+        if type(idx_ptr.pointer) is LeafNode:
 
-        # find the expansion that results in least area added
-        for i in range(len(node.items)):
+            # sort by least area needed to expand and take first p entries
+            node.items = sorted(node.items, key=lambda x: self.FindAddedArea(x, index_entry)[1])
+            items = node.items[:self.p]
 
-            curr_ptr = node.items[i]
-            curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
+            # find the expansion that results in least overlap
+            for i in range(len(items)):
 
-            if diff < min_exp:
-                min_exp = diff
-                idx_ptr = curr_ptr
-                idx_ptr_pos = i
-                min_area = curr_area
+                curr_ptr = items[i]
+                curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
 
-            # tiebreaker: choose smaller bounding box
-            elif diff == min_exp:
-
-                if curr_area < min_area:
-
+                if diff < min_exp:
+                    min_exp = diff
                     idx_ptr = curr_ptr
                     idx_ptr_pos = i
                     min_area = curr_area
+
+                # tiebreaker: choose smaller bounding box
+                elif diff == min_exp:
+                    if curr_area < min_area:
+                        idx_ptr = curr_ptr
+                        idx_ptr_pos = i
+                        min_area = curr_area
+        else:
+
+            # find the expansion that results in least area added
+            for i in range(len(node.items)):
+
+                curr_ptr = node.items[i]
+                curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
+
+                if diff < min_exp:
+                    min_exp = diff
+                    idx_ptr = curr_ptr
+                    idx_ptr_pos = i
+                    min_area = curr_area
+
+                # tiebreaker: choose smaller bounding box
+                elif diff == min_exp:
+
+                    if curr_area < min_area:
+
+                        idx_ptr = curr_ptr
+                        idx_ptr_pos = i
+                        min_area = curr_area
 
         return idx_ptr, idx_ptr_pos
 
@@ -456,7 +458,6 @@ class RTree(object):
         # else:
         l1, l2, b1, b2 = self.Split(node)
         node.rm_plot()
-        node.covering.rm_plot()
         n1 = LeafNode(indices=l1, covering=b1, level=level, plotting=self.plotting)
         n2 = LeafNode(indices=l2, covering=b2, level=level, plotting=self.plotting)
         b1 = n1.covering
@@ -523,7 +524,7 @@ class RTree(object):
 
                 # If the branch node has too many items split
                 l1, l2, b1, b2 = self.Split(node)
-                node.covering.rm_plot()
+                node.rm_plot()
                 n1 = BranchNode(indices=l1, covering=b1, level=curr_level, plotting=self.plotting)
                 n2 = BranchNode(indices=l2, covering=b2, level=curr_level, plotting=self.plotting)
 
@@ -589,7 +590,6 @@ class RTree(object):
                                 q += child_node.items
                                 ins_level = child_node.level
                                 child_node.rm_plot()
-                                child_node.covering.rm_plot()
                                 del node.items[i]
 
                             else:
@@ -631,7 +631,7 @@ rtree = RTree(5, plotting=True)
 items = []
 start = timeit.default_timer()
 
-for i in range(20):
+for i in range(200):
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
     b1 = Bound([x, x, y, y])
@@ -639,8 +639,11 @@ for i in range(20):
     items.append(i1)
     rtree.Insert(entry=i1, insert_level=0)
 
-for i in items:
-    rtree.Delete(i)
+print(rtree)
+
+for i in range(len(items)):
+    rtree.Delete(items[i])
+    rtree.Insert(entry=items[i], insert_level=0)
 
 stop = timeit.default_timer()
 
@@ -657,6 +660,14 @@ print(rtree)
 # print(rtree)
 
 print("Done!")
+
+
+
+
+
+
+
+
 
 
 
