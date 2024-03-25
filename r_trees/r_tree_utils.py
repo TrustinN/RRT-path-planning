@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 
 class Bound:
 
+    def __init__(self, dim):
+        self.dim = dim
+
     def margin(self):
         return
 
@@ -25,6 +28,7 @@ class Rect(Bound):
 
     def __init__(self, bound=[]):
 
+        super().__init__(2)
         self.bound = bound
 
         if bound:
@@ -36,7 +40,7 @@ class Rect(Bound):
 
             self.length = self.max_x - self.min_x
             self.width = self.max_y - self.min_y
-            self.area = self.width * self.length
+            self.vol = self.width * self.length
 
             self.center_x = self.min_x + self.length / 2
             self.center_y = self.min_y + self.width / 2
@@ -61,7 +65,7 @@ class Rect(Bound):
 
         return [min_x, max_x, min_y, max_y]
 
-    def expand_area(b1, b2):
+    def expand_vol(b1, b2):
 
         bound = Rect.expand(b1, b2)
         return (bound[1] - bound[0]) * (bound[3] - bound[2])
@@ -103,10 +107,10 @@ class Rect(Bound):
         else:
             return overlap_x * overlap_y
 
-    def plot(self, c):
-        self.p_obj = plt.plot([self.min_x, self.min_x, self.max_x, self.max_x, self.min_x],
-                              [self.min_y, self.max_y, self.max_y, self.min_y, self.min_y],
-                              c=c, linewidth=.5)
+    def plot(self, c, ax):
+        self.p_obj = ax.plot([self.min_x, self.min_x, self.max_x, self.max_x, self.min_x],
+                             [self.min_y, self.max_y, self.max_y, self.min_y, self.min_y],
+                             c=c, linewidth=.5)
 
     def rm_plot(self):
         if self.p_obj:
@@ -124,8 +128,12 @@ class Rect(Bound):
 class Cube(Bound):
 
     def __init__(self, bound=[]):
+
+        super().__init__(3)
         self.bound = bound
+
         if bound:
+
             self.min_x = bound[0]
             self.max_x = bound[1]
             self.min_y = bound[2]
@@ -137,7 +145,7 @@ class Cube(Bound):
             self.width = self.max_y - self.min_y
             self.height = self.max_z - self.min_z
 
-            self.volume = self.width * self.length * self.height
+            self.vol = self.width * self.length * self.height
             self.center_x = self.min_x + self.length / 2
             self.center_y = self.min_y + self.width / 2
             self.center_z = self.min_z + self.height / 2
@@ -163,7 +171,7 @@ class Cube(Bound):
 
         return [min_x, max_x, min_y, max_y, min_z, max_z]
 
-    def expand_area(b1, b2):
+    def expand_vol(b1, b2):
 
         bound = Cube.expand(b1, b2)
         return (bound[1] - bound[0]) * (bound[3] - bound[2]) * (bound[5] - bound[4])
@@ -223,7 +231,7 @@ class Cube(Bound):
         return x, y, z
 
     def plot(self, c, ax):
-        x, y, z = self.get_cube()
+        x, y, z = Cube.get_cube()
         self.p_obj = ax.plot_surface(self.length * x + self.center_x,
                                      self.width * y + self.center_y,
                                      self.height * z + self.center_z,
@@ -288,6 +296,8 @@ class IndexPointer(Entry):
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
+
+
 
 
 
