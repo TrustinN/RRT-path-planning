@@ -567,7 +567,7 @@ class RTree(object):
                         if FindLeaf(child_node, index_entry, curr_lvl=curr_lvl - 1):
                             rm_item = True
 
-                            # delete underfull leafnodes
+                            # delete underfull nodes
                             if len(child_node.items) < self.min_num:
 
                                 q += child_node.items

@@ -1,6 +1,5 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 class Bound:
@@ -156,6 +155,14 @@ class Cube(Bound):
     # returns perimeter measure
     def margin(self):
         return self.length + self.width + self.height
+
+    def contains(self, other):
+
+        x_check = (self.min_x <= other.min_x) and (self.max_x >= other.max_x)
+        y_check = (self.min_y <= other.min_y) and (self.max_y >= other.max_y)
+        z_check = (self.min_z <= other.min_z) and (self.max_z >= other.max_z)
+
+        return x_check and y_check and z_check
 
     # returns bounds and area
     def expand(b1, b2):
