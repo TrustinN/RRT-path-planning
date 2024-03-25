@@ -709,6 +709,25 @@ class RTree(object):
         # call recursive function
         FindLeaf(self.root, index_entry=entry, curr_lvl=self.height)
 
+    # given a scope (search rectangle/Bound) returns list of index records
+    # contained in that scope
+    def Search(self, scope):
+
+        def helper_func(node):
+
+            if type(node) is LeafNode:
+                for record in node.items:
+                    if scope.contains(record.bound):
+                        yield record
+
+            else:
+                for b in node.items:
+                    if Bound.overlap(scope, b.bound) > 0:
+                        for i in helper_func(b.pointer):
+                            yield i
+
+        return list(helper_func(self.root))
+
 
 ###############################################################################
 # Testing                                                                     #
@@ -723,19 +742,19 @@ def sample_point(bounds):
 
 np.random.seed(123)
 
-rtree = RTree(40, plotting=False)
+rtree = RTree(7, plotting=True)
 
 start = timeit.default_timer()
 
-for i in range(40000):
+for i in range(50):
 
     x, y = sample_point([0, 800, 800, 0])
-    ti1 = np.array([x, y])
+    ti = np.array([x, y])
 
-    b1 = Bound([x, x, y, y])
-    i1 = IndexRecord(b1, ti1)
+    b = Bound([x, x, y, y])
+    ir = IndexRecord(b, ti)
 
-    rtree.Insert(entry=i1)
+    rtree.Insert(entry=ir)
 
 
 stop = timeit.default_timer()
@@ -743,8 +762,10 @@ stop = timeit.default_timer()
 print('Time: ', stop - start)
 print(rtree)
 
-
 print("Done!")
+
+
+
 
 
 
