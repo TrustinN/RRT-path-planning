@@ -13,14 +13,17 @@ class Bound(object):
         if bounds:
             self.min_x = bounds[0]
             self.max_x = bounds[1]
-            self.max_y = bounds[2]
-            self.min_y = bounds[3]
+            self.min_y = bounds[2]
+            self.max_y = bounds[3]
+
             self.length = self.max_x - self.min_x
             self.width = self.max_y - self.min_y
             self.area = self.width * self.length
+
             self.center_x = self.min_x + self.length / 2
             self.center_y = self.min_y + self.width / 2
             self.center = np.array([self.center_x, self.center_y])
+
             self.p_obj = None
 
     # returns perimeter
@@ -32,49 +35,75 @@ class Bound(object):
 
     # returns bounds and area
     def expand(b1, b2):
+
         if b1.bounds and b2.bounds:
+
             min_x = min(b1.min_x, b2.min_x)
             max_x = max(b1.max_x, b2.max_x)
-            max_y = max(b1.max_y, b2.max_y)
             min_y = min(b1.min_y, b2.min_y)
-            return [min_x, max_x, max_y, min_y]
+            max_y = max(b1.max_y, b2.max_y)
+
+            return [min_x, max_x, min_y, max_y]
+
         elif b1.bound:
-            return [b1.min_x, b1.max_x, b1.max_y, b1.min_y]
+
+            return [b1.min_x, b1.max_x, b1.min_y, b1.max_y]
+
         elif b2.bound:
-            return [b2.min_x, b2.max_x, b2.max_y, b2.min_y]
+
+            return [b2.min_x, b2.max_x, b2.min_y, b2.max_y]
 
     def combine(b1, b2):
+
         if b1.bounds and b2.bounds:
+
             bounds = Bound.expand(b1, b2)
+
             return Bound(bounds)
+
         elif b1.bounds:
+
             return Bound(b1.bounds)
+
         elif b2.bounds:
+
             return Bound(b2.bounds)
 
     def combine_l(bounds):
-        min_x, max_x, max_y, min_y = math.inf, -math.inf, -math.inf, math.inf
+
+        min_x, max_x, min_y, max_y = math.inf, -math.inf, math.inf, -math.inf
+
         for b in bounds:
+
             if b.min_x < min_x:
                 min_x = b.min_x
+
             if b.max_x > max_x:
                 max_x = b.max_x
-            if b.max_y > max_y:
-                max_y = b.max_y
+
             if b.min_y < min_y:
                 min_y = b.min_y
-        return [min_x, max_x, max_y, min_y]
+
+            if b.max_y > max_y:
+                max_y = b.max_y
+
+        return [min_x, max_x, min_y, max_y]
 
     # returns overlap area of two bounds
     def overlap(b1, b2):
+
         l_sum = .5 * (b1.length + b2.length)
         w_sum = .5 * (b1.width + b2.width)
+
         x_dist = abs(b1.center_x - b2.center_x)
         y_dist = abs(b1.center_y - b2.center_y)
+
         overlap_x = l_sum - x_dist
         overlap_y = w_sum - y_dist
+
         if overlap_x <= 0 or overlap_y <= 0:
             return 0
+
         else:
             return overlap_x * overlap_y
 
@@ -90,16 +119,24 @@ class Bound(object):
         self.p_obj = None
 
     def __str__(self):
-        return f"{[self.min_x, self.max_x, self.max_y, self.min_y]}"
+        return f"{[self.min_x, self.max_x, self.min_y, self.max_y]}"
 
     def __repr__(self):
-        return f"{[self.min_x, self.max_x, self.max_y, self.min_y]}"
+        return f"{[self.min_x, self.max_x, self.min_y, self.max_y]}"
 
 
-class IndexRecord(object):
+class Entry:
+
+    def __init__(self, bound):
+
+        self.bound = bound
+
+
+class IndexRecord(Entry):
 
     def __init__(self, bound, tuple_identifier):
-        self.bound = bound
+
+        super().__init__(bound)
         self.tuple_identifier = tuple_identifier
 
     def __str__(self):
@@ -118,13 +155,15 @@ class IndexRecord(object):
         return not self.__eq__(other)
 
 
-class IndexPointer(object):
+class IndexPointer(Entry):
 
     def __init__(self, bound, pointer):
-        self.bound = bound
+
+        super().__init__(bound)
         self.pointer = pointer
 
     def update(self, bound):
+
         self.bound = bound
 
     def __str__(self):
@@ -134,34 +173,58 @@ class IndexPointer(object):
         return "pt " + f"{self.bound} -> {self.pointer}"
 
 
-class BranchNode(object):
+class Node:
 
-    def __init__(self, indices=[], covering=Bound(), level=0, plotting=False):
-        self.level = level
+    def __init__(self, items, covering, level, plotting):
+
+        self.items = items
         self.covering = covering
-        self.has_overflown = False
-        self.items = indices
+        self.level = level
         self.plotting = plotting
 
+    def add_entry(self, entry):
+        """
+        Add an entry to the node's list of items
+        """
+        return
+
+
+class BranchNode(Node):
+
+    def __init__(self, items=[], covering=Bound(), level=0, plotting=False):
+
+        super().__init__(items, covering, level, plotting)
+
         if self.plotting:
+
             if self.covering:
+
                 covering.plot("#ff0000")
 
     def add_entry(self, entry):
+
         self.items.append(entry)
+
         if self.covering:
+
             self.covering.rm_plot()
             self.covering = Bound.combine(self.covering, entry.bound)
+
             if self.plotting:
+
                 self.covering.plot("#ff0000")
 
     def update_bound(self, bound):
+
         self.covering.rm_plot()
         self.covering = bound
+
         if self.plotting:
+
             self.covering.plot("#ff0000")
 
     def rm_plot(self):
+
         self.covering.rm_plot()
 
     def __str__(self):
@@ -177,41 +240,55 @@ class BranchNode(object):
         return "Branch " + f"{self.level} " + "(\n" + textwrap.indent(string, "    ") + ")"
 
 
-class LeafNode(object):
+class LeafNode(Node):
 
-    def __init__(self, indices=[], covering=Bound(), level=0, plotting=False):
-        self.level = level
-        self.items = indices
-        self.covering = covering
-        self.has_overflown = False
-        self.plotting = plotting
+    def __init__(self, items=[], covering=Bound(), level=0, plotting=False):
+
+        super().__init__(items, covering, level, plotting)
 
         if self.plotting:
+
             if self.covering:
+
                 covering.plot("#009b00")
+
             self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
             self.points = []
+
             for i in self.items:
+
                 self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
     def plot(self):
+
         for i in self.items:
+
             self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
     def add_entry(self, entry):
+
         self.items.append(entry)
+
         if self.covering:
+
             self.covering.rm_plot()
             self.covering = Bound.combine(self.covering, entry.bound)
+
             if self.plotting:
+
                 self.covering.plot("#009b00")
         else:
+
             self.covering = entry.bound
+
         if self.plotting:
+
             self.points.append(plt.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
     def rm_entry(self, entry):
+
         for i in range(len(self.items)):
+
             if entry == self.items[i]:
 
                 # Remove index_entry, adjust leaf covering
@@ -219,22 +296,28 @@ class LeafNode(object):
                 point_plot = self.points.pop(i)
                 point_plot.remove()
                 self.update_bound(Bound(Bound.combine_l([j.bound for j in self.items])))
+
                 return True
 
         return False
 
     def update_bound(self, bound):
+
         self.covering.rm_plot()
         self.covering = bound
+
         if self.plotting:
+
             self.covering.plot("#009b00")
 
     def rm_plot(self):
+
         if self.plotting:
+
             for h in self.points:
                 h.remove()
-            self.points = []
 
+            self.points = []
             self.covering.rm_plot()
 
     def __str__(self):
@@ -252,18 +335,24 @@ class LeafNode(object):
 
 class RTree(object):
 
-    root = LeafNode(indices=[], covering=None, level=0)
+    root = LeafNode(items=[], covering=None, level=0)
 
     ###########################################################################
     # Methods                                                                 #
     ###########################################################################
 
     def __init__(self, M, plotting=False):
+
         self.max_num = M
         self.min_num = math.floor(M * .4)
+
         self.height = 0
         self.p = min(math.floor(M * .3), 32)
+
         self.plotting = plotting
+
+        if self.plotting:
+            plt.gca()
 
     def __str__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
@@ -272,27 +361,29 @@ class RTree(object):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
 
     def FindAddedArea(self, ptr, index_entry):
+
         bounds = Bound.expand(ptr.bound, index_entry.bound)
-        exp_area = (bounds[1] - bounds[0]) * (bounds[2] - bounds[3])
+        exp_area = (bounds[1] - bounds[0]) * (bounds[3] - bounds[2])
         curr_area = ptr.bound.area
         diff = exp_area - curr_area
+
         return curr_area, diff
 
     # returns current overlap area and the difference in overlap area when
     # adding new entry
     def FindAddedOverlap(self, ptr, ptrs, index_entry):
+
         curr_overlap = sum([Bound.overlap(ptr.bound, p.bound) for p in ptrs if p != ptr])
         new_bound = Bound.combine(ptr.bound, index_entry.bound)
         new_overlap = sum([Bound.overlap(new_bound, p.bound) for p in ptrs if p != ptr])
         diff = new_overlap - curr_overlap
+
         return curr_overlap, diff
 
     # choosing parent of entry to insert
     def ChooseSubTree(self, node, index_entry):
 
         # pick the subdirectory that leads to least expansion
-        # idx_ptr is the entry and idx_ptr_pos is the index
-        # of the idx_ptr in node.items
         min_exp, min_area = math.inf, math.inf
         idx_ptr, idx_ptr_pos = node.items[0], 0
 
@@ -309,6 +400,7 @@ class RTree(object):
                 curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
 
                 if diff < min_exp:
+
                     min_exp = diff
                     idx_ptr = curr_ptr
                     idx_ptr_pos = i
@@ -316,10 +408,13 @@ class RTree(object):
 
                 # tiebreaker: choose smaller bounding box
                 elif diff == min_exp:
+
                     if curr_area < min_area:
+
                         idx_ptr = curr_ptr
                         idx_ptr_pos = i
                         min_area = curr_area
+
         else:
 
             # find the expansion that results in least area added
@@ -329,6 +424,7 @@ class RTree(object):
                 curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
 
                 if diff < min_exp:
+
                     min_exp = diff
                     idx_ptr = curr_ptr
                     idx_ptr_pos = i
@@ -420,6 +516,7 @@ class RTree(object):
             # find index to split along by least overlap
             s1 = [items[j].bound for j in range(self.min_num + i)]
             s2 = [items[j + self.min_num + i].bound for j in range(len(items) - self.min_num - i)]
+
             tmp_b1 = Bound(Bound.combine_l(s1))
             tmp_b2 = Bound(Bound.combine_l(s2))
 
@@ -433,6 +530,7 @@ class RTree(object):
                 if curr_overlap == min_overlap:
 
                     if curr_area < min_area:
+
                         split_idx = self.min_num + i
                         min_area = curr_area
                         b1, b2 = tmp_b1, tmp_b2
@@ -447,59 +545,77 @@ class RTree(object):
         return items[:split_idx], items[split_idx:], b1, b2
 
     def Split(self, node):
+
         self.ChooseSplitAxis(node)
-        return self.ChooseSplitIndex(node.items)
-
-    def OverflowTreatment(self, node, level, parent):
-        if level != self.height and not node.has_overflown:
-            node.has_overflown = True
-            to_insert = self.Reinsert(node, parent)
-            return None, None, None, None, to_insert, level
-        else:
-            if type(node) is LeafNode:
-                l1, l2, b1, b2 = self.Split(node)
-                node.rm_plot()
-                n1 = LeafNode(indices=l1, covering=b1, level=level, plotting=self.plotting)
-                n2 = LeafNode(indices=l2, covering=b2, level=level, plotting=self.plotting)
-                b1 = n1.covering
-                b2 = n2.covering
-                return n1, n2, b1, b2, None, None
-            else:
-                l1, l2, b1, b2 = self.Split(node)
-                return l1, l2, b1, b2, None, None
-
-    def Reinsert(self, node, parent):
         node.rm_plot()
 
-        sort_dist = sorted(node.items, key=lambda x: np.linalg.norm(parent.covering.center - x.bound.center), reverse=True)
+        return self.ChooseSplitIndex(node.items)
+
+    def OverflowTreatment(self, node, level, overflow):
+
+        if level != self.height and level not in overflow:
+
+            overflow.add(level)
+            to_insert = self.Reinsert(node)
+
+            return None, None, None, None, to_insert, level
+
+        else:
+
+            if type(node) is LeafNode:
+
+                l1, l2, b1, b2 = self.Split(node)
+
+                n1 = LeafNode(items=l1, covering=b1, level=level, plotting=self.plotting)
+                n2 = LeafNode(items=l2, covering=b2, level=level, plotting=self.plotting)
+
+                b1 = n1.covering
+                b2 = n2.covering
+
+                return n1, n2, b1, b2, None, None
+
+            else:
+
+                l1, l2, b1, b2 = self.Split(node)
+
+                return l1, l2, b1, b2, None, None
+
+    def Reinsert(self, node):
+
+        node.rm_plot()
+
+        sort_dist = sorted(node.items, key=lambda x: np.linalg.norm(node.covering.center - x.bound.center), reverse=True)
         node.items = sort_dist[self.p:]
 
         node.update_bound(Bound(Bound.combine_l([n.bound for n in node.items])))
+
         if type(node) is LeafNode:
+
             node.plot()
 
         return sort_dist[:self.p][::-1]
 
-    def ChooseLeaf(self, node, index_entry, curr_level, insert_level=0, parent_node=None):
+    def ChooseLeaf(self, node, index_entry, curr_lvl, overflowed, ins_lvl=0):
 
-        n1, n2, b1, b2, q, re_insert_lvl = None, None, None, None, [], None
+        n1, n2, b1, b2, q, r_lvl = None, None, None, None, [], None
 
-        if curr_level == insert_level:
+        if curr_lvl == ins_lvl:
 
             node.add_entry(index_entry)
 
             if len(node.items) > self.max_num:
 
                 if type(node) is LeafNode:
-                    # if node is too big, split leaf node and add the entry to
-                    # both each of the splits
-                    n1, n2, b1, b2, r, re_insert_lvl = self.OverflowTreatment(node, curr_level, parent_node)
-                # else:
-                #     l1, l2, b1, b2, r, re_insert_lvl = self.OverflowTreatment(node, curr_level, node)
+
+                    # if node is too big, split leaf node
+                    n1, n2, b1, b2, r, r_lvl = self.OverflowTreatment(node,
+                                                                      curr_lvl,
+                                                                      overflowed,
+                                                                      )
 
                     if r:
                         for elem in r:
-                            q.append((elem, re_insert_lvl))
+                            q.append((elem, r_lvl))
 
         else:
 
@@ -507,12 +623,12 @@ class RTree(object):
             idx_pointer, idx_pointer_pos = self.ChooseSubTree(node, index_entry)
 
             # index.pointer is the pointer to one of node's children nodes
-            n1, n2, b1, b2, q, re_insert_lvl = self.ChooseLeaf(node=idx_pointer.pointer,
-                                                               index_entry=index_entry,
-                                                               curr_level=curr_level - 1,
-                                                               insert_level=insert_level, 
-                                                               parent_node=node
-                                                               )
+            n1, n2, b1, b2, q, r_lvl = self.ChooseLeaf(node=idx_pointer.pointer,
+                                                       index_entry=index_entry,
+                                                       curr_lvl=curr_lvl - 1,
+                                                       ins_lvl=ins_lvl,
+                                                       overflowed=overflowed,
+                                                       )
 
             # update bound
             idx_pointer.update(idx_pointer.pointer.covering)
@@ -530,54 +646,62 @@ class RTree(object):
             if len(node.items) > self.max_num:
 
                 # If the branch node has too many items split
-                l1, l2, b1, b2, r, re_insert_lvl = self.OverflowTreatment(node, curr_level, node)
+                l1, l2, b1, b2, r, r_lvl = self.OverflowTreatment(node,
+                                                                  curr_lvl,
+                                                                  overflowed,
+                                                                  )
 
                 if r:
+
                     for elem in r:
-                        q.append((elem, re_insert_lvl))
+
+                        q.append((elem, r_lvl))
 
                 if l1:
-                    node.rm_plot()
-                    n1 = BranchNode(indices=l1, covering=b1, level=curr_level, plotting=self.plotting)
-                    n2 = BranchNode(indices=l2, covering=b2, level=curr_level, plotting=self.plotting)
+
+                    n1 = BranchNode(items=l1, covering=b1, level=curr_lvl, plotting=self.plotting)
+                    n2 = BranchNode(items=l2, covering=b2, level=curr_lvl, plotting=self.plotting)
 
         # returns either split leaf nodes, or branch nodes, depending on
         # which one is at the highest level of tree
-        return n1, n2, b1, b2, q, re_insert_lvl
+        return n1, n2, b1, b2, q, r_lvl
 
     # inserts entry with propagation of changes upwards until root node
     # if root node is too big, we split
-    def Insert(self, entry, insert_level=0):
+    def Insert(self, entry, ins_lvl=0, overflowed=set()):
 
-        n1, n2, b1, b2, q, re_insert_lvl = self.ChooseLeaf(node=self.root,
-                                                           index_entry=entry,
-                                                           curr_level=self.height,
-                                                           insert_level=insert_level,
-                                                           )
+        n1, n2, b1, b2, q, r_lvl = self.ChooseLeaf(node=self.root,
+                                                   index_entry=entry,
+                                                   curr_lvl=self.height,
+                                                   ins_lvl=ins_lvl,
+                                                   overflowed=overflowed,
+                                                   )
 
         if n2:
 
-            self.height += 1
             p1 = IndexPointer(bound=b1, pointer=n1)
             p2 = IndexPointer(bound=b2, pointer=n2)
-            self.root = BranchNode(indices=[],
+
+            self.height += 1
+            self.root = BranchNode(items=[],
                                    covering=Bound.combine(b1, b2),
                                    level=self.height,
                                    plotting=self.plotting
                                    )
+
             self.root.add_entry(p1)
             self.root.add_entry(p2)
 
         if q:
             for pairs in q:
-                self.Insert(pairs[0], insert_level=pairs[1])
+                self.Insert(pairs[0], ins_lvl=pairs[1], overflowed=overflowed)
 
     # removes entry from the tree
     def Delete(self, entry):
 
-        def FindLeaf(node, index_entry, curr_level):
+        def FindLeaf(node, index_entry, curr_lvl):
 
-            if curr_level == 0:
+            if curr_lvl == 0:
 
                 # returns whether entry is removed after attempting
                 # to remove it
@@ -587,7 +711,7 @@ class RTree(object):
 
                 # Set of index records to be readded in case of
                 # underfull node after deletion
-                q, rm_item, ins_level = [], False, 0
+                q, rm_item, ins_lvl = [], False, 0
 
                 # Findleaf on all branches that might have index_entry
                 for i in range(len(node.items) - 1, -1, -1):
@@ -599,14 +723,14 @@ class RTree(object):
                         child_node = curr_item.pointer
 
                         # If we found an entry and deleted it, do whats after
-                        if FindLeaf(child_node, index_entry, curr_level=curr_level - 1):
+                        if FindLeaf(child_node, index_entry, curr_lvl=curr_lvl - 1):
                             rm_item = True
 
                             # delete underfull leafnodes
                             if len(child_node.items) < self.min_num:
 
                                 q += child_node.items
-                                ins_level = child_node.level
+                                ins_lvl = child_node.level
                                 child_node.rm_plot()
                                 del node.items[i]
 
@@ -621,12 +745,12 @@ class RTree(object):
 
                 # reinsert here
                 for elem in q:
-                    self.Insert(entry=elem, insert_level=ins_level)
+                    self.Insert(entry=elem, ins_lvl=ins_lvl)
 
                 return rm_item
 
         # call recursive function
-        FindLeaf(self.root, index_entry=entry, curr_level=self.height)
+        FindLeaf(self.root, index_entry=entry, curr_lvl=self.height)
 
 
 ###############################################################################
@@ -636,60 +760,34 @@ class RTree(object):
 
 def sample_point(bounds):
     rand_x = math.floor((bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0])
-    rand_y = math.floor((bounds[2] - bounds[3]) * np.random.random_sample() + bounds[3])
+    rand_y = math.floor((bounds[3] - bounds[2]) * np.random.random_sample() + bounds[2])
     return rand_x, rand_y
 
 
 np.random.seed(123)
-ax = plt.gca()
-ax.set_xlim([-10, 810])
-ax.set_ylim([-10, 810])
 
-rtree = RTree(40, plotting=True)
-items = []
+rtree = RTree(10, plotting=True)
+
 start = timeit.default_timer()
 
-for i in range(8000):
+for i in range(1000):
+
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
+
     b1 = Bound([x, x, y, y])
     i1 = IndexRecord(b1, ti1)
-    # i == 3521
-    rtree.Insert(entry=i1, insert_level=0)
 
-# for i in range(len(items)):
-#     rtree.Delete(items[i])
-#     rtree.Insert(entry=items[i], insert_level=0)
+    rtree.Insert(entry=i1)
+
 
 stop = timeit.default_timer()
 
 print('Time: ', stop - start)
 print(rtree)
 
-# Fix overflow treatment: somehow duplicating pointers
-# This is probably because Split is called twice
-# when you overflow, you also want to reset directory page bound
-# once in the reinsert algorithm and another outside the reinsert
-# Bad performance when there are more than 2
-# layers to tree
-# Find added overlap operation is expensive also
-# print(rtree)
 
 print("Done!")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
