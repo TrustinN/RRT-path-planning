@@ -3,13 +3,14 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import textwrap
-from r_tree_utils import Rect as Bound
-from r_tree_utils import Cube as Bound
 from r_tree_utils import IndexPointer
 from mpl_toolkits.mplot3d import Axes3D
 
 
 class RTree(object):
+
+    from r_tree_utils import Rect
+    from r_tree_utils import Cube
 
     class Node:
 
@@ -48,7 +49,7 @@ class RTree(object):
             if self.covering:
 
                 self.covering.rm_plot()
-                self.covering = Bound.combine([self.covering, entry.bound])
+                self.covering = RTree.Bound.combine([self.covering, entry.bound])
 
                 if self.ax:
                     self.covering.plot("#ff0000", self.ax)
@@ -115,7 +116,7 @@ class RTree(object):
             if self.covering:
 
                 self.covering.rm_plot()
-                self.covering = Bound.combine([self.covering, entry.bound])
+                self.covering = RTree.Bound.combine([self.covering, entry.bound])
 
                 if self.ax:
                     self.covering.plot("#009b00", self.ax)
@@ -139,7 +140,7 @@ class RTree(object):
                     self.items.pop(i)
                     point_plot = self.points.pop(i)
                     point_plot.remove()
-                    self.update_bound(Bound.combine([j.bound for j in self.items]))
+                    self.update_bound(RTree.Bound.combine([j.bound for j in self.items]))
 
                     return True
 
@@ -193,10 +194,13 @@ class RTree(object):
         if self.plotting:
 
             if self.dim == 2:
+
+                RTree.Bound = RTree.Rect
                 _, self.ax = plt.subplots()
 
             elif self.dim == 3:
 
+                RTree.Bound = RTree.Cube
                 f = plt.figure()
                 ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
                 self.ax = ax
@@ -214,7 +218,7 @@ class RTree(object):
 
     def FindAddedArea(ptr, index_entry):
 
-        exp_vol = Bound.expand_vol(ptr.bound, index_entry.bound)
+        exp_vol = RTree.Bound.expand_vol(ptr.bound, index_entry.bound)
         curr_vol = ptr.bound.vol
         diff = exp_vol - curr_vol
 
@@ -224,10 +228,10 @@ class RTree(object):
     # adding new entry
     def FindAddedOverlap(ptr, ptrs, index_entry):
 
-        curr_overlap = sum(Bound.overlap(ptr.bound, p.bound) for p in ptrs if p != ptr)
+        curr_overlap = sum(RTree.Bound.overlap(ptr.bound, p.bound) for p in ptrs if p != ptr)
 
-        new_bound = Bound.combine([ptr.bound, index_entry.bound])
-        new_overlap = sum(Bound.overlap(new_bound, p.bound) for p in ptrs if p != ptr)
+        new_bound = RTree.Bound.combine([ptr.bound, index_entry.bound])
+        new_overlap = sum(RTree.Bound.overlap(new_bound, p.bound) for p in ptrs if p != ptr)
 
         diff = new_overlap - curr_overlap
 
@@ -288,8 +292,8 @@ class RTree(object):
             sb1 = [items[j].bound for j in range(start + idx)]
             sb2 = [items[j + start + idx].bound for j in range(len(items) - start - idx)]
 
-            mb1 = Bound.combine(sb1)
-            mb2 = Bound.combine(sb2)
+            mb1 = RTree.Bound.combine(sb1)
+            mb2 = RTree.Bound.combine(sb2)
 
             margin_1, margin_2 = mb1.margin(), mb2.margin()
 
@@ -353,10 +357,10 @@ class RTree(object):
             s1 = [items[j].bound for j in range(self.min_num + i)]
             s2 = [items[j + self.min_num + i].bound for j in range(len(items) - self.min_num - i)]
 
-            tmp_b1 = Bound.combine(s1)
-            tmp_b2 = Bound.combine(s2)
+            tmp_b1 = RTree.Bound.combine(s1)
+            tmp_b2 = RTree.Bound.combine(s2)
 
-            curr_overlap = Bound.overlap(tmp_b1, tmp_b2)
+            curr_overlap = RTree.Bound.overlap(tmp_b1, tmp_b2)
 
             if curr_overlap <= min_overlap:
 
@@ -421,7 +425,7 @@ class RTree(object):
         sort_dist = sorted(node.items, key=lambda x: np.linalg.norm(node.covering.center - x.bound.center), reverse=True)
         node.items = sort_dist[self.p:]
 
-        node.update_bound(Bound.combine([n.bound for n in node.items]))
+        node.update_bound(RTree.Bound.combine([n.bound for n in node.items]))
 
         if type(node) is RTree.LeafNode:
             node.plot()
@@ -467,7 +471,7 @@ class RTree(object):
 
             # update bound
             idx_ptr.update(idx_ptr.pointer.covering)
-            node.update_bound(Bound.combine([n.bound for n in node.items]))
+            node.update_bound(RTree.Bound.combine([n.bound for n in node.items]))
 
             if n2:
 
@@ -521,7 +525,7 @@ class RTree(object):
 
             self.height += 1
             self.root = RTree.BranchNode(items=[],
-                                         covering=Bound.combine([b1, b2]),
+                                         covering=RTree.Bound.combine([b1, b2]),
                                          level=self.height,
                                          ax=self.ax,
                                          )
@@ -578,7 +582,7 @@ class RTree(object):
 
                 # points to branch, update bound if childpointer was changed
                 if rm_item:
-                    node.update_bound(Bound.combine([n.bound for n in node.items]))
+                    node.update_bound(RTree.Bound.combine([n.bound for n in node.items]))
 
                 # reinsert here
                 for elem in q:
@@ -604,7 +608,7 @@ class RTree(object):
 
             else:
                 for b in node.items:
-                    if Bound.overlap(scope, b.bound) > 0:
+                    if RTree.Bound.overlap(scope, b.bound) > 0:
                         helper_func(b.pointer, found)
 
         helper_func(self.root, found)
