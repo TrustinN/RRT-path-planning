@@ -3,23 +3,21 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import textwrap
-import timeit
 from r_tree_utils import Rect as Bound
-# from r_tree_utils import Cube
-from r_tree_utils import IndexRecord
+from r_tree_utils import Cube as Bound
 from r_tree_utils import IndexPointer
+from mpl_toolkits.mplot3d import Axes3D
 
 
 class RTree(object):
 
     class Node:
 
-        def __init__(self, items, covering, level, plotting):
+        def __init__(self, items, covering, level):
 
             self.items = items
             self.covering = covering
             self.level = level
-            self.plotting = plotting
 
         def add_entry(self, entry):
             """
@@ -29,13 +27,19 @@ class RTree(object):
 
     class BranchNode(Node):
 
-        def __init__(self, items=[], covering=Bound(), level=0, plotting=False):
+        def __init__(self, items, covering, level=0, ax=None):
 
-            super().__init__(items, covering, level, plotting)
+            super().__init__(items, covering, level)
 
-            if self.plotting:
+            if covering.dim == 2:
+                self.ax = ax
+            else:
+                self.ax = None
+
+            if self.ax:
+
                 if self.covering:
-                    covering.plot("#ff0000")
+                    covering.plot("#ff0000", self.ax)
 
         def add_entry(self, entry):
 
@@ -46,16 +50,16 @@ class RTree(object):
                 self.covering.rm_plot()
                 self.covering = Bound.combine([self.covering, entry.bound])
 
-                if self.plotting:
-                    self.covering.plot("#ff0000")
+                if self.ax:
+                    self.covering.plot("#ff0000", self.ax)
 
         def update_bound(self, bound):
 
             self.covering.rm_plot()
             self.covering = bound
 
-            if self.plotting:
-                self.covering.plot("#ff0000")
+            if self.ax:
+                self.covering.plot("#ff0000", self.ax)
 
         def rm_plot(self):
 
@@ -75,25 +79,34 @@ class RTree(object):
 
     class LeafNode(Node):
 
-        def __init__(self, items=[], covering=Bound(), level=0, plotting=False):
+        def __init__(self, items, covering, level=0, ax=None):
 
-            super().__init__(items, covering, level, plotting)
+            super().__init__(items, covering, level)
 
-            if self.plotting:
-                if self.covering:
-                    covering.plot("#009b00")
+            self.ax = ax
+
+            if self.ax:
 
                 self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
                 self.points = []
 
+                if self.covering:
+                    covering.plot("#009b00", self.ax)
+
                 for i in self.items:
-                    self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
+                    if len(i.tuple_identifier) == 2:
+                        self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
+                    else:
+                        self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], i.tuple_identifier[2], c=self.color, s=10, edgecolor='none'))
 
         def plot(self):
 
-            if self.plotting:
+            if self.ax:
                 for i in self.items:
-                    self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
+                    if len(i.tuple_identifier) == 2:
+                        self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
+                    else:
+                        self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], i.tuple_identifier[2], c=self.color, s=10, edgecolor='none'))
 
         def add_entry(self, entry):
 
@@ -104,14 +117,17 @@ class RTree(object):
                 self.covering.rm_plot()
                 self.covering = Bound.combine([self.covering, entry.bound])
 
-                if self.plotting:
-                    self.covering.plot("#009b00")
+                if self.ax:
+                    self.covering.plot("#009b00", self.ax)
 
             else:
                 self.covering = entry.bound
 
-            if self.plotting:
-                self.points.append(plt.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
+            if self.ax:
+                if len(entry.tuple_identifier) == 2:
+                    self.points.append(self.ax.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
+                else:
+                    self.points.append(self.ax.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], entry.tuple_identifier[2], c=self.color, s=10, edgecolor='none'))
 
         def rm_entry(self, entry):
 
@@ -134,12 +150,12 @@ class RTree(object):
             self.covering.rm_plot()
             self.covering = bound
 
-            if self.plotting:
-                self.covering.plot("#009b00")
+            if self.ax:
+                self.covering.plot("#009b00", self.ax)
 
         def rm_plot(self):
 
-            if self.plotting:
+            if self.ax:
 
                 for h in self.points:
                     h.remove()
@@ -159,8 +175,6 @@ class RTree(object):
                 string += str(i) + "\n"
             return "Leaf " + f"{self.level} (" + "\n" + textwrap.indent(string, "    ") + ")"
 
-    root = LeafNode(items=[], covering=None, level=0)
-
     ###########################################################################
     # Methods                                                                 #
     ###########################################################################
@@ -172,14 +186,25 @@ class RTree(object):
 
         self.height = 0
         self.p = min(math.floor(M * .3), 32)
+        self.dim = dim
 
         self.plotting = plotting
 
         if self.plotting:
-            plt.gca()
 
-        if dim == 2:
-            return
+            if self.dim == 2:
+                _, self.ax = plt.subplots()
+
+            elif self.dim == 3:
+
+                f = plt.figure()
+                ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
+                self.ax = ax
+
+        else:
+            self.ax = None
+
+        self.root = RTree.LeafNode(items=[], covering=None, level=0, ax=self.ax)
 
     def __str__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
@@ -189,11 +214,11 @@ class RTree(object):
 
     def FindAddedArea(ptr, index_entry):
 
-        exp_area = Bound.expand_area(ptr.bound, index_entry.bound)
-        curr_area = ptr.bound.area
-        diff = exp_area - curr_area
+        exp_vol = Bound.expand_vol(ptr.bound, index_entry.bound)
+        curr_vol = ptr.bound.vol
+        diff = exp_vol - curr_vol
 
-        return curr_area, diff
+        return curr_vol, diff
 
     # returns current overlap area and the difference in overlap area when
     # adding new entry
@@ -212,7 +237,7 @@ class RTree(object):
     def ChooseSubTree(self, node, index_entry, curr_lvl):
 
         # pick the subdirectory that leads to least expansion
-        min_exp, min_area = math.inf, math.inf
+        min_exp, min_vol = math.inf, math.inf
         idx_ptr, ptr_pos = None, 0
 
         if curr_lvl == 0:
@@ -224,31 +249,31 @@ class RTree(object):
         else:
             items = node.items
 
-        # find the expansion that results in least area added
+        # find the expansion that results in least vol added
         for i in range(len(items)):
 
             curr_ptr = items[i]
 
             if curr_lvl == 0:
-                curr_area, diff = RTree.FindAddedOverlap(curr_ptr, node.items, index_entry)
+                curr_vol, diff = RTree.FindAddedOverlap(curr_ptr, node.items, index_entry)
 
             else:
-                curr_area, diff = RTree.FindAddedArea(curr_ptr, index_entry)
+                curr_vol, diff = RTree.FindAddedArea(curr_ptr, index_entry)
 
             if diff < min_exp:
 
                 min_exp = diff
                 idx_ptr = curr_ptr
                 ptr_pos = i
-                min_area = curr_area
+                min_vol = curr_vol
 
             # tiebreaker: choose smaller bounding box
             elif diff == min_exp:
-                if curr_area < min_area:
+                if curr_vol < min_vol:
 
                     idx_ptr = curr_ptr
                     ptr_pos = i
-                    min_area = curr_area
+                    min_vol = curr_vol
 
         return idx_ptr, ptr_pos
 
@@ -320,7 +345,7 @@ class RTree(object):
 
         split_idx, b1, b2 = None, None, None
         min_overlap = math.inf
-        min_area = math.inf
+        min_vol = math.inf
 
         for i in range(self.max_num - 2 * self.min_num + 1):
 
@@ -335,20 +360,20 @@ class RTree(object):
 
             if curr_overlap <= min_overlap:
 
-                curr_area = tmp_b1.area + tmp_b2.area
+                curr_vol = tmp_b1.vol + tmp_b2.vol
 
                 # tiebreaker: choose smaller bounding box
                 if curr_overlap == min_overlap:
 
-                    if curr_area < min_area:
+                    if curr_vol < min_vol:
 
                         split_idx = self.min_num + i
-                        min_area = curr_area
+                        min_vol = curr_vol
                         b1, b2 = tmp_b1, tmp_b2
 
                 else:
 
-                    min_area = curr_area
+                    min_vol = curr_vol
                     min_overlap = curr_overlap
                     split_idx = self.min_num + i
                     b1, b2 = tmp_b1, tmp_b2
@@ -376,8 +401,8 @@ class RTree(object):
 
                 l1, l2, b1, b2 = self.Split(node)
 
-                n1 = RTree.LeafNode(items=l1, covering=b1, level=level, plotting=self.plotting)
-                n2 = RTree.LeafNode(items=l2, covering=b2, level=level, plotting=self.plotting)
+                n1 = RTree.LeafNode(items=l1, covering=b1, level=level, ax=self.ax)
+                n2 = RTree.LeafNode(items=l2, covering=b2, level=level, ax=self.ax)
 
                 b1 = n1.covering
                 b2 = n2.covering
@@ -468,9 +493,11 @@ class RTree(object):
                 if l1:
 
                     n1 = RTree.BranchNode(items=l1, covering=b1,
-                                          level=curr_lvl, plotting=self.plotting)
+                                          level=curr_lvl, ax=self.ax,
+                                          )
                     n2 = RTree.BranchNode(items=l2, covering=b2,
-                                          level=curr_lvl, plotting=self.plotting)
+                                          level=curr_lvl, ax=self.ax,
+                                          )
 
         # returns either split leaf nodes, or branch nodes, depending on
         # which one is at the highest level of tree
@@ -496,7 +523,7 @@ class RTree(object):
             self.root = RTree.BranchNode(items=[],
                                          covering=Bound.combine([b1, b2]),
                                          level=self.height,
-                                         plotting=self.plotting
+                                         ax=self.ax,
                                          )
 
             self.root.add_entry(p1)
@@ -583,46 +610,17 @@ class RTree(object):
         helper_func(self.root, found)
         return found
 
-###############################################################################
-# Testing                                                                     #
-###############################################################################
+    def animate(self):
+        if self.dim == 3:
+            self.ax.set_axis_off()
+            if self.plotting:
+                for angle in range(0, 1000, 2):
+                    self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
+                    plt.draw()
+                    plt.pause(.001)
 
+                plt.show()
 
-def sample_point(bounds):
-    rand_x = math.floor((bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0])
-    rand_y = math.floor((bounds[3] - bounds[2]) * np.random.random_sample() + bounds[2])
-    return rand_x, rand_y
-
-
-np.random.seed(123)
-
-rtree = RTree(20, dim=2, plotting=True)
-
-
-start = timeit.default_timer()
-
-for i in range(200):
-
-    x, y = sample_point([0, 800, 800, 0])
-    ti = np.array([x, y])
-
-    b = Bound([x, x, y, y])
-    ir = IndexRecord(b, ti)
-
-    rtree.Insert(entry=ir)
-
-stop = timeit.default_timer()
-print('Time: ', stop - start)
-
-b = Bound([50, 300, 50, 300])
-target = rtree.Search(b)
-b.plot("#0000ff")
-
-for t in target:
-    rtree.Delete(t)
-
-
-print(rtree)
 
 
 
