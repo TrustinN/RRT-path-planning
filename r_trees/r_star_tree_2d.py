@@ -237,8 +237,9 @@ class LeafNode(Node):
 
     def plot(self):
 
-        for i in self.items:
-            self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
+        if self.plotting:
+            for i in self.items:
+                self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
     def add_entry(self, entry):
 
@@ -368,7 +369,6 @@ class RTree(object):
             items = node.items[:self.p]
 
         else:
-
             items = node.items
 
         # find the expansion that results in least area added
@@ -519,7 +519,7 @@ class RTree(object):
             return None, None, None, None, to_insert, level
 
         else:
-            if type(node) is LeafNode:
+            if level == 0:
 
                 l1, l2, b1, b2 = self.Split(node)
 
@@ -559,7 +559,7 @@ class RTree(object):
             node.add_entry(index_entry)
 
             if len(node.items) > self.max_num:
-                if type(node) is LeafNode:
+                if curr_lvl == 0:
 
                     # if node is too big, split leaf node
                     n1, n2, b1, b2, r, r_lvl = self.OverflowTreatment(node,
@@ -574,13 +574,13 @@ class RTree(object):
         else:
 
             # choosing parent of entry to insert
-            idx_pointer, idx_pointer_pos = self.ChooseSubTree(node,
-                                                              index_entry,
-                                                              curr_lvl,
-                                                              )
+            idx_ptr, ptr_pos = self.ChooseSubTree(node,
+                                                  index_entry,
+                                                  curr_lvl,
+                                                  )
 
             # index.pointer is the pointer to one of node's children nodes
-            n1, n2, b1, b2, q, r_lvl = self.ChooseLeaf(node=idx_pointer.pointer,
+            n1, n2, b1, b2, q, r_lvl = self.ChooseLeaf(node=idx_ptr.pointer,
                                                        index_entry=index_entry,
                                                        curr_lvl=curr_lvl - 1,
                                                        ins_lvl=ins_lvl,
@@ -588,16 +588,16 @@ class RTree(object):
                                                        )
 
             # update bound
-            idx_pointer.update(idx_pointer.pointer.covering)
+            idx_ptr.update(idx_ptr.pointer.covering)
             node.update_bound(Bound.combine([n.bound for n in node.items]))
 
             if n2:
 
                 # Should be creating new indexpointers for each split created
                 # These indexpointers will lie in our current node.
-                node.items[idx_pointer_pos] = IndexPointer(b2, n2)
-                pointer_1 = IndexPointer(b1, n1)
-                node.add_entry(pointer_1)
+                node.items[ptr_pos] = IndexPointer(b2, n2)
+                other_ptr = IndexPointer(b1, n1)
+                node.add_entry(other_ptr)
                 n2 = None
 
             if len(node.items) > self.max_num:
@@ -614,8 +614,10 @@ class RTree(object):
 
                 if l1:
 
-                    n1 = BranchNode(items=l1, covering=b1, level=curr_lvl, plotting=self.plotting)
-                    n2 = BranchNode(items=l2, covering=b2, level=curr_lvl, plotting=self.plotting)
+                    n1 = BranchNode(items=l1, covering=b1,
+                                    level=curr_lvl, plotting=self.plotting)
+                    n2 = BranchNode(items=l2, covering=b2,
+                                    level=curr_lvl, plotting=self.plotting)
 
         # returns either split leaf nodes, or branch nodes, depending on
         # which one is at the highest level of tree
@@ -721,11 +723,11 @@ def sample_point(bounds):
 
 np.random.seed(123)
 
-rtree = RTree(10, plotting=True)
+rtree = RTree(40, plotting=False)
 
 start = timeit.default_timer()
 
-for i in range(1000):
+for i in range(40000):
 
     x, y = sample_point([0, 800, 800, 0])
     ti1 = np.array([x, y])
@@ -743,6 +745,8 @@ print(rtree)
 
 
 print("Done!")
+
+
 
 
 
