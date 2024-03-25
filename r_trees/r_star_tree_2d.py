@@ -9,8 +9,11 @@ import timeit
 class Bound(object):
 
     def __init__(self, bounds=[]):
+
         self.bounds = bounds
+
         if bounds:
+
             self.min_x = bounds[0]
             self.max_x = bounds[1]
             self.min_y = bounds[2]
@@ -46,35 +49,16 @@ class Bound(object):
             return [min_x, max_x, min_y, max_y]
 
         elif b1.bound:
-
             return [b1.min_x, b1.max_x, b1.min_y, b1.max_y]
 
         elif b2.bound:
-
             return [b2.min_x, b2.max_x, b2.min_y, b2.max_y]
 
-    def combine(b1, b2):
-
-        if b1.bounds and b2.bounds:
-
-            bounds = Bound.expand(b1, b2)
-
-            return Bound(bounds)
-
-        elif b1.bounds:
-
-            return Bound(b1.bounds)
-
-        elif b2.bounds:
-
-            return Bound(b2.bounds)
-
-    def combine_l(bounds):
+    def combine(bounds):
 
         min_x, max_x, min_y, max_y = math.inf, -math.inf, math.inf, -math.inf
 
         for b in bounds:
-
             if b.min_x < min_x:
                 min_x = b.min_x
 
@@ -87,7 +71,7 @@ class Bound(object):
             if b.max_y > max_y:
                 max_y = b.max_y
 
-        return [min_x, max_x, min_y, max_y]
+        return Bound([min_x, max_x, min_y, max_y])
 
     # returns overlap area of two bounds
     def overlap(b1, b2):
@@ -163,7 +147,6 @@ class IndexPointer(Entry):
         self.pointer = pointer
 
     def update(self, bound):
-
         self.bound = bound
 
     def __str__(self):
@@ -196,9 +179,7 @@ class BranchNode(Node):
         super().__init__(items, covering, level, plotting)
 
         if self.plotting:
-
             if self.covering:
-
                 covering.plot("#ff0000")
 
     def add_entry(self, entry):
@@ -208,10 +189,9 @@ class BranchNode(Node):
         if self.covering:
 
             self.covering.rm_plot()
-            self.covering = Bound.combine(self.covering, entry.bound)
+            self.covering = Bound.combine([self.covering, entry.bound])
 
             if self.plotting:
-
                 self.covering.plot("#ff0000")
 
     def update_bound(self, bound):
@@ -220,7 +200,6 @@ class BranchNode(Node):
         self.covering = bound
 
         if self.plotting:
-
             self.covering.plot("#ff0000")
 
     def rm_plot(self):
@@ -247,22 +226,18 @@ class LeafNode(Node):
         super().__init__(items, covering, level, plotting)
 
         if self.plotting:
-
             if self.covering:
-
                 covering.plot("#009b00")
 
             self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
             self.points = []
 
             for i in self.items:
-
                 self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
     def plot(self):
 
         for i in self.items:
-
             self.points.append(plt.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
     def add_entry(self, entry):
@@ -272,17 +247,15 @@ class LeafNode(Node):
         if self.covering:
 
             self.covering.rm_plot()
-            self.covering = Bound.combine(self.covering, entry.bound)
+            self.covering = Bound.combine([self.covering, entry.bound])
 
             if self.plotting:
-
                 self.covering.plot("#009b00")
-        else:
 
+        else:
             self.covering = entry.bound
 
         if self.plotting:
-
             self.points.append(plt.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
 
     def rm_entry(self, entry):
@@ -295,7 +268,7 @@ class LeafNode(Node):
                 self.items.pop(i)
                 point_plot = self.points.pop(i)
                 point_plot.remove()
-                self.update_bound(Bound(Bound.combine_l([j.bound for j in self.items])))
+                self.update_bound(Bound.combine([j.bound for j in self.items]))
 
                 return True
 
@@ -307,7 +280,6 @@ class LeafNode(Node):
         self.covering = bound
 
         if self.plotting:
-
             self.covering.plot("#009b00")
 
     def rm_plot(self):
@@ -374,72 +346,58 @@ class RTree(object):
     def FindAddedOverlap(self, ptr, ptrs, index_entry):
 
         curr_overlap = sum([Bound.overlap(ptr.bound, p.bound) for p in ptrs if p != ptr])
-        new_bound = Bound.combine(ptr.bound, index_entry.bound)
+
+        new_bound = Bound.combine([ptr.bound, index_entry.bound])
         new_overlap = sum([Bound.overlap(new_bound, p.bound) for p in ptrs if p != ptr])
+
         diff = new_overlap - curr_overlap
 
         return curr_overlap, diff
 
     # choosing parent of entry to insert
-    def ChooseSubTree(self, node, index_entry):
+    def ChooseSubTree(self, node, index_entry, curr_lvl):
 
         # pick the subdirectory that leads to least expansion
         min_exp, min_area = math.inf, math.inf
-        idx_ptr, idx_ptr_pos = node.items[0], 0
+        idx_ptr, ptr_pos = None, 0
 
-        if type(idx_ptr.pointer) is LeafNode:
+        if curr_lvl == 0:
 
             # sort by least area needed to expand and take first p entries
             node.items = sorted(node.items, key=lambda x: self.FindAddedArea(x, index_entry)[1])
             items = node.items[:self.p]
 
-            # find the expansion that results in least overlap
-            for i in range(len(items)):
-
-                curr_ptr = items[i]
-                curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
-
-                if diff < min_exp:
-
-                    min_exp = diff
-                    idx_ptr = curr_ptr
-                    idx_ptr_pos = i
-                    min_area = curr_area
-
-                # tiebreaker: choose smaller bounding box
-                elif diff == min_exp:
-
-                    if curr_area < min_area:
-
-                        idx_ptr = curr_ptr
-                        idx_ptr_pos = i
-                        min_area = curr_area
-
         else:
 
-            # find the expansion that results in least area added
-            for i in range(len(node.items)):
+            items = node.items
 
-                curr_ptr = node.items[i]
+        # find the expansion that results in least area added
+        for i in range(len(items)):
+
+            curr_ptr = items[i]
+
+            if curr_lvl == 0:
+                curr_area, diff = self.FindAddedOverlap(curr_ptr, node.items, index_entry)
+
+            else:
                 curr_area, diff = self.FindAddedArea(curr_ptr, index_entry)
 
-                if diff < min_exp:
+            if diff < min_exp:
 
-                    min_exp = diff
+                min_exp = diff
+                idx_ptr = curr_ptr
+                ptr_pos = i
+                min_area = curr_area
+
+            # tiebreaker: choose smaller bounding box
+            elif diff == min_exp:
+                if curr_area < min_area:
+
                     idx_ptr = curr_ptr
-                    idx_ptr_pos = i
+                    ptr_pos = i
                     min_area = curr_area
 
-                # tiebreaker: choose smaller bounding box
-                elif diff == min_exp:
-
-                    if curr_area < min_area:
-
-                        idx_ptr = curr_ptr
-                        idx_ptr_pos = i
-                        min_area = curr_area
-
-        return idx_ptr, idx_ptr_pos
+        return idx_ptr, ptr_pos
 
     # takes in node, could be either leafnode or branchnode
     # and finds the axis to split along based on their items
@@ -452,8 +410,8 @@ class RTree(object):
             sb1 = [items[j].bound for j in range(start + idx)]
             sb2 = [items[j + start + idx].bound for j in range(len(items) - start - idx)]
 
-            mb1 = Bound(Bound.combine_l(sb1))
-            mb2 = Bound(Bound.combine_l(sb2))
+            mb1 = Bound.combine(sb1)
+            mb2 = Bound.combine(sb2)
 
             margin_1, margin_2 = mb1.margin(), mb2.margin()
 
@@ -517,8 +475,8 @@ class RTree(object):
             s1 = [items[j].bound for j in range(self.min_num + i)]
             s2 = [items[j + self.min_num + i].bound for j in range(len(items) - self.min_num - i)]
 
-            tmp_b1 = Bound(Bound.combine_l(s1))
-            tmp_b2 = Bound(Bound.combine_l(s2))
+            tmp_b1 = Bound.combine(s1)
+            tmp_b2 = Bound.combine(s2)
 
             curr_overlap = Bound.overlap(tmp_b1, tmp_b2)
 
@@ -561,7 +519,6 @@ class RTree(object):
             return None, None, None, None, to_insert, level
 
         else:
-
             if type(node) is LeafNode:
 
                 l1, l2, b1, b2 = self.Split(node)
@@ -575,7 +532,6 @@ class RTree(object):
                 return n1, n2, b1, b2, None, None
 
             else:
-
                 l1, l2, b1, b2 = self.Split(node)
 
                 return l1, l2, b1, b2, None, None
@@ -587,10 +543,9 @@ class RTree(object):
         sort_dist = sorted(node.items, key=lambda x: np.linalg.norm(node.covering.center - x.bound.center), reverse=True)
         node.items = sort_dist[self.p:]
 
-        node.update_bound(Bound(Bound.combine_l([n.bound for n in node.items])))
+        node.update_bound(Bound.combine([n.bound for n in node.items]))
 
         if type(node) is LeafNode:
-
             node.plot()
 
         return sort_dist[:self.p][::-1]
@@ -604,7 +559,6 @@ class RTree(object):
             node.add_entry(index_entry)
 
             if len(node.items) > self.max_num:
-
                 if type(node) is LeafNode:
 
                     # if node is too big, split leaf node
@@ -620,7 +574,10 @@ class RTree(object):
         else:
 
             # choosing parent of entry to insert
-            idx_pointer, idx_pointer_pos = self.ChooseSubTree(node, index_entry)
+            idx_pointer, idx_pointer_pos = self.ChooseSubTree(node,
+                                                              index_entry,
+                                                              curr_lvl,
+                                                              )
 
             # index.pointer is the pointer to one of node's children nodes
             n1, n2, b1, b2, q, r_lvl = self.ChooseLeaf(node=idx_pointer.pointer,
@@ -632,7 +589,7 @@ class RTree(object):
 
             # update bound
             idx_pointer.update(idx_pointer.pointer.covering)
-            node.update_bound(Bound(Bound.combine_l([n.bound for n in node.items])))
+            node.update_bound(Bound.combine([n.bound for n in node.items]))
 
             if n2:
 
@@ -652,9 +609,7 @@ class RTree(object):
                                                                   )
 
                 if r:
-
                     for elem in r:
-
                         q.append((elem, r_lvl))
 
                 if l1:
@@ -684,7 +639,7 @@ class RTree(object):
 
             self.height += 1
             self.root = BranchNode(items=[],
-                                   covering=Bound.combine(b1, b2),
+                                   covering=Bound.combine([b1, b2]),
                                    level=self.height,
                                    plotting=self.plotting
                                    )
@@ -741,7 +696,7 @@ class RTree(object):
 
                 # points to branch, update bound if childpointer was changed
                 if rm_item:
-                    node.update_bound(Bound(Bound.combine_l([n.bound for n in node.items])))
+                    node.update_bound(Bound.combine([n.bound for n in node.items]))
 
                 # reinsert here
                 for elem in q:
