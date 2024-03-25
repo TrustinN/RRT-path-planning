@@ -593,6 +593,31 @@ class RTree(object):
         # call recursive function
         FindLeaf(self.root, index_entry=entry, curr_lvl=self.height)
 
+        # Fix the root node if there are too few entries in root.items
+        if len(self.root.items) < self.min_num and self.height != 0:
+
+            q = []
+            items = self.root.items
+
+            for i in range(len(items) - 1, 0, -1):
+
+                q += items[i].pointer.items
+                items[i].pointer.rm_plot()
+                del self.root.items[i]
+
+            self.root.rm_plot()
+            self.root = items[0].pointer
+            self.height -= 1
+
+            # reinsert here
+            if self.height == 0:
+                ins_lvl = 0
+            else:
+                ins_lvl = self.height
+
+            for elem in q:
+                self.Insert(entry=elem, ins_lvl=ins_lvl)
+
     # given a scope (search rectangle/Bound) returns list of index records
     # contained in that scope
     def Search(self, scope):
@@ -624,6 +649,11 @@ class RTree(object):
                     plt.pause(.001)
 
                 plt.show()
+
+
+
+
+
 
 
 

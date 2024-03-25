@@ -21,11 +21,11 @@ if test == 2:
         rand_y = math.floor((bounds[3] - bounds[2]) * np.random.random_sample() + bounds[2])
         return rand_x, rand_y
 
-    # np.random.seed(123)
-    rtree = RTree(20, dim=2, plotting=True)
+    np.random.seed(123)
+    rtree = RTree(10, dim=2, plotting=True)
     start = timeit.default_timer()
 
-    for i in range(200):
+    for i in range(100):
 
         x, y = sample_point([0, 800, 800, 0])
         ti = np.array([x, y])
@@ -38,12 +38,13 @@ if test == 2:
     stop = timeit.default_timer()
     print('Time: ', stop - start)
 
-    b = Rect([50, 300, 50, 300])
+    b = Rect([0, 800, 0, 800])
     target = rtree.Search(b)
     b.plot("#0000ff", rtree.ax)
 
-    for t in target:
-        rtree.Delete(t)
+    # i == 76
+    for i in range(len(target)):
+        rtree.Delete(target[i])
 
     print(rtree)
 
