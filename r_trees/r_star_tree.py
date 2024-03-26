@@ -200,15 +200,14 @@ class RTree(object):
                 f = plt.figure()
                 ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
                 self.ax = ax
-
         else:
-            if self.dim == 2:
-                RTree.Bound = RTree.Rect
-
-            elif self.dim == 3:
-                RTree.Bound = RTree.Cube
-
             self.ax = None
+
+        if self.dim == 2:
+            RTree.Bound = RTree.Rect
+
+        elif self.dim == 3:
+            RTree.Bound = RTree.Cube
 
         self.root = RTree.LeafNode(items=[], covering=None, level=0, ax=self.ax)
 
@@ -321,6 +320,15 @@ class RTree(object):
         # sort by upper value f bounding box
         y_u_sort = sorted(node.items, key=lambda x: x.bound.max_y, reverse=True)
 
+        if self.dim == 3:
+            # z-axis calculation
+            # sort by upper value f bounding box
+            z_l_sort = sorted(node.items, key=lambda x: x.bound.min_z)
+
+            # z-axis calculation
+            # sort by upper value f bounding box
+            z_u_sort = sorted(node.items, key=lambda x: x.bound.max_z, reverse=True)
+
         for i in range(self.max_num - 2 * self.min_num + 1):
 
             curr_g = helper_func(x_l_sort, self.min_num, i)
@@ -346,6 +354,20 @@ class RTree(object):
             if curr_g < g_value:
                 g_value = curr_g
                 node.items = y_u_sort
+
+            if self.dim == 3:
+
+                curr_g = helper_func(z_l_sort, self.min_num, i)
+
+                if curr_g < g_value:
+                    g_value = curr_g
+                    node.items = z_l_sort
+
+                curr_g = helper_func(z_u_sort, self.min_num, i)
+
+                if curr_g < g_value:
+                    g_value = curr_g
+                    node.items = z_u_sort
 
     def ChooseSplitIndex(self, items):
 
@@ -641,9 +663,10 @@ class RTree(object):
         helper_func(self.root, found)
         return found
 
+    # For 3d plotting of the tree
     def animate(self):
-        if self.dim == 3:
-            self.ax.set_axis_off()
+        if self.dim == 3 and self.plotting:
+            # self.ax.set_axis_off()
             if self.plotting:
                 for angle in range(0, 1000, 2):
                     self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
@@ -651,6 +674,11 @@ class RTree(object):
                     plt.pause(.001)
 
                 plt.show()
+
+    def NearestNeighbor(self, ):
+        return
+
+
 
 
 
