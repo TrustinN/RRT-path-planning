@@ -192,20 +192,22 @@ class RTree(object):
         self.plotting = plotting
 
         if self.plotting:
-
             if self.dim == 2:
-
-                RTree.Bound = RTree.Rect
                 _, self.ax = plt.subplots()
 
             elif self.dim == 3:
 
-                RTree.Bound = RTree.Cube
                 f = plt.figure()
                 ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
                 self.ax = ax
 
         else:
+            if self.dim == 2:
+                RTree.Bound = RTree.Rect
+
+            elif self.dim == 3:
+                RTree.Bound = RTree.Cube
+
             self.ax = None
 
         self.root = RTree.LeafNode(items=[], covering=None, level=0, ax=self.ax)
