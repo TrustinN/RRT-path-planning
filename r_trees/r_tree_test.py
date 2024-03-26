@@ -7,7 +7,7 @@ from r_tree_utils import Rect
 from r_tree_utils import Cube
 
 
-test = 2
+test = 3
 
 
 if test == 2:
@@ -22,10 +22,10 @@ if test == 2:
         return rand_x, rand_y
 
     np.random.seed(123)
-    rtree = RTree(10, dim=2, plotting=True)
+    rtree = RTree(10, dim=2, plotting=False)
     start = timeit.default_timer()
 
-    for i in range(100):
+    for i in range(1000):
 
         x, y = sample_point([0, 800, 800, 0])
         ti = np.array([x, y])
@@ -38,13 +38,12 @@ if test == 2:
     stop = timeit.default_timer()
     print('Time: ', stop - start)
 
-    b = Rect([0, 800, 0, 800])
-    target = rtree.Search(b)
-    b.plot("#0000ff", rtree.ax)
-
-    # i == 76
-    for i in range(len(target)):
-        rtree.Delete(target[i])
+    # b = Rect([0, 800, 0, 800])
+    # target = rtree.Search(b)
+    # b.plot("#0000ff", rtree.ax)
+    #
+    # for i in range(len(target)):
+    #     rtree.Delete(target[i])
 
     print(rtree)
 
@@ -75,14 +74,16 @@ else:
 
     print('Time: ', stop - start)
 
-    b = Cube([50, 400, 50, 400, 50, 400])
-    target = rtree.Search(b)
-    b.plot("#0000ff", rtree.ax)
-
-    for t in target:
-        rtree.Delete(t)
+    # b = Cube([50, 400, 50, 400, 50, 400])
+    # target = rtree.Search(b)
+    # if rtree.plotting:
+    #     b.plot("#0000ff", rtree.ax)
+    #
+    # for t in target:
+    #     rtree.Delete(t)
 
     rtree.animate()
+    print("Done!")
 
 
 
