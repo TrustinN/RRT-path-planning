@@ -3,6 +3,8 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import textwrap
+from queue import PriorityQueue
+from r_tree_utils import IndexRecord
 from r_tree_utils import IndexPointer
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -628,7 +630,7 @@ class RTree(object):
 
             else:
                 for b in node.items:
-                    if RTree.Bound.overlap(scope, b.bound) > 0:
+                    if RTree.Bound.overlap(scope, b.bound):
                         helper_func(b.pointer, found)
 
         helper_func(self.root, found)
@@ -647,17 +649,49 @@ class RTree(object):
 
                 plt.show()
 
-    def NearestNeighbor(self, ):
-        return
+    def NearestNeighbor(self, entry):
 
+        def get_dist(b, point):
+            if b.dim == 2:
 
+                bound = b.bound
+                x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
+                y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
 
+                btw_x = bound[0] <= point[0] <= bound[1]
+                btw_y = bound[2] <= point[1] <= bound[3]
 
+                if btw_x and btw_y:
+                    return 0
 
+                if btw_x:
+                    return y_dist
 
+                if btw_y:
+                    return x_dist
 
+                return math.sqrt(x_dist ** 2 + y_dist ** 2)
 
+        pq = PriorityQueue()
+        pq.put((0, self.root))
 
+        while not pq.empty():
+            elem = pq.get()[1]
+
+            if type(elem) is IndexRecord:
+                return elem
+
+            elif type(elem) is RTree.LeafNode:
+                for r in elem.items:
+
+                    dist_r = np.linalg.norm(r.tuple_identifier - entry.tuple_identifier)
+                    pq.put((dist_r, r))
+
+            else:
+                for b in elem.items:
+
+                    child_node = b.pointer
+                    pq.put((get_dist(child_node.covering, entry.tuple_identifier), child_node))
 
 
 
