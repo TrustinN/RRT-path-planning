@@ -1,9 +1,9 @@
-from .rrt_utils import vertex
-from .rrt_utils import graph_init
-from .rrt_utils import Sampler
-from .rrt_utils import closest_point
-from .rrt_utils import intersects_objects
-from .rrt_utils import in_free_space
+from .rrt_utils2 import vertex
+from .rrt_utils2 import graph_init
+from .rrt_utils2 import Sampler
+from .rrt_utils2 import intersects_objects
+from .rrt_utils2 import in_free_space
+from r_trees.r_tree_utils import IndexRecord
 
 
 ###############################################################################
@@ -25,7 +25,8 @@ def rrt_run(start, end, map, step_size, max_iter):
 
         p_rand = sampler.sample()
 
-        v_near = closest_point(p_rand, graph.vertices)
+        p_test = IndexRecord(None, p_rand)
+        v_near = graph.NearestNeighbor(p_test)
         p_near = v_near.value
 
         if in_free_space(p_rand, map.region, map.obstacles):
