@@ -1,11 +1,11 @@
 import numpy as np
 import math
 import timeit
-from r_star_tree import RTree
-from r_tree_utils import IndexRecord
-from r_tree_utils import Rect
-from r_tree_utils import Cube
-from r_tree_utils import nCircle
+from r_trees.r_star_tree import RTree
+from r_trees.r_tree_utils import IndexRecord
+from r_trees.r_tree_utils import Rect
+from r_trees.r_tree_utils import Cube
+from r_trees.r_tree_utils import nCircle
 import matplotlib.pyplot as plt
 
 
@@ -188,6 +188,7 @@ test_nearest(rtree, t_point)
 
 
 print("Done!")
+
 
 
 

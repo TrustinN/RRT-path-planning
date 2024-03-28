@@ -1,6 +1,8 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from r_trees.r_star_tree import RTree
+from r_trees.r_tree_utils import IndexRecord
 
 
 ###############################################################################
@@ -33,12 +35,14 @@ def plot_poly(path, c="#000000"):
 ###############################################################################
 
 
-class Graph(object):
+class Graph(RTree):
     def __init__(self, vertices=[], num_vertices=0):
+        super().__init__(50, dim=2, plotting=False)
         self.vertices = vertices
         self.num_vertices = num_vertices
 
     def add_vertex(self, vertex):
+        self.Insert(vertex)
         self.vertices.append(vertex)
         self.num_vertices += 1
 
@@ -69,7 +73,7 @@ class Graph(object):
             self.vertices = []
 
 
-class vertex(object):
+class vertex(IndexRecord):
     def __init__(self, value=np.array([]),
                  neighbors=[],
                  position=0,
@@ -77,6 +81,7 @@ class vertex(object):
                  dist_to_root=0,
                  plots=[],
                  ):
+        super().__init__(None, value)
         self.value = value
         self.neighbors = neighbors
         self.position = position
@@ -479,8 +484,10 @@ def graph_init(start, end, connect=False):
         v_end = vertex(value=end, neighbors=[], plots=[], dist_to_root=0)
     else:
         v_end = vertex(value=end, neighbors=[], plots=[], dist_to_root=math.inf)
-    graph0 = Graph(vertices=[v_start])
-    graph1 = Graph(vertices=[v_end])
+    graph0 = Graph()
+    graph0.add_vertex(v_start)
+    graph1 = Graph()
+    graph1.add_vertex(v_end)
     return v_start, v_end, graph0, graph1
 
 
@@ -658,6 +665,9 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                 end.remove_parent()
                 v.add_neighbor(end)
+
+
+
 
 
 
