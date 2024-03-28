@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import textwrap
 from queue import PriorityQueue
-from r_tree_utils import IndexRecord
-from r_tree_utils import IndexPointer
+from .r_tree_utils import IndexRecord
+from .r_tree_utils import IndexPointer
 from mpl_toolkits.mplot3d import Axes3D
 from dataclasses import dataclass, field
 from typing import Any
@@ -19,8 +19,8 @@ class PrioritizedItem:
 
 class RTree(object):
 
-    from r_tree_utils import Rect
-    from r_tree_utils import Cube
+    from .r_tree_utils import Rect
+    from .r_tree_utils import Cube
 
     class Node:
 
@@ -665,7 +665,7 @@ class RTree(object):
         while not pq.empty():
             elem = pq.get().item
 
-            if type(elem) is IndexRecord:
+            if isinstance(elem, IndexRecord):
                 return elem
 
             elif type(elem) is RTree.LeafNode:
@@ -682,6 +682,8 @@ class RTree(object):
                     dist = RTree.Bound.get_dist(child_node.covering, entry.tuple_identifier)
                     e = PrioritizedItem(dist, child_node)
                     pq.put(e)
+
+
 
 
 

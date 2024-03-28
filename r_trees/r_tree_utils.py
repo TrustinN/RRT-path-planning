@@ -394,6 +394,15 @@ class IndexRecord(Entry):
 
     def __init__(self, bound, tuple_identifier):
 
+        if not bound:
+            dim = len(tuple_identifier)
+
+            if dim == 2:
+                bound = Rect([tuple_identifier[i // 2] for i in range(2 * dim)])
+
+            elif dim == 3:
+                bound = Cube([tuple_identifier[i // 2] for i in range(2 * dim)])
+
         super().__init__(bound)
         self.tuple_identifier = tuple_identifier
 
@@ -428,6 +437,8 @@ class IndexPointer(Entry):
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
+
+
 
 
 
