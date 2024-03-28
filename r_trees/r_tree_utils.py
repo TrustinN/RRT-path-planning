@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class Bound:
@@ -21,6 +22,76 @@ class Bound:
 
     def rm_plot(self):
         return
+
+
+class nCircle(Bound):
+
+    def __init__(self, center, radius):
+        super().__init__(len(center))
+        self.center = center
+        self.radius = radius
+
+    def get_sphere():
+
+        phi, theta = np.mgrid[0:np.pi:100j, 0:2 * np.pi:100j]
+        x = np.cos(theta) * np.sin(phi)
+        y = np.sin(theta) * np.sin(phi)
+        z = np.cos(phi)
+
+        return x, y, z
+
+    def overlap(self, other):
+
+        if type(other) is nCircle:
+            return np.linalg.norm(self.center - other.center) >= self.radius + other.radius
+
+        elif type(other) is Rect:
+            return Rect.get_dist(other, self.center) <= self.radius
+
+        elif type(other) is Cube:
+            return Cube.get_dist(other, self.center) <= self.radius
+
+    def plot(self, c, ax):
+
+        if self.dim == 2:
+
+            cc = plt.Circle((self.center[0], self.center[1]), self.radius, fill=False)
+            ax.add_artist(cc)
+
+        elif self.dim == 3:
+
+            x, y, z = nCircle.get_sphere()
+            ax.plot_surface(self.radius * x + self.center[0],
+                            self.radius * y + self.center[1],
+                            self.radius * z + self.center[2],
+                            alpha=0.08,
+                            shade=False,
+                            )
+
+    def contains(self, other):
+
+        bound = other.bound
+
+        if type(other) is Rect:
+            for i in range(2):
+                for j in range(2):
+                    corner = np.array([bound[i], bound[j + 2]])
+
+                    if np.linalg.norm(corner - self.center) > self.radius:
+                        return False
+
+            return True
+
+        if type(other) is Cube:
+            for i in range(2):
+                for j in range(2):
+                    for k in range(2):
+                        corner = np.array([bound[i], bound[j + 2], bound[k + 4]])
+
+                        if np.linalg.norm(corner - self.center) > self.radius:
+                            return False
+
+            return True
 
 
 class Rect(Bound):
@@ -89,13 +160,13 @@ class Rect(Bound):
         return Rect([min_x, max_x, min_y, max_y])
 
     # returns overlap area of two bounds
-    def overlap(b1, b2):
+    def overlap(self, other):
 
-        l_sum = .5 * (b1.length + b2.length)
-        w_sum = .5 * (b1.width + b2.width)
+        l_sum = .5 * (self.length + other.length)
+        w_sum = .5 * (self.width + other.width)
 
-        x_dist = abs(b1.center_x - b2.center_x)
-        y_dist = abs(b1.center_y - b2.center_y)
+        x_dist = abs(self.center_x - other.center_x)
+        y_dist = abs(self.center_y - other.center_y)
 
         overlap_x = l_sum - x_dist
         overlap_y = w_sum - y_dist
@@ -226,15 +297,15 @@ class Cube(Bound):
         return Cube([min_x, max_x, min_y, max_y, min_z, max_z])
 
     # returns overlap area of two bounds
-    def overlap(b1, b2):
+    def overlap(self, other):
 
-        l_sum = .5 * (b1.length + b2.length)
-        w_sum = .5 * (b1.width + b2.width)
-        h_sum = .5 * (b1.height + b2.height)
+        l_sum = .5 * (self.length + other.length)
+        w_sum = .5 * (self.width + other.width)
+        h_sum = .5 * (self.height + other.height)
 
-        x_dist = abs(b1.center_x - b2.center_x)
-        y_dist = abs(b1.center_y - b2.center_y)
-        z_dist = abs(b1.center_z - b2.center_z)
+        x_dist = abs(self.center_x - other.center_x)
+        y_dist = abs(self.center_y - other.center_y)
+        z_dist = abs(self.center_z - other.center_z)
 
         overlap_x = l_sum - x_dist
         overlap_y = w_sum - y_dist
@@ -251,9 +322,9 @@ class Cube(Bound):
         phi = np.arange(1, 10, 2) * np.pi / 4
         Phi, Theta = np.meshgrid(phi, phi)
 
-        x = np.cos(Phi)*np.sin(Theta)
-        y = np.sin(Phi)*np.sin(Theta)
-        z = np.cos(Theta)/np.sqrt(2)
+        x = np.cos(Phi) * np.sin(Theta)
+        y = np.sin(Phi) * np.sin(Theta)
+        z = np.cos(Theta) / np.sqrt(2)
 
         return x, y, z
 

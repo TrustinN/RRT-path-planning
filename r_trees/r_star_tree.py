@@ -17,62 +17,6 @@ class PrioritizedItem:
     item: Any = field(compare=False)
 
 
-# def get_dist(b, point):
-#     if b.dim == 2:
-#
-#         bound = b.bound
-#         x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
-#         y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
-#
-#         btw_x = bound[0] <= point[0] <= bound[1]
-#         btw_y = bound[2] <= point[1] <= bound[3]
-#
-#         if btw_x and btw_y:
-#             return 0
-#
-#         if btw_x:
-#             return y_dist
-#
-#         if btw_y:
-#             return x_dist
-#
-#         return math.sqrt(x_dist ** 2 + y_dist ** 2)
-#
-#     if b.dim == 3:
-#
-#         bound = b.bound
-#         x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
-#         y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
-#         z_dist = min(abs(point[2] - bound[4]), abs(point[2] - bound[5]))
-#
-#         btw_x = bound[0] <= point[0] <= bound[1]
-#         btw_y = bound[2] <= point[1] <= bound[3]
-#         btw_z = bound[4] <= point[2] <= bound[5]
-#
-#         if btw_x and btw_y and btw_z:
-#             return 0
-#
-#         if btw_x and btw_y:
-#             return z_dist
-#
-#         if btw_x and btw_z:
-#             return y_dist
-#
-#         if btw_y and btw_z:
-#             return x_dist
-#
-#         if btw_x:
-#             return math.sqrt(y_dist ** 2 + z_dist ** 2)
-#
-#         if btw_y:
-#             return math.sqrt(x_dist ** 2 + z_dist ** 2)
-#
-#         if btw_z:
-#             return math.sqrt(x_dist ** 2 + y_dist ** 2)
-#
-#         return math.sqrt(x_dist ** 2 + y_dist ** 2 + z_dist ** 2)
-#
-
 class RTree(object):
 
     from r_tree_utils import Rect
@@ -295,9 +239,9 @@ class RTree(object):
     # adding new entry
     def FindAddedOverlap(ptr, ptrs, index_entry):
 
-        curr_overlap = sum(RTree.Bound.overlap(ptr.bound, p.bound) for p in ptrs if p != ptr)
+        curr_overlap = sum(ptr.bound.overlap(p.bound) for p in ptrs if p != ptr)
         new_bound = RTree.Bound.combine([ptr.bound, index_entry.bound])
-        new_overlap = sum(RTree.Bound.overlap(new_bound, p.bound) for p in ptrs if p != ptr)
+        new_overlap = sum(new_bound.overlap(p.bound) for p in ptrs if p != ptr)
         diff = new_overlap - curr_overlap
 
         return curr_overlap, diff
@@ -439,7 +383,7 @@ class RTree(object):
 
             tmp_b1 = RTree.Bound.combine(s1)
             tmp_b2 = RTree.Bound.combine(s2)
-            curr_overlap = RTree.Bound.overlap(tmp_b1, tmp_b2)
+            curr_overlap = tmp_b1.overlap(tmp_b2)
 
             if curr_overlap <= min_overlap:
                 curr_vol = tmp_b1.vol + tmp_b2.vol
@@ -694,7 +638,7 @@ class RTree(object):
 
             else:
                 for b in node.items:
-                    if RTree.Bound.overlap(scope, b.bound):
+                    if scope.overlap(b.bound):
                         helper_func(b.pointer, found)
 
         helper_func(self.root, found)
@@ -738,16 +682,6 @@ class RTree(object):
                     dist = RTree.Bound.get_dist(child_node.covering, entry.tuple_identifier)
                     e = PrioritizedItem(dist, child_node)
                     pq.put(e)
-
-
-
-
-
-
-
-
-
-
 
 
 

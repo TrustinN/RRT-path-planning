@@ -5,10 +5,11 @@ from r_star_tree import RTree
 from r_tree_utils import IndexRecord
 from r_tree_utils import Rect
 from r_tree_utils import Cube
+from r_tree_utils import nCircle
 import matplotlib.pyplot as plt
 
 
-test = 3
+test = 2
 # np.random.seed(623)
 
 if test == 2:
@@ -40,14 +41,22 @@ if test == 2:
 
         return p
 
-    def test_delete(rtree, b):
+    def test_search(rtree, scope):
 
         start = timeit.default_timer()
-        target = rtree.Search(b)
-        b.plot("#0000ff", rtree.ax)
+        found = rtree.Search(scope)
+        scope.plot("#0000ff", rtree.ax)
 
-        for i in range(len(target)):
-            rtree.Delete(target[i])
+        stop = timeit.default_timer()
+        print('Test Search: ', stop - start)
+        return found
+
+    def test_delete(rtree, array):
+
+        start = timeit.default_timer()
+
+        for t in array:
+            rtree.Delete(t)
 
         stop = timeit.default_timer()
         print('Test Delete: ', stop - start)
@@ -114,15 +123,21 @@ elif test == 3:
 
         return p
 
-    def test_delete(rtree, b):
+    def test_search(rtree, scope):
 
         start = timeit.default_timer()
-        target = rtree.Search(b)
+        found = rtree.Search(scope)
+        scope.plot("#0000ff", rtree.ax)
 
-        if rtree.plotting:
-            b.plot("#0000ff", rtree.ax)
+        stop = timeit.default_timer()
+        print('Test Search: ', stop - start)
+        return found
 
-        for t in target:
+    def test_delete(rtree, array):
+
+        start = timeit.default_timer()
+
+        for t in array:
             rtree.Delete(t)
 
         stop = timeit.default_timer()
@@ -161,20 +176,17 @@ elif test == 3:
         print('closest: ', closest)
 
 
-rtree = RTree(40, dim=test, plotting=False)
+rtree = RTree(40, dim=test, plotting=True)
 p = test_insert(rtree, 1200)
-# test_delete(rtree, )
-t_point = np.array([250, 250, 250])
+t_point = np.array([250, 250])
+found = test_search(rtree, nCircle(t_point, 200))
+test_delete(rtree, found)
 test_nearest(rtree, t_point)
-test_nearest_naive(p, t_point)
+# test_nearest_naive(p, t_point)
 
 rtree.animate()
 
-
 print("Done!")
-
-
-
 
 
 
