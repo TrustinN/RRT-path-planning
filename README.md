@@ -7,13 +7,11 @@
 <table>
   <tr>
     <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_maze.png" alt="1" width=360px height=200px></td>
-
     <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_maze.png" alt="2" width=360px height=200px></td>
   </tr> 
   <tr>
-    <td><img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_race.png" alt="3" width = 360px height = 640px></td>
-
-    <td><img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_race.png" align="right" alt="4" width = 360px height = 640px>
+    <td><img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_race.png" alt="3" width=360px height=200px></td>
+    <td><img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_race.png" align="right" alt="4" width=360px height=200px>
   </td>
   </tr>
 </table>
