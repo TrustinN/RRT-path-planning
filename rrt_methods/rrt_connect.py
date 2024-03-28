@@ -4,6 +4,7 @@ from .rrt_utils import in_free_space
 from .rrt_utils import rrt_extend_connect
 from .rrt_utils import rrt_connect_path
 from r_trees.r_tree_utils import IndexRecord
+from utils.map_utils import plot_path
 
 
 ###############################################################################
@@ -14,10 +15,10 @@ from r_trees.r_tree_utils import IndexRecord
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(start, end, map, step_size, max_iter, clear=False):
+def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
 
     sampler = Sampler(map)
-    v_start, v_end, t_start, t_end = graph_init(start, end)
+    v_start, v_end, t_start, t_end = graph_init(map=map, plotting=plotting)
 
     connect = False
     c1, c2 = None, None
@@ -66,9 +67,14 @@ def rrt_run(start, end, map, step_size, max_iter, clear=False):
         t_end.clear()
 
     if iter == max_iter:
-        return []
+        path = []
     else:
-        return rrt_connect_path(v_start, v_end, t_start, t_end, c1, c2)
+        path = rrt_connect_path(v_start, v_end, t_start, t_end, c1, c2)
+
+    if plotting:
+        plot_path(path, c="#000000", ax=map.ax)
+
+    return path
 
 
 

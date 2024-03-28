@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from r_trees.r_star_tree import RTree
 from r_trees.r_tree_utils import IndexRecord
 from r_trees.r_tree_utils import nCircle
+from mpl_toolkits.mplot3d import Axes3D
 
 
 ###############################################################################
@@ -37,10 +38,22 @@ def plot_poly(path, c="#000000"):
 
 
 class Graph(RTree):
-    def __init__(self, vertices=[], num_vertices=0):
-        super().__init__(50, dim=2, plotting=False)
+    def __init__(self, vertices=[], num_vertices=0, plotting=False, ax=None):
+        super().__init__(50, dim=2, plotting=plotting, ax=ax)
         self.vertices = vertices
         self.num_vertices = num_vertices
+
+    def make_vertex(self, value=np.array([]),
+                    neighbors=[],
+                    position=0,
+                    parent=None,
+                    dist_to_root=0):
+        return self.vertex(value=value,
+                           neighbors=neighbors,
+                           position=position,
+                           parent=parent,
+                           dist_to_root=dist_to_root,
+                           ax=self.ax)
 
     def add_vertex(self, vertex):
         self.Insert(vertex)
@@ -73,78 +86,81 @@ class Graph(RTree):
             self.num_vertices = 0
             self.vertices = []
 
+    class vertex(IndexRecord):
+        def __init__(self, value=np.array([]),
+                     neighbors=[],
+                     position=0,
+                     parent=None,
+                     dist_to_root=0,
+                     ax=None
+                     ):
+            super().__init__(None, value)
+            self.value = value
+            self.neighbors = neighbors
+            self.position = position
+            self.num_neighbors = len(self.neighbors)
+            self.parent = parent
+            self.dist_to_root = dist_to_root
+            self.plots = []
+            self.ax = ax
 
-class vertex(IndexRecord):
-    def __init__(self, value=np.array([]),
-                 neighbors=[],
-                 position=0,
-                 parent=None,
-                 dist_to_root=0,
-                 plots=[],
-                 ):
-        super().__init__(None, value)
-        self.value = value
-        self.neighbors = neighbors
-        self.position = position
-        self.num_neighbors = len(self.neighbors)
-        self.parent = parent
-        self.dist_to_root = dist_to_root
-        self.plots = plots
+        def __hash__(self):
+            return hash(self.value.tostring())
 
-    def __hash__(self):
-        return hash(self.value.tostring())
+        def equals(self, other):
+            return np.array_equal(self.value, other.value)
 
-    def equals(self, other):
-        return np.array_equal(self.value, other.value)
+        def dist_to(self, other):
+            if type(other) is Graph.vertex:
+                return np.linalg.norm(self.value - other.value)
+            elif type(other) is np.ndarray:
+                return np.linalg.norm(self.value - other)
 
-    def dist_to(self, other):
-        if type(other) is vertex:
-            return np.linalg.norm(self.value - other.value)
-        elif type(other) is np.ndarray:
-            return np.linalg.norm(self.value - other)
+        def add_neighbor(self, other):
+            if type(other) is Graph.vertex:
+                other.position = self.num_neighbors
+                other.parent = self
+                self.neighbors.append(other)
+                self.num_neighbors += 1
 
-    def add_neighbor(self, other):
-        if type(other) is vertex:
-            other.position = self.num_neighbors
-            other.parent = self
-            self.neighbors.append(other)
-            self.num_neighbors += 1
+                other.dist_to_root = self.dist_to_root + self.dist_to(other)
 
-            other.dist_to_root = self.dist_to_root + self.dist_to(other)
+                if self.ax:
+                    p = self.ax.plot(
+                        [self.value[0], other.value[0]],
+                        [self.value[1], other.value[1]],
+                        c="#7dafe6",
+                        linewidth=1,
+                        )
+                    self.plots.append(p)
 
-            p = plt.plot(
-                [self.value[0], other.value[0]],
-                [self.value[1], other.value[1]],
-                c="#7dafe6",
-                )
-            self.plots.append(p)
+        def remove_neighbor(self, other_pos):
+            if self.ax:
+                c = self.plots[other_pos]
+                for handle in c:
+                    handle.remove()
+                self.plots.pop(other_pos)
 
-    def remove_neighbor(self, other_pos):
-        c = self.plots[other_pos]
-        for handle in c:
-            handle.remove()
-        self.plots.pop(other_pos)
+            self.neighbors.pop(other_pos)
+            self.num_neighbors -= 1
+            for i in range(self.num_neighbors):
+                self.neighbors[i].position = i
 
-        self.neighbors.pop(other_pos)
-        self.num_neighbors -= 1
-        for i in range(self.num_neighbors):
-            self.neighbors[i].position = i
+        def remove_parent(self):
+            if self.parent:
+                pos = self.position
+                self.parent.remove_neighbor(pos)
+                self.position = 0
+                self.parent = None
 
-    def remove_parent(self):
-        if self.parent:
-            pos = self.position
-            self.parent.remove_neighbor(pos)
-            self.position = 0
-            self.parent = None
+        def clear_plots(self):
+            for c in self.plots:
+                for handle in c:
+                    handle.remove()
+            self.plots = []
 
-    def clear_plots(self):
-        for c in self.plots:
-            for handle in c:
-                handle.remove()
-        self.plots = []
-
-    def __repr__(self):
-        return f"(value:{self.value})"
+        def __repr__(self):
+            return f"(value:{self.value})"
 
 
 class Ellipse(object):
@@ -339,9 +355,22 @@ class Sample_Scope():
 
 class Map():
 
-    def __init__(self, region, obstacles):
+    def __init__(self, region, obstacles, dim=2):
         self.region = region
         self.obstacles = obstacles
+        self.dim = dim
+        self.ax = None
+
+    def plot(self):
+
+        if self.dim == 2:
+            _, self.ax = plt.subplots()
+
+        elif self.dim == 3:
+
+            f = plt.figure()
+            ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
+            self.ax = ax
 
     def sample_init(self, name, scope):
         self.scope = Sample_Scope(name, scope)
@@ -483,17 +512,22 @@ def expected_num(area, density):
 ###############################################################################
 
 
-def graph_init(start, end, connect=False):
-    v_start = vertex(value=start, neighbors=[], plots=[])
-    v_end = vertex()
-    if connect:
-        v_end = vertex(value=end, neighbors=[], plots=[], dist_to_root=0)
-    else:
-        v_end = vertex(value=end, neighbors=[], plots=[], dist_to_root=math.inf)
-    graph0 = Graph()
+def graph_init(map, connect=False, plotting=False):
+
+    if plotting:
+        map.plot()
+
+    start, end = map.path[0], map.path[1]
+    graph0, graph1 = Graph(plotting=plotting, ax=map.ax), Graph(plotting=plotting, ax=map.ax)
+    v_start = graph0.make_vertex(value=start, neighbors=[])
+    v_end = graph1.make_vertex(value=end, neighbors=[], dist_to_root=0)
+
+    if not connect:
+        v_end = graph1.make_vertex(value=end, neighbors=[], dist_to_root=math.inf)
+
     graph0.add_vertex(v_start)
-    graph1 = Graph()
     graph1.add_vertex(v_end)
+
     return v_start, v_end, graph0, graph1
 
 
@@ -519,12 +553,11 @@ def rrt_extend(p_rand, p_near, v_near, region, obstacles, step_size, graph0, gra
     expand_iter = math.floor(min_dist / step_size)
     for i in range(expand_iter):
         p_new = step_size * p_step + v_near.value
-        v_new = vertex(value=p_new,
-                       neighbors=[],
-                       position=0,
-                       parent=None,
-                       plots=[],
-                       )
+        v_new = graph0.make_vertex(value=p_new,
+                                   neighbors=[],
+                                   position=0,
+                                   parent=None,
+                                   )
         v_near.add_neighbor(v_new)
         graph0.add_vertex(v_new)
         v_near = v_new
@@ -547,12 +580,11 @@ def rrt_extend_connect(p_rand, p_near, v_near, region, obstacles, step_size, gra
     expand_iter = math.floor(min_dist / step_size)
     for i in range(expand_iter):
         p_new = step_size * p_step + v_near.value
-        v_new = vertex(value=p_new,
-                       neighbors=[],
-                       position=0,
-                       parent=None,
-                       plots=[],
-                       )
+        v_new = graph0.make_vertex(value=p_new,
+                                   neighbors=[],
+                                   position=0,
+                                   parent=None,
+                                   )
         v_near.add_neighbor(v_new)
         graph0.add_vertex(v_new)
         prev_parent = v_near
@@ -661,6 +693,7 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                 end.remove_parent()
                 v.add_neighbor(end)
+
 
 
 

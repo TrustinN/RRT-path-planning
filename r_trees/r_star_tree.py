@@ -107,7 +107,7 @@ class RTree(object):
                 for i in self.items:
                     if len(i.tuple_identifier) == 2:
                         self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
-                    else:
+                    elif len(i.tuple_identifier) == 3:
                         self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], i.tuple_identifier[2], c=self.color, s=10, edgecolor='none'))
 
         def plot(self):
@@ -116,7 +116,7 @@ class RTree(object):
                 for i in self.items:
                     if len(i.tuple_identifier) == 2:
                         self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
-                    else:
+                    elif len(i.tuple_identifier) == 3:
                         self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], i.tuple_identifier[2], c=self.color, s=10, edgecolor='none'))
 
         def add_entry(self, entry):
@@ -137,7 +137,7 @@ class RTree(object):
             if self.ax:
                 if len(entry.tuple_identifier) == 2:
                     self.points.append(self.ax.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
-                else:
+                elif len(entry.tuple_identifier) == 3:
                     self.points.append(self.ax.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], entry.tuple_identifier[2], c=self.color, s=10, edgecolor='none'))
 
         def rm_entry(self, entry):
@@ -190,7 +190,7 @@ class RTree(object):
     # Methods                                                                 #
     ###########################################################################
 
-    def __init__(self, M, dim, plotting=False):
+    def __init__(self, M, dim, plotting=False, ax=None):
 
         self.max_num = M
         self.min_num = math.floor(M * .4)
@@ -202,14 +202,17 @@ class RTree(object):
         self.plotting = plotting
 
         if self.plotting:
-            if self.dim == 2:
-                _, self.ax = plt.subplots()
-
-            elif self.dim == 3:
-
-                f = plt.figure()
-                ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
+            if ax:
                 self.ax = ax
+            else:
+                if self.dim == 2:
+                    _, self.ax = plt.subplots()
+
+                elif self.dim == 3:
+
+                    f = plt.figure()
+                    ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
+                    self.ax = ax
         else:
             self.ax = None
 

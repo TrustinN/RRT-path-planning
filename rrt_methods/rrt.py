@@ -1,9 +1,9 @@
-from .rrt_utils import vertex
 from .rrt_utils import graph_init
 from .rrt_utils import Sampler
 from .rrt_utils import intersects_objects
 from .rrt_utils import in_free_space
 from r_trees.r_tree_utils import IndexRecord
+from utils.map_utils import plot_path
 
 
 ###############################################################################
@@ -14,10 +14,10 @@ from r_trees.r_tree_utils import IndexRecord
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(start, end, map, step_size, max_iter):
+def rrt_run(map, step_size, max_iter, plotting=False):
 
     sampler = Sampler(map)
-    v_start, v_end, graph, _ = graph_init(start, end)
+    v_start, v_end, graph, _ = graph_init(map=map, plotting=plotting)
 
     iter = 0
     while v_end.num_neighbors < 1 and iter < max_iter:
@@ -31,12 +31,11 @@ def rrt_run(start, end, map, step_size, max_iter):
 
         if in_free_space(p_rand, map.region, map.obstacles):
             if not intersects_objects(map.region, map.obstacles, p_rand, p_near):
-                v_new = vertex(value=p_rand,
-                               neighbors=[],
-                               position=0,
-                               parent=None,
-                               plots=[],
-                               )
+                v_new = graph.make_vertex(value=p_rand,
+                                          neighbors=[],
+                                          position=0,
+                                          parent=None,
+                                          )
                 v_near.add_neighbor(v_new)
                 graph.add_vertex(v_new)
                 iter += 1
@@ -45,7 +44,12 @@ def rrt_run(start, end, map, step_size, max_iter):
                         v_end.remove_parent()
                         v_new.add_neighbor(v_end)
 
-    return graph.backtrack(v_start, v_end)
+    path = graph.backtrack(v_start, v_end)
+
+    if plotting:
+        plot_path(path, c="#000000", ax=map.ax)
+
+    return path
 
 
 

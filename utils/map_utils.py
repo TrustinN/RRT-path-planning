@@ -1,29 +1,26 @@
-import matplotlib.pyplot as plt
-
-
 ###############################################################################
 # Plotting                                                                    #
 ###############################################################################
 
 
-def plot_path(path, c="#000000"):
+def plot_path(path, c="#000000", ax=None):
     path_x = []
     path_y = []
     for i in range(len(path)):
         idx = i % len(path)
         path_x.append(path[idx][0])
         path_y.append(path[idx][1])
-    plt.plot(path_x, path_y, c=c)
+    ax.plot(path_x, path_y, c=c)
 
 
-def plot_poly(path, c="#000000"):
+def plot_poly(path, c="#000000", ax=None):
     path_x = []
     path_y = []
     for i in range(len(path) + 1):
         idx = i % len(path)
         path_x.append(path[idx][0])
         path_y.append(path[idx][1])
-    plt.plot(path_x, path_y, c=c)
+    ax.plot(path_x, path_y, c=c)
 
 
 # Returns whether a point lies inside some polygon
