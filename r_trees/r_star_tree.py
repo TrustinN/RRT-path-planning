@@ -7,7 +7,71 @@ from queue import PriorityQueue
 from r_tree_utils import IndexRecord
 from r_tree_utils import IndexPointer
 from mpl_toolkits.mplot3d import Axes3D
+from dataclasses import dataclass, field
+from typing import Any
 
+
+@dataclass(order=True)
+class PrioritizedItem:
+    priority: int
+    item: Any = field(compare=False)
+
+
+# def get_dist(b, point):
+#     if b.dim == 2:
+#
+#         bound = b.bound
+#         x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
+#         y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
+#
+#         btw_x = bound[0] <= point[0] <= bound[1]
+#         btw_y = bound[2] <= point[1] <= bound[3]
+#
+#         if btw_x and btw_y:
+#             return 0
+#
+#         if btw_x:
+#             return y_dist
+#
+#         if btw_y:
+#             return x_dist
+#
+#         return math.sqrt(x_dist ** 2 + y_dist ** 2)
+#
+#     if b.dim == 3:
+#
+#         bound = b.bound
+#         x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
+#         y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
+#         z_dist = min(abs(point[2] - bound[4]), abs(point[2] - bound[5]))
+#
+#         btw_x = bound[0] <= point[0] <= bound[1]
+#         btw_y = bound[2] <= point[1] <= bound[3]
+#         btw_z = bound[4] <= point[2] <= bound[5]
+#
+#         if btw_x and btw_y and btw_z:
+#             return 0
+#
+#         if btw_x and btw_y:
+#             return z_dist
+#
+#         if btw_x and btw_z:
+#             return y_dist
+#
+#         if btw_y and btw_z:
+#             return x_dist
+#
+#         if btw_x:
+#             return math.sqrt(y_dist ** 2 + z_dist ** 2)
+#
+#         if btw_y:
+#             return math.sqrt(x_dist ** 2 + z_dist ** 2)
+#
+#         if btw_z:
+#             return math.sqrt(x_dist ** 2 + y_dist ** 2)
+#
+#         return math.sqrt(x_dist ** 2 + y_dist ** 2 + z_dist ** 2)
+#
 
 class RTree(object):
 
@@ -651,32 +715,11 @@ class RTree(object):
 
     def NearestNeighbor(self, entry):
 
-        def get_dist(b, point):
-            if b.dim == 2:
-
-                bound = b.bound
-                x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
-                y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
-
-                btw_x = bound[0] <= point[0] <= bound[1]
-                btw_y = bound[2] <= point[1] <= bound[3]
-
-                if btw_x and btw_y:
-                    return 0
-
-                if btw_x:
-                    return y_dist
-
-                if btw_y:
-                    return x_dist
-
-                return math.sqrt(x_dist ** 2 + y_dist ** 2)
-
         pq = PriorityQueue()
-        pq.put((0, self.root))
+        pq.put(PrioritizedItem(0, self.root))
 
         while not pq.empty():
-            elem = pq.get()[1]
+            elem = pq.get().item
 
             if type(elem) is IndexRecord:
                 return elem
@@ -685,13 +728,27 @@ class RTree(object):
                 for r in elem.items:
 
                     dist_r = np.linalg.norm(r.tuple_identifier - entry.tuple_identifier)
-                    pq.put((dist_r, r))
+                    e = PrioritizedItem(dist_r, r)
+                    pq.put(e)
 
             else:
                 for b in elem.items:
 
                     child_node = b.pointer
-                    pq.put((get_dist(child_node.covering, entry.tuple_identifier), child_node))
+                    dist = RTree.Bound.get_dist(child_node.covering, entry.tuple_identifier)
+                    e = PrioritizedItem(dist, child_node)
+                    pq.put(e)
+
+
+
+
+
+
+
+
+
+
+
 
 
 

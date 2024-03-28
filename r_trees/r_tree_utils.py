@@ -106,6 +106,26 @@ class Rect(Bound):
         else:
             return overlap_x * overlap_y
 
+    def get_dist(b, point):
+
+        bound = b.bound
+        x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
+        y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
+
+        btw_x = bound[0] <= point[0] <= bound[1]
+        btw_y = bound[2] <= point[1] <= bound[3]
+
+        if btw_x and btw_y:
+            return 0
+
+        if btw_x:
+            return y_dist
+
+        if btw_y:
+            return x_dist
+
+        return math.sqrt(x_dist ** 2 + y_dist ** 2)
+
     def plot(self, c, ax):
         self.p_obj = ax.plot([self.min_x, self.min_x, self.max_x, self.max_x, self.min_x],
                              [self.min_y, self.max_y, self.max_y, self.min_y, self.min_y],
@@ -236,6 +256,40 @@ class Cube(Bound):
         z = np.cos(Theta)/np.sqrt(2)
 
         return x, y, z
+
+    def get_dist(b, point):
+
+        bound = b.bound
+        x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
+        y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
+        z_dist = min(abs(point[2] - bound[4]), abs(point[2] - bound[5]))
+
+        btw_x = bound[0] <= point[0] <= bound[1]
+        btw_y = bound[2] <= point[1] <= bound[3]
+        btw_z = bound[4] <= point[2] <= bound[5]
+
+        if btw_x and btw_y and btw_z:
+            return 0
+
+        if btw_x and btw_y:
+            return z_dist
+
+        if btw_x and btw_z:
+            return y_dist
+
+        if btw_y and btw_z:
+            return x_dist
+
+        if btw_x:
+            return math.sqrt(y_dist ** 2 + z_dist ** 2)
+
+        if btw_y:
+            return math.sqrt(x_dist ** 2 + z_dist ** 2)
+
+        if btw_z:
+            return math.sqrt(x_dist ** 2 + y_dist ** 2)
+
+        return math.sqrt(x_dist ** 2 + y_dist ** 2 + z_dist ** 2)
 
     def plot(self, c, ax):
         x, y, z = Cube.get_cube()
