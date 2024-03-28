@@ -1,8 +1,8 @@
-from .rrt_utils2 import vertex
-from .rrt_utils2 import graph_init
-from .rrt_utils2 import Sampler
-from .rrt_utils2 import intersects_objects
-from .rrt_utils2 import in_free_space
+from .rrt_utils import vertex
+from .rrt_utils import graph_init
+from .rrt_utils import Sampler
+from .rrt_utils import intersects_objects
+from .rrt_utils import in_free_space
 from r_trees.r_tree_utils import IndexRecord
 
 

@@ -23,9 +23,6 @@ def rrt_run(start, end, map, step_size, max_iter):
         if curr_dist > d_worst:
             d_worst = curr_dist
 
-    # for i in range(len(path) - 1):
-    #     path_length += np.linalg.norm(path[i] - path[i + 1])
-
     # start informed rrt sampling
     ellipse_scope = Ellipse(start, end, d_worst)
     map.add_path([start, end])

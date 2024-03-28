@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from random import randrange
 from .make_race import new_race
 from .map_utils import plot_poly
 from .map_utils import ray_cast
@@ -35,8 +36,22 @@ def expand_obstacle(p0, p1, r):
 
 
 def race_map(racetrack=None, n=20):
+    SCREEN_WIDTH = 800
+    SCREEN_HEIGHT = 800
+    POINT_RADIUS = 5
+    POINT_COLOR = (255, 0, 0)
+    LINE_COLOR = (0, 0, 255)
+    ROAD_THICKNESS = 50
+    screen = None
     if not racetrack:
-        racetrack = new_race()
+        racetrack = new_race(SCREEN_WIDTH,
+                             SCREEN_HEIGHT,
+                             POINT_RADIUS,
+                             screen,
+                             POINT_COLOR,
+                             LINE_COLOR,
+                             ROAD_THICKNESS,
+                             randrange(1000))
     midpoints = racetrack.generate_race_course_midpath(n)
     blue_cones, yellow_cones = racetrack.generate_left_and_right_cones()
 

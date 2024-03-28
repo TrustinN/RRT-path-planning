@@ -1,12 +1,12 @@
 from .rrt_utils import vertex
 from .rrt_utils import graph_init
 from .rrt_utils import Sampler
-from .rrt_utils import closest_point
 from .rrt_utils import rrt_step
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_rewire
 from .rrt_utils import rrt_connect
 from .rrt_utils import rrt_connect_path
+from r_trees.r_tree_utils import IndexRecord
 
 
 ###############################################################################
@@ -28,7 +28,8 @@ def rrt_run(start, end, map, step_size, max_iter):
         iter += 1
 
         p_rand = sampler.sample()
-        v_near = closest_point(p_rand, t_start.vertices)
+        p_test = IndexRecord(None, p_rand)
+        v_near = t_start.NearestNeighbor(p_test)
         p_new = rrt_step(p_rand, v_near, step_size)
         if in_free_space(p_new, map.region, map.obstacles):
             v_new = vertex(value=p_new,
@@ -44,7 +45,7 @@ def rrt_run(start, end, map, step_size, max_iter):
                     c2 = v_new
                     break
 
-        v_near = closest_point(p_rand, t_end.vertices)
+        v_near = t_end.NearestNeighbor(p_test)
         p_new = rrt_step(p_rand, v_near, step_size)
         if in_free_space(p_new, map.region, map.obstacles):
             v_new = vertex(value=p_new,

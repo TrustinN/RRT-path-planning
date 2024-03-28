@@ -1,12 +1,12 @@
 import math
 import matplotlib.pyplot as plt
 from .rrt_utils import vertex
-from .rrt_utils import closest_point
 from .rrt_utils import graph_init
 from .rrt_utils import Sampler
 from .rrt_utils import rrt_step
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_rewire
+from r_trees.r_tree_utils import IndexRecord
 
 
 ###############################################################################
@@ -29,7 +29,8 @@ def rrt_run(start, end, map, step_size, max_iter):
         p_rand = sampler.sample()
         if sampler.scope == "ellipse":
             plt.scatter(p_rand[0], p_rand[1])
-        v_near = closest_point(p_rand, graph.vertices)
+        p_test = IndexRecord(None, p_rand)
+        v_near = graph.NearestNeighbor(p_test)
         p_new = rrt_step(p_rand, v_near, step_size)
 
         if in_free_space(p_new, map.region, map.obstacles):

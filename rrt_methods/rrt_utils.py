@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from r_trees.r_star_tree import RTree
 from r_trees.r_tree_utils import IndexRecord
+from r_trees.r_tree_utils import nCircle
 
 
 ###############################################################################
@@ -89,6 +90,9 @@ class vertex(IndexRecord):
         self.parent = parent
         self.dist_to_root = dist_to_root
         self.plots = plots
+
+    def __hash__(self):
+        return hash(self.value.tostring())
 
     def equals(self, other):
         return np.array_equal(self.value, other.value)
@@ -182,7 +186,9 @@ def search(f, graph, *args):
 
 
 def search_visible_neighbors(f, region, obstacles, graph, v, r, step_size):
-    neighbors = search(f, graph, v, r * step_size)
+    # neighbors = search(f, graph, v, r * step_size)
+    scope = nCircle(v.value, r * step_size)
+    neighbors = graph.Search(scope)
     visible_neighbors = []
     for n in neighbors:
         if not n.equals(v) and not intersects_objects(region, obstacles, n.value, v.value):
@@ -650,21 +656,16 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
     if added_to_graph:
         graph.add_vertex(v)
 
-    for n in neighbors:
-        curr_node = v
-        for i in range(depth):
-            if curr_node:
-                if curr_node.dist_to_root + curr_node.dist_to(n) < n.dist_to_root:
-                    if not intersects_objects(region, obstacles, curr_node.value, n.value):
-                        n.remove_parent()
-                        curr_node.add_neighbor(n)
-                curr_node = curr_node.parent
-
     if v.parent:
         if not intersects_objects(region, obstacles, end.value, v.value):
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                 end.remove_parent()
                 v.add_neighbor(end)
+
+
+
+
+
 
 
 

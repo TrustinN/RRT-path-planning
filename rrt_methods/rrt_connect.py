@@ -1,9 +1,9 @@
 from .rrt_utils import graph_init
-from .rrt_utils import closest_point
 from .rrt_utils import Sampler
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_extend_connect
 from .rrt_utils import rrt_connect_path
+from r_trees.r_tree_utils import IndexRecord
 
 
 ###############################################################################
@@ -27,7 +27,8 @@ def rrt_run(start, end, map, step_size, max_iter, clear=False):
         iter += 1
 
         p_rand = sampler.sample()
-        v_near = closest_point(p_rand, t_start.vertices)
+        p_test = IndexRecord(None, p_rand)
+        v_near = t_start.NearestNeighbor(p_test)
         p_near = v_near.value
 
         if in_free_space(p_rand, map.region, map.obstacles):
@@ -43,7 +44,8 @@ def rrt_run(start, end, map, step_size, max_iter, clear=False):
         if connect:
             break
 
-        v_near = closest_point(p_rand, t_end.vertices)
+        p_test = IndexRecord(None, p_rand)
+        v_near = t_end.NearestNeighbor(p_test)
         p_near = v_near.value
 
         if in_free_space(p_rand, map.region, map.obstacles):
