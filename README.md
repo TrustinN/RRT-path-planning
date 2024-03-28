@@ -4,6 +4,7 @@
 ### R* Tree 3d - 150 samples, 10 children max
 <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/r_trees/examples/r_tree_3d.mov" width="500">
 
+### RRT Methods
 <table>
   <tr>
     <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_race.png" alt="1"></td>
