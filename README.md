@@ -13,7 +13,7 @@
   <tr>
     <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_connect_race.png" alt="4" width=360px height=270px></td>
     <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_connect_sqom.png" alt="5" width=360px height=270px></td>
-    <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_connect_maze.png" alt="6" width=270px height=360px></td>
+    <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_connect_maze.png" alt="6" width=270px height=270px></td>
   </tr>
   <tr>
     <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_star_race.png" alt="7" width=360px height=270px></td>
@@ -26,7 +26,6 @@
     <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/rrt_star_connect_maze.png" alt="12" width=360px height=270px></td>
   </tr> 
   <tr>
-    <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/informed_rrt_star_race.png" alt="13" width=360px height=270px></td>
     <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/informed_rrt_star_sqom.png" alt="14" width=360px height=270px></td>
     <td> <img src="https://github.com/TrustinN/RRT-path-planning/blob/main/rrt_methods/examples/informed_rrt_star_maze.png" alt="15" width=360px height=270px></td>
   </tr> 
