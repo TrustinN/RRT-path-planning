@@ -3,13 +3,12 @@ import math
 import timeit
 from r_trees.r_star_tree import RTree
 from r_trees.r_tree_utils import IndexRecord
-from r_trees.r_tree_utils import Rect
-from r_trees.r_tree_utils import Cube
-from r_trees.r_tree_utils import nCircle
+from r_trees.r_tree_utils import NCube
+from r_trees.r_tree_utils import NCircle
 import matplotlib.pyplot as plt
 
 
-test = 2
+test = 3
 np.random.seed(523)
 
 if test == 2:
@@ -32,7 +31,7 @@ if test == 2:
 
             x, y = point[0], point[1]
             ti = point
-            b = Rect([x, x, y, y])
+            b = NCube.make_bound(ti)
             ir = IndexRecord(b, ti)
             rtree.Insert(entry=ir)
 
@@ -65,7 +64,7 @@ if test == 2:
 
         start = timeit.default_timer()
 
-        b = Rect([p[0], p[0], p[1], p[1]])
+        b = NCube.make_bound(p)
         ir = IndexRecord(b, p)
         nn = rtree.NearestNeighbor(ir)
         nnti = nn.tuple_identifier
@@ -114,7 +113,7 @@ elif test == 3:
         for point in p:
             x, y, z = point[0], point[1], point[2]
             ti = point
-            b = Cube([x, x, y, y, z, z])
+            b = NCube.make_bound(ti)
             ir = IndexRecord(bound=b, tuple_identifier=ti)
             rtree.Insert(ir)
 
@@ -147,7 +146,7 @@ elif test == 3:
 
         start = timeit.default_timer()
 
-        b = Cube([p[0], p[0], p[1], p[1], p[2], p[2]])
+        b = NCube.make_bound(p)
         ir = IndexRecord(b, p)
         nn = rtree.NearestNeighbor(ir)
         nnti = nn.tuple_identifier
@@ -176,18 +175,19 @@ elif test == 3:
         print('closest: ', closest)
 
 
-rtree = RTree(10, dim=test, plotting=True)
-p = test_insert(rtree, 1200)
-t_point = np.array([250, 250])
-found = test_search(rtree, nCircle(t_point, 200))
-test_delete(rtree, found)
-test_nearest(rtree, t_point)
+rtree = RTree(40, dim=test, plotting=False)
+p = test_insert(rtree, 10000)
+# t_point = np.array([250, 250, 250])
+# found = test_search(rtree, NCircle(t_point, 200))
+# test_delete(rtree, found)
+# test_nearest(rtree, t_point)
 # test_nearest_naive(p, t_point)
 
 # rtree.animate()
 
 
 print("Done!")
+
 
 
 

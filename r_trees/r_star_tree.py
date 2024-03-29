@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import textwrap
 from queue import PriorityQueue
+from .r_tree_utils import NCube
 from .r_tree_utils import IndexRecord
 from .r_tree_utils import IndexPointer
 from mpl_toolkits.mplot3d import Axes3D
@@ -18,9 +19,6 @@ class PrioritizedItem:
 
 
 class RTree(object):
-
-    from .r_tree_utils import Rect
-    from .r_tree_utils import Cube
 
     class Node:
 
@@ -216,12 +214,7 @@ class RTree(object):
         else:
             self.ax = None
 
-        if self.dim == 2:
-            RTree.Bound = RTree.Rect
-
-        elif self.dim == 3:
-            RTree.Bound = RTree.Cube
-
+        RTree.Bound = NCube
         self.root = RTree.LeafNode(items=[], covering=None, level=0, ax=self.ax)
 
     def __str__(self):
@@ -304,7 +297,7 @@ class RTree(object):
             sb2 = [items[j + start + idx].bound for j in range(len(items) - start - idx)]
             mb1 = RTree.Bound.combine(sb1)
             mb2 = RTree.Bound.combine(sb2)
-            margin_1, margin_2 = mb1.margin(), mb2.margin()
+            margin_1, margin_2 = mb1.margin, mb2.margin
 
             return margin_1 + margin_2
 
@@ -312,65 +305,23 @@ class RTree(object):
         # calculated by the margin of the bounds
         g_value = math.inf
 
-        # x-axis calculation
-        # sort by lower value of bounding box
-        x_l_sort = sorted(node.items, key=lambda x: x.bound.min_x)
-
-        # x-axis calculation
-        # sort by upper value f bounding box
-        x_u_sort = sorted(node.items, key=lambda x: x.bound.max_x, reverse=True)
-
-        # y-axis calculation
-        # sort by upper value f bounding box
-        y_l_sort = sorted(node.items, key=lambda x: x.bound.min_y)
-
-        # y-axis calculation
-        # sort by upper value f bounding box
-        y_u_sort = sorted(node.items, key=lambda x: x.bound.max_y, reverse=True)
-
-        if self.dim == 3:
-
-            # z-axis calculation
-            # sort by upper value f bounding box
-            z_l_sort = sorted(node.items, key=lambda x: x.bound.min_z)
-
-            # z-axis calculation
-            # sort by upper value f bounding box
-            z_u_sort = sorted(node.items, key=lambda x: x.bound.max_z, reverse=True)
+        l_sort = [sorted(node.items, key=lambda x: x.bound.bound[i][0]) for i in range(self.dim)]
+        u_sort = [sorted(node.items, key=lambda x: x.bound.bound[i][1], reverse=True) for i in range(self.dim)]
 
         for i in range(self.max_num - 2 * self.min_num + 1):
+            for j in range(self.dim):
 
-            curr_g = helper_func(x_l_sort, self.min_num, i)
-            if curr_g < g_value:
-                g_value = curr_g
-                node.items = x_l_sort
-
-            curr_g = helper_func(x_u_sort, self.min_num, i)
-            if curr_g < g_value:
-                g_value = curr_g
-                node.items = x_u_sort
-
-            curr_g = helper_func(y_l_sort, self.min_num, i)
-            if curr_g < g_value:
-                g_value = curr_g
-                node.items = y_l_sort
-
-            curr_g = helper_func(y_u_sort, self.min_num, i)
-            if curr_g < g_value:
-                g_value = curr_g
-                node.items = y_u_sort
-
-            if self.dim == 3:
-
-                curr_g = helper_func(z_l_sort, self.min_num, i)
+                curr_ax = l_sort[j]
+                curr_g = helper_func(curr_ax, self.min_num, i)
                 if curr_g < g_value:
                     g_value = curr_g
-                    node.items = z_l_sort
+                    node.items = curr_ax
 
-                curr_g = helper_func(z_u_sort, self.min_num, i)
+                curr_ax = u_sort[j]
+                curr_g = helper_func(curr_ax, self.min_num, i)
                 if curr_g < g_value:
                     g_value = curr_g
-                    node.items = z_u_sort
+                    node.items = curr_ax
 
     def ChooseSplitIndex(self, items):
 
@@ -685,6 +636,7 @@ class RTree(object):
                     plt.pause(.001)
 
                 plt.show()
+
 
 
 

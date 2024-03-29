@@ -45,11 +45,8 @@ class NCircle(Bound):
         if type(other) is NCircle:
             return np.linalg.norm(self.center - other.center) >= self.radius + other.radius
 
-        elif type(other) is Rect:
-            return Rect.get_dist(other, self.center) <= self.radius
-
-        elif type(other) is Cube:
-            return Cube.get_dist(other, self.center) <= self.radius
+        elif type(other) is NCube:
+            return NCube.get_dist(other, self.center) <= self.radius
 
     def plot(self, c, ax):
 
@@ -71,28 +68,11 @@ class NCircle(Bound):
 
     def contains(self, other):
 
-        bound = other.bound
-
-        if type(other) is Rect:
-            for i in range(2):
-                for j in range(2):
-                    corner = np.array([bound[i], bound[j + 2]])
-
-                    if np.linalg.norm(corner - self.center) > self.radius:
-                        return False
-
-            return True
-
-        if type(other) is Cube:
-            for i in range(2):
-                for j in range(2):
-                    for k in range(2):
-                        corner = np.array([bound[i], bound[j + 2], bound[k + 4]])
-
-                        if np.linalg.norm(corner - self.center) > self.radius:
-                            return False
-
-            return True
+        points = other.get_points()
+        for p in points:
+            if np.linalg.norm(p - self.center) > self.radius:
+                return False
+        return True
 
 
 class NCube(Bound):
@@ -109,7 +89,7 @@ class NCube(Bound):
         def contains(self, other):
             if isinstance(other, tuple):
                 return self[0] <= other[0] and self[1] >= other[1]
-            elif isinstance(other, int):
+            else:
                 return self[0] <= other <= self[1]
 
         def expand(e1, e2):
@@ -121,7 +101,7 @@ class NCube(Bound):
         def __str__(self):
             return f"({self[0]}, {self[1]})"
 
-        def __str__(self):
+        def __repr__(self):
             return f"({self[0]}, {self[1]})"
 
     def __init__(self, bound=[]):
@@ -134,19 +114,28 @@ class NCube(Bound):
 
             self.lengths = [b.length for b in bound]
             self.center = np.array([b.midpoint for b in bound])
-            self.perimeter = self.dim * sum(self.lengths)
+            self.margin = self.dim * sum(self.lengths)
             self.vol = np.prod(self.lengths)
+
+    def get_points(self):
+        points = []
+
+        def helper(points, curr_point, iter):
+            if iter == self.dim:
+                points.append(np.array(curr_point))
+
+            else:
+                for i in range(2):
+                    helper(points, curr_point + [self.bound[iter][i]], iter + 1)
+
+        helper(points, [], 0)
+        return points
 
     def contains(self, other):
 
-        if self.dim == other.dim:
-
-            for i in range(self.dim):
-                if not self.bound[i].contains(other.bound[i]):
-                    return False
-
-        else:
-            return False
+        for i in range(self.dim):
+            if not self.bound[i].contains(other.bound[i]):
+                return False
 
         return True
 
@@ -181,23 +170,40 @@ class NCube(Bound):
 
     def get_dist(self, point):
 
-        dist = [self.bound[i].dist_to(point[i]) for i in range(self.dim)]
-        btw = [self.bound[i].contains(point[i]) for i in range(self.dim)]
+        dist = np.array([self.bound[i].dist_to(point[i]) for i in range(self.dim)])
+        btw = np.array([not self.bound[i].contains(point[i]) for i in range(self.dim)])
         rel_dist = dist[btw]
 
+        if len(rel_dist) == 0:
+            return 0
+
         return math.sqrt(sum(np.square(rel_dist)))
+
+    def make_bound(point):
+        return NCube([NCube.Endpoints(point[i], point[i]) for i in range(len(point))])
+
+    def get_cube():
+
+        phi = np.arange(1, 10, 2) * np.pi / 4
+        Phi, Theta = np.meshgrid(phi, phi)
+
+        x = np.cos(Phi) * np.sin(Theta)
+        y = np.sin(Phi) * np.sin(Theta)
+        z = np.cos(Theta) / np.sqrt(2)
+
+        return x, y, z
 
     def plot(self, c, ax):
 
         if self.dim == 2:
 
-            x = [self.bound[0][i // 2] for i in range(2 * self.dim)]
+            x = [self.bound[0][(i // 2) % self.dim] for i in range(2 * self.dim + 1)]
             y = [self.bound[1][(i // 2) % self.dim] for i in range(2 * (self.dim + 1))][1:]
             self.p = ax.plot(x, y, c=c, linewidth=.5)
 
         elif self.dim == 3:
 
-            x, y, z = Cube.get_cube()
+            x, y, z = NCube.get_cube()
             self.p = ax.plot_surface(self.lengths[0] * x + self.center[0],
                                      self.lengths[1] * y + self.center[1],
                                      self.lengths[2] * z + self.center[2],
@@ -222,295 +228,6 @@ class NCube(Bound):
 
     def __repr__(self):
         return f"{self.bound}"
-
-
-class Rect(Bound):
-
-    def __init__(self, bound=[]):
-
-        super().__init__(2)
-        self.bound = bound
-
-        if bound:
-
-            self.min_x = bound[0]
-            self.max_x = bound[1]
-            self.min_y = bound[2]
-            self.max_y = bound[3]
-
-            self.length = self.max_x - self.min_x
-            self.width = self.max_y - self.min_y
-            self.vol = self.width * self.length
-
-            self.center_x = self.min_x + self.length / 2
-            self.center_y = self.min_y + self.width / 2
-            self.center = np.array([self.center_x, self.center_y])
-
-            self.p_obj = None
-
-    # returns perimeter
-    def margin(self):
-        return 2 * (self.length + self.width)
-
-    def contains(self, other):
-        return (self.min_x <= other.min_x) and (self.max_x >= other.max_x) and (self.min_y <= other.min_y) and (self.max_y >= other.max_y)
-
-    # returns bounds and area
-    def expand(b1, b2):
-
-        min_x = min(b1.min_x, b2.min_x)
-        max_x = max(b1.max_x, b2.max_x)
-        min_y = min(b1.min_y, b2.min_y)
-        max_y = max(b1.max_y, b2.max_y)
-
-        return [min_x, max_x, min_y, max_y]
-
-    def expand_vol(b1, b2):
-
-        bound = Rect.expand(b1, b2)
-        return (bound[1] - bound[0]) * (bound[3] - bound[2])
-
-    def combine(bounds):
-
-        min_x, max_x, min_y, max_y = math.inf, -math.inf, math.inf, -math.inf
-
-        for b in bounds:
-            if b.min_x < min_x:
-                min_x = b.min_x
-
-            if b.max_x > max_x:
-                max_x = b.max_x
-
-            if b.min_y < min_y:
-                min_y = b.min_y
-
-            if b.max_y > max_y:
-                max_y = b.max_y
-
-        return Rect([min_x, max_x, min_y, max_y])
-
-    # returns overlap area of two bounds
-    def overlap(self, other):
-
-        l_sum = .5 * (self.length + other.length)
-        w_sum = .5 * (self.width + other.width)
-
-        x_dist = abs(self.center_x - other.center_x)
-        y_dist = abs(self.center_y - other.center_y)
-
-        overlap_x = l_sum - x_dist
-        overlap_y = w_sum - y_dist
-
-        if overlap_x <= 0 or overlap_y <= 0:
-            return 0
-
-        else:
-            return overlap_x * overlap_y
-
-    def get_dist(b, point):
-
-        bound = b.bound
-        x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
-        y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
-
-        btw_x = bound[0] <= point[0] <= bound[1]
-        btw_y = bound[2] <= point[1] <= bound[3]
-
-        if btw_x and btw_y:
-            return 0
-
-        if btw_x:
-            return y_dist
-
-        if btw_y:
-            return x_dist
-
-        return math.sqrt(x_dist ** 2 + y_dist ** 2)
-
-    def plot(self, c, ax):
-        self.p_obj = ax.plot([self.min_x, self.min_x, self.max_x, self.max_x, self.min_x],
-                             [self.min_y, self.max_y, self.max_y, self.min_y, self.min_y],
-                             c=c, linewidth=.5)
-
-    def rm_plot(self):
-        if self.p_obj:
-            for handle in self.p_obj:
-                handle.remove()
-        self.p_obj = None
-
-    def __str__(self):
-        return f"{[self.min_x, self.max_x, self.min_y, self.max_y]}"
-
-    def __repr__(self):
-        return f"{[self.min_x, self.max_x, self.min_y, self.max_y]}"
-
-
-class Cube(Bound):
-
-    def __init__(self, bound=[]):
-
-        super().__init__(3)
-        self.bound = bound
-
-        if bound:
-
-            self.min_x = bound[0]
-            self.max_x = bound[1]
-            self.min_y = bound[2]
-            self.max_y = bound[3]
-            self.min_z = bound[4]
-            self.max_z = bound[5]
-
-            self.length = self.max_x - self.min_x
-            self.width = self.max_y - self.min_y
-            self.height = self.max_z - self.min_z
-
-            self.vol = self.width * self.length * self.height
-            self.center_x = self.min_x + self.length / 2
-            self.center_y = self.min_y + self.width / 2
-            self.center_z = self.min_z + self.height / 2
-            self.center = np.array([self.center_x, self.center_y, self.center_z])
-
-            self.p_obj = None
-
-    # returns perimeter measure
-    def margin(self):
-        return self.length + self.width + self.height
-
-    def contains(self, other):
-
-        x_check = (self.min_x <= other.min_x) and (self.max_x >= other.max_x)
-        y_check = (self.min_y <= other.min_y) and (self.max_y >= other.max_y)
-        z_check = (self.min_z <= other.min_z) and (self.max_z >= other.max_z)
-
-        return x_check and y_check and z_check
-
-    # returns bounds and area
-    def expand(b1, b2):
-
-        min_x = min(b1.min_x, b2.min_x)
-        max_x = max(b1.max_x, b2.max_x)
-
-        min_y = min(b1.min_y, b2.min_y)
-        max_y = max(b1.max_y, b2.max_y)
-
-        min_z = min(b1.min_z, b2.min_z)
-        max_z = max(b1.max_z, b2.max_z)
-
-        return [min_x, max_x, min_y, max_y, min_z, max_z]
-
-    def expand_vol(b1, b2):
-
-        bound = Cube.expand(b1, b2)
-        return (bound[1] - bound[0]) * (bound[3] - bound[2]) * (bound[5] - bound[4])
-
-    def combine(bounds):
-
-        min_x, max_x, min_y, max_y, min_z, max_z = math.inf, -math.inf, math.inf, -math.inf, math.inf, -math.inf
-
-        for b in bounds:
-            if b.min_x < min_x:
-                min_x = b.min_x
-            if b.max_x > max_x:
-                max_x = b.max_x
-
-            if b.min_y < min_y:
-                min_y = b.min_y
-            if b.max_y > max_y:
-                max_y = b.max_y
-
-            if b.min_z < min_z:
-                min_z = b.min_z
-            if b.max_z > max_z:
-                max_z = b.max_z
-
-        return Cube([min_x, max_x, min_y, max_y, min_z, max_z])
-
-    # returns overlap area of two bounds
-    def overlap(self, other):
-
-        l_sum = .5 * (self.length + other.length)
-        w_sum = .5 * (self.width + other.width)
-        h_sum = .5 * (self.height + other.height)
-
-        x_dist = abs(self.center_x - other.center_x)
-        y_dist = abs(self.center_y - other.center_y)
-        z_dist = abs(self.center_z - other.center_z)
-
-        overlap_x = l_sum - x_dist
-        overlap_y = w_sum - y_dist
-        overlap_z = h_sum - z_dist
-
-        if overlap_x <= 0 or overlap_y <= 0 or overlap_z <= 0:
-            return 0
-
-        else:
-            return overlap_x * overlap_y * overlap_z
-
-    def get_cube():
-
-        phi = np.arange(1, 10, 2) * np.pi / 4
-        Phi, Theta = np.meshgrid(phi, phi)
-
-        x = np.cos(Phi) * np.sin(Theta)
-        y = np.sin(Phi) * np.sin(Theta)
-        z = np.cos(Theta) / np.sqrt(2)
-
-        return x, y, z
-
-    def get_dist(b, point):
-
-        bound = b.bound
-        x_dist = min(abs(point[0] - bound[0]), abs(point[0] - bound[1]))
-        y_dist = min(abs(point[1] - bound[2]), abs(point[1] - bound[3]))
-        z_dist = min(abs(point[2] - bound[4]), abs(point[2] - bound[5]))
-
-        btw_x = bound[0] <= point[0] <= bound[1]
-        btw_y = bound[2] <= point[1] <= bound[3]
-        btw_z = bound[4] <= point[2] <= bound[5]
-
-        if btw_x and btw_y and btw_z:
-            return 0
-
-        if btw_x and btw_y:
-            return z_dist
-
-        if btw_x and btw_z:
-            return y_dist
-
-        if btw_y and btw_z:
-            return x_dist
-
-        if btw_x:
-            return math.sqrt(y_dist ** 2 + z_dist ** 2)
-
-        if btw_y:
-            return math.sqrt(x_dist ** 2 + z_dist ** 2)
-
-        if btw_z:
-            return math.sqrt(x_dist ** 2 + y_dist ** 2)
-
-        return math.sqrt(x_dist ** 2 + y_dist ** 2 + z_dist ** 2)
-
-    def plot(self, c, ax):
-        x, y, z = Cube.get_cube()
-        self.p_obj = ax.plot_surface(self.length * x + self.center_x,
-                                     self.width * y + self.center_y,
-                                     self.height * z + self.center_z,
-                                     alpha=0.08,
-                                     shade=False,
-                                     )
-
-    def rm_plot(self):
-        if self.p_obj:
-            self.p_obj.remove()
-        self.p_obj = None
-
-    def __str__(self):
-        return f"{[self.min_x, self.max_x, self.min_y, self.max_y, self.min_z, self.max_z]}"
-
-    def __repr__(self):
-        return f"{[self.min_x, self.max_x, self.min_y, self.max_y, self.min_z, self.max_z]}"
 
 
 class Entry:
@@ -567,6 +284,7 @@ class IndexPointer(Entry):
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
+
 
 
 
