@@ -99,12 +99,12 @@ class NCube(Bound):
 
     class Endpoints(tuple):
 
-        def __new__(cls, a, b):
-            return super(NCube.Endpoints, cls).__new__(cls, tuple(a, b))
+        def __new__(cls, *args):
+            return super(NCube.Endpoints, cls).__new__(cls, tuple(args))
 
-        def __init__(self, a, b):
-            self.length = b - a
-            self.midpoint = (a + b) / 2
+        def __init__(self, *args):
+            self.length = self[1] - self[0]
+            self.midpoint = (self[1] + self[0]) / 2
 
         def contains(self, other):
             if isinstance(other, tuple):
@@ -117,6 +117,12 @@ class NCube(Bound):
 
         def dist_to(self, num):
             return min(abs(self[0] - num), abs(self[1] - num))
+
+        def __str__(self):
+            return f"({self[0]}, {self[1]})"
+
+        def __str__(self):
+            return f"({self[0]}, {self[1]})"
 
     def __init__(self, bound=[]):
 
@@ -151,10 +157,10 @@ class NCube(Bound):
         return np.prod([NCube.Endpoints.expand(b1.bound[i], b2.bound[i]).length for i in range(b1.dim)])
 
     def combine(bounds):
-        nb = [NCube.Endpoints(math.inf, -math.inf) for i in range(len(bounds[0]))]
+        nb = [NCube.Endpoints(math.inf, -math.inf) for i in range(bounds[0].dim)]
         for i in range(len(bounds)):
             curr_bound = bounds[i]
-            nb = [NCube.Endpoints.combine(nb[j], curr_bound[j]) for j in range(len(curr_bound))]
+            nb = [NCube.Endpoints.expand(nb[j], curr_bound.bound[j]) for j in range(len(curr_bound.bound))]
 
         return NCube(nb)
 
@@ -212,10 +218,10 @@ class NCube(Bound):
             self.p = None
 
     def __str__(self):
-        return f"{[self.min_x, self.max_x, self.min_y, self.max_y]}"
+        return f"{self.bound}"
 
     def __repr__(self):
-        return f"{[self.min_x, self.max_x, self.min_y, self.max_y]}"
+        return f"{self.bound}"
 
 
 class Rect(Bound):

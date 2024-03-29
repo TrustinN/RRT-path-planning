@@ -9,9 +9,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from rrt_methods.rrt_utils import sample_free
 from rrt_methods.rrt_utils import sample_ellipse
-from r_trees.r_tree_utils import Rect
-from r_trees.r_tree_utils import Cube
 from r_trees.r_tree_utils import IndexRecord
+from r_trees.r_tree_utils import NCube
 
 ###############################################################################
 # Sampling random point                                                       #
@@ -67,26 +66,6 @@ class Sampler(object):
             return sample_ellipse(self.overlay, buffer=1)
 
 
-class AxMin():
-
-    def __init__(self):
-        self.min = math.inf
-
-    def compare(self, num):
-        if num < self.min:
-            self.min = num
-
-
-class AxMax():
-
-    def __init__(self):
-        self.max = -math.inf
-
-    def compare(self, num):
-        if num > self.max:
-            self.max = num
-
-
 class Obstacle(IndexRecord):
 
     class Facet():
@@ -96,28 +75,8 @@ class Obstacle(IndexRecord):
             self.dim = dim
             self.vertices = vertices
             self.num_vertices = len(self.vertices)
-            bounds = []
-
-            for i in range(dim):
-                bounds.append(AxMin())
-                bounds.append(AxMax())
-
-            for i in range(self.num_vertices):
-                curr_vertex = vertices[i]
-                for j in range(dim):
-                    bounds[2 * j].compare(curr_vertex[j])
-                    bounds[2 * j + 1].compare(curr_vertex[j])
-
-            self.bound = []
-            for i in range(dim):
-                self.bound.append(bounds[2 * i].min)
-                self.bound.append(bounds[2 * i + 1].max)
-
-            if dim == 2:
-                self.bound = Rect(self.bound)
-
-            elif dim == 3:
-                self.bound = Cube(self.bound)
+            bounds = list(map(lambda v: NCube([NCube.Endpoints(v[i], v[i]) for i in range(len(v))]), vertices))
+            self.bound = NCube.combine(bounds)
 
         def plot(self, ax):
             ax.add_collection3d(Poly3DCollection([self.vertices], alpha=0.08))
@@ -129,10 +88,8 @@ class Obstacle(IndexRecord):
 
     def __init__(self, faces, dim=3):
         self.faces = faces
-        self.bounds = [f.bound for f in faces]
-
-        if dim == 3:
-            self.bound = Cube.combine(self.bounds)
+        bounds = [f.bound for f in faces]
+        self.bound = NCube.combine(bounds)
 
     def plot(self, ax=None):
         for f in self.faces:
