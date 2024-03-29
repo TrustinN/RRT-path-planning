@@ -143,13 +143,13 @@ class RTree(object):
         def rm_entry(self, entry):
 
             for i in range(len(self.items)):
-
                 if entry == self.items[i]:
 
                     # Remove index_entry, adjust leaf covering
+                    if self.ax:
+                        point_plot = self.points.pop(i)
+                        point_plot.remove()
                     self.items.pop(i)
-                    point_plot = self.points.pop(i)
-                    point_plot.remove()
                     self.update_bound(RTree.Bound.combine([j.bound for j in self.items]))
 
                     return True
@@ -647,19 +647,6 @@ class RTree(object):
         helper_func(self.root, found)
         return found
 
-    # For 3d plotting of the tree
-    def animate(self):
-
-        if self.dim == 3 and self.plotting:
-            if self.plotting:
-                for angle in range(0, 1000, 2):
-
-                    self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
-                    plt.draw()
-                    plt.pause(.001)
-
-                plt.show()
-
     def NearestNeighbor(self, entry):
 
         pq = PriorityQueue()
@@ -686,11 +673,18 @@ class RTree(object):
                     e = PrioritizedItem(dist, child_node)
                     pq.put(e)
 
+    # For 3d plotting of the tree
+    def animate(self):
 
+        if self.dim == 3 and self.plotting:
+            if self.plotting:
+                for angle in range(0, 1000, 2):
 
+                    self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
+                    plt.draw()
+                    plt.pause(.001)
 
-
-
+                plt.show()
 
 
 

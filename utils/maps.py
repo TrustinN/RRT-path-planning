@@ -4,7 +4,152 @@ from random import randrange
 from .make_race import new_race
 from .map_utils import plot_poly
 from .map_utils import ray_cast
-from rrt_methods.rrt_utils import Map
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from rrt_methods.rrt_utils import sample_free
+from rrt_methods.rrt_utils import sample_ellipse
+from r_trees.r_tree_utils import Rect
+from r_trees.r_tree_utils import Cube
+from r_trees.r_tree_utils import IndexRecord
+
+###############################################################################
+# Sampling random point                                                       #
+###############################################################################
+
+
+class Sample_Scope():
+
+    def __init__(self, name, scope, map=None):
+        self.name = name
+        self.overlay = scope
+
+
+class Map():
+
+    def __init__(self, region, obstacles, dim=2):
+        self.region = region
+        self.obstacles = obstacles
+        self.dim = dim
+        self.ax = None
+
+    def plot(self):
+
+        if self.dim == 2:
+            _, self.ax = plt.subplots()
+
+        elif self.dim == 3:
+
+            f = plt.figure()
+            ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
+            self.ax = ax
+
+    def sample_init(self, name, scope):
+        self.scope = Sample_Scope(name, scope)
+
+    def add_path(self, path):
+        self.path = path
+
+
+# Need to create a separate sample space object
+class Sampler(object):
+
+    def __init__(self, map):
+        self.scope = map.scope.name
+        self.region = map.region
+        self.obstacles = map.obstacles
+        self.overlay = map.scope.overlay
+
+    def sample(self):
+        if self.scope == "box":
+            return sample_free(self.overlay, self.region, self.obstacles)
+        if self.scope == "ellipse":
+            return sample_ellipse(self.overlay, buffer=1)
+
+
+class AxMin():
+
+    def __init__(self):
+        self.min = math.inf
+
+    def compare(self, num):
+        if num < self.min:
+            self.min = num
+
+
+class AxMax():
+
+    def __init__(self):
+        self.max = -math.inf
+
+    def compare(self, num):
+        if num > self.max:
+            self.max = num
+
+
+class Obstacle(IndexRecord):
+
+    class Facet():
+
+        def __init__(self, vertices, dim):
+
+            self.dim = dim
+            self.vertices = vertices
+            self.num_vertices = len(self.vertices)
+            bounds = []
+
+            for i in range(dim):
+                bounds.append(AxMin())
+                bounds.append(AxMax())
+
+            for i in range(self.num_vertices):
+                curr_vertex = vertices[i]
+                for j in range(dim):
+                    bounds[2 * j].compare(curr_vertex[j])
+                    bounds[2 * j + 1].compare(curr_vertex[j])
+
+            self.bound = []
+            for i in range(dim):
+                self.bound.append(bounds[2 * i].min)
+                self.bound.append(bounds[2 * i + 1].max)
+
+            if dim == 2:
+                self.bound = Rect(self.bound)
+
+            elif dim == 3:
+                self.bound = Cube(self.bound)
+
+        def plot(self, ax):
+            ax.add_collection3d(Poly3DCollection([self.vertices], alpha=0.08))
+            for v in self.vertices:
+                ax.scatter(v[0], v[1], v[2], s=10, edgecolor='none')
+
+        def plot_bound(self, ax):
+            self.bound.plot(10, ax)
+
+    def __init__(self, faces, dim=3):
+        self.faces = faces
+        self.bounds = [f.bound for f in faces]
+
+        if dim == 3:
+            self.bound = Cube.combine(self.bounds)
+
+    def plot(self, ax=None):
+        for f in self.faces:
+            f.plot(ax=ax)
+
+    def plot_bound(self, ax):
+        self.bound.plot(10, ax)
+
+    def animate(self, ax):
+
+        for angle in range(0, 1000, 1):
+
+            ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
+            plt.draw()
+            plt.pause(.001)
+
+        plt.show()
 
 
 def make_rect_region(min_x, max_x, max_y, min_y):

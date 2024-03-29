@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 test = 2
-# np.random.seed(623)
+np.random.seed(523)
 
 if test == 2:
 
@@ -176,7 +176,7 @@ elif test == 3:
         print('closest: ', closest)
 
 
-rtree = RTree(40, dim=test, plotting=True)
+rtree = RTree(10, dim=test, plotting=True)
 p = test_insert(rtree, 1200)
 t_point = np.array([250, 250])
 found = test_search(rtree, nCircle(t_point, 200))

@@ -3,8 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from r_trees.r_star_tree import RTree
 from r_trees.r_tree_utils import IndexRecord
-from r_trees.r_tree_utils import nCircle
-from mpl_toolkits.mplot3d import Axes3D
+from r_trees.r_tree_utils import NCircle
 
 
 ###############################################################################
@@ -203,7 +202,7 @@ def search(f, graph, *args):
 
 def search_visible_neighbors(f, region, obstacles, graph, v, r, step_size):
     # neighbors = search(f, graph, v, r * step_size)
-    scope = nCircle(v.value, r * step_size)
+    scope = NCircle(v.value, r * step_size)
     neighbors = graph.Search(scope)
     visible_neighbors = []
     for n in neighbors:
@@ -340,59 +339,6 @@ def in_free_space(p, region, obstacles):
         for o in obstacles:
             valid_pos = valid_pos and not ray_cast(o, p)
     return valid_pos
-
-
-###############################################################################
-# Sampling random point                                                       #
-###############################################################################
-
-class Sample_Scope():
-
-    def __init__(self, name, scope, map=None):
-        self.name = name
-        self.overlay = scope
-
-
-class Map():
-
-    def __init__(self, region, obstacles, dim=2):
-        self.region = region
-        self.obstacles = obstacles
-        self.dim = dim
-        self.ax = None
-
-    def plot(self):
-
-        if self.dim == 2:
-            _, self.ax = plt.subplots()
-
-        elif self.dim == 3:
-
-            f = plt.figure()
-            ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
-            self.ax = ax
-
-    def sample_init(self, name, scope):
-        self.scope = Sample_Scope(name, scope)
-
-    def add_path(self, path):
-        self.path = path
-
-
-# Need to create a separate sample space object
-class Sampler(object):
-
-    def __init__(self, map):
-        self.scope = map.scope.name
-        self.region = map.region
-        self.obstacles = map.obstacles
-        self.overlay = map.scope.overlay
-
-    def sample(self):
-        if self.scope == "box":
-            return sample_free(self.overlay, self.region, self.obstacles)
-        if self.scope == "ellipse":
-            return sample_ellipse(self.overlay, buffer=1)
 
 
 # samples point in a given rectangular area bounded
@@ -688,11 +634,22 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
     if added_to_graph:
         graph.add_vertex(v)
 
+    # for n in neighbors:
+    #     curr_node = v
+    #     for i in range(depth):
+    #         if curr_node:
+    #             if curr_node.dist_to_root + curr_node.dist_to(n) < n.dist_to_root:
+    #                 if not intersects_objects(region, obstacles, curr_node.value, n.value):
+    #                     n.remove_parent()
+    #                     curr_node.add_neighbor(n)
+    #             curr_node = curr_node.parent
+
     if v.parent:
         if not intersects_objects(region, obstacles, end.value, v.value):
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                 end.remove_parent()
                 v.add_neighbor(end)
+
 
 
 

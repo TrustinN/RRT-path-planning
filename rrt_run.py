@@ -28,8 +28,8 @@ from rrt_methods.rrt_utils import find_bounding_box
 # from rrt_methods.rrt_connect import rrt_run
 # from rrt_methods.rrt_star import rrt_run
 # from rrt_methods.rrt_star_connect import rrt_run
-# from rrt_methods.quick_rrt_star import rrt_run
-from rrt_methods.informed_rrt_star import rrt_run
+from rrt_methods.quick_rrt_star import rrt_run
+# from rrt_methods.informed_rrt_star import rrt_run
 
 ###############################################################################
 # Generate Regions                                                            #
@@ -50,7 +50,7 @@ box_scope = find_bounding_box(map.region)
 map.sample_init("box", box_scope)
 
 start = timeit.default_timer()
-path = rrt_run(map=map, step_size=20, max_iter=1500, plotting=True)
+path = rrt_run(map=map, step_size=30, max_iter=1500, plotting=True)
 stop = timeit.default_timer()
 
 print('Time: ', stop - start)

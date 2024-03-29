@@ -24,7 +24,7 @@ class Bound:
         return
 
 
-class nCircle(Bound):
+class NCircle(Bound):
 
     def __init__(self, center, radius):
         super().__init__(len(center))
@@ -42,7 +42,7 @@ class nCircle(Bound):
 
     def overlap(self, other):
 
-        if type(other) is nCircle:
+        if type(other) is NCircle:
             return np.linalg.norm(self.center - other.center) >= self.radius + other.radius
 
         elif type(other) is Rect:
@@ -53,20 +53,21 @@ class nCircle(Bound):
 
     def plot(self, c, ax):
 
-        if self.dim == 2:
+        if ax:
+            if self.dim == 2:
 
-            cc = plt.Circle((self.center[0], self.center[1]), self.radius, fill=False)
-            ax.add_artist(cc)
+                cc = plt.Circle((self.center[0], self.center[1]), self.radius, fill=False)
+                ax.add_artist(cc)
 
-        elif self.dim == 3:
+            elif self.dim == 3:
 
-            x, y, z = nCircle.get_sphere()
-            ax.plot_surface(self.radius * x + self.center[0],
-                            self.radius * y + self.center[1],
-                            self.radius * z + self.center[2],
-                            alpha=0.08,
-                            shade=False,
-                            )
+                x, y, z = NCircle.get_sphere()
+                ax.plot_surface(self.radius * x + self.center[0],
+                                self.radius * y + self.center[1],
+                                self.radius * z + self.center[2],
+                                alpha=0.08,
+                                shade=False,
+                                )
 
     def contains(self, other):
 
@@ -92,6 +93,129 @@ class nCircle(Bound):
                             return False
 
             return True
+
+
+class NCube(Bound):
+
+    class Endpoints(tuple):
+
+        def __new__(cls, a, b):
+            return super(NCube.Endpoints, cls).__new__(cls, tuple(a, b))
+
+        def __init__(self, a, b):
+            self.length = b - a
+            self.midpoint = (a + b) / 2
+
+        def contains(self, other):
+            if isinstance(other, tuple):
+                return self[0] <= other[0] and self[1] >= other[1]
+            elif isinstance(other, int):
+                return self[0] <= other <= self[1]
+
+        def expand(e1, e2):
+            return NCube.Endpoints(min(e1[0], e2[0]), max(e1[1], e2[1]))
+
+        def dist_to(self, num):
+            return min(abs(self[0] - num), abs(self[1] - num))
+
+    def __init__(self, bound=[]):
+
+        self.bound = bound
+        if bound:
+
+            super().__init__(len(bound))
+            self.p = None
+
+            self.lengths = [b.length for b in bound]
+            self.center = np.array([b.midpoint for b in bound])
+            self.perimeter = self.dim * sum(self.lengths)
+            self.vol = np.prod(self.lengths)
+
+    def contains(self, other):
+
+        if self.dim == other.dim:
+
+            for i in range(self.dim):
+                if not self.bound[i].contains(other.bound[i]):
+                    return False
+
+        else:
+            return False
+
+        return True
+
+    def expand(b1, b2):
+        return [NCube.Endpoints.expand(b1.bound[i], b2.bound[i]) for i in range(b1.dim)]
+
+    def expand_vol(b1, b2):
+        return np.prod([NCube.Endpoints.expand(b1.bound[i], b2.bound[i]).length for i in range(b1.dim)])
+
+    def combine(bounds):
+        nb = [NCube.Endpoints(math.inf, -math.inf) for i in range(len(bounds[0]))]
+        for i in range(len(bounds)):
+            curr_bound = bounds[i]
+            nb = [NCube.Endpoints.combine(nb[j], curr_bound[j]) for j in range(len(curr_bound))]
+
+        return NCube(nb)
+
+    # returns overlap area of two bounds
+    def overlap(self, other):
+
+        overlaps = [.5 * (self.lengths[i] + other.lengths[i]) - abs(self.center[i] - other.center[i]) for i in range(self.dim)]
+        prod = 1
+
+        for o in overlaps:
+
+            if o <= 0:
+                return 0
+
+            prod *= o
+
+        return prod
+
+    def get_dist(self, point):
+
+        dist = [self.bound[i].dist_to(point[i]) for i in range(self.dim)]
+        btw = [self.bound[i].contains(point[i]) for i in range(self.dim)]
+        rel_dist = dist[btw]
+
+        return math.sqrt(sum(np.square(rel_dist)))
+
+    def plot(self, c, ax):
+
+        if self.dim == 2:
+
+            x = [self.bound[0][i // 2] for i in range(2 * self.dim)]
+            y = [self.bound[1][(i // 2) % self.dim] for i in range(2 * (self.dim + 1))][1:]
+            self.p = ax.plot(x, y, c=c, linewidth=.5)
+
+        elif self.dim == 3:
+
+            x, y, z = Cube.get_cube()
+            self.p = ax.plot_surface(self.lengths[0] * x + self.center[0],
+                                     self.lengths[1] * y + self.center[1],
+                                     self.lengths[2] * z + self.center[2],
+                                     alpha=0.08,
+                                     shade=False,
+                                     )
+
+    def rm_plot(self):
+        if self.dim == 2:
+            if self.p:
+                for handle in self.p:
+                    handle.remove()
+            self.p = None
+
+        elif self.dim == 3:
+            if self.p:
+                self.p.remove()
+            self.p = None
+
+    def __str__(self):
+        return f"{[self.min_x, self.max_x, self.min_y, self.max_y]}"
+
+    def __repr__(self):
+        return f"{[self.min_x, self.max_x, self.min_y, self.max_y]}"
 
 
 class Rect(Bound):
@@ -437,6 +561,8 @@ class IndexPointer(Entry):
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
+
+
 
 
 
