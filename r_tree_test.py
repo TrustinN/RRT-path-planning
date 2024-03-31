@@ -8,8 +8,8 @@ from r_trees.r_tree_utils import NCircle
 import matplotlib.pyplot as plt
 
 
-test = 3
-np.random.seed(523)
+test = 2
+np.random.seed(623)
 
 if test == 2:
 
@@ -176,7 +176,7 @@ elif test == 3:
 
 
 rtree = RTree(40, dim=test, plotting=False)
-p = test_insert(rtree, 10000)
+p = test_insert(rtree, 12000)
 # t_point = np.array([250, 250, 250])
 # found = test_search(rtree, NCircle(t_point, 200))
 # test_delete(rtree, found)
