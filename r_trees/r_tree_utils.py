@@ -243,12 +243,7 @@ class IndexRecord(Entry):
 
         if not bound:
             dim = len(tuple_identifier)
-
-            if dim == 2:
-                bound = Rect([tuple_identifier[i // 2] for i in range(2 * dim)])
-
-            elif dim == 3:
-                bound = Cube([tuple_identifier[i // 2] for i in range(2 * dim)])
+            bound = NCube([tuple_identifier[i // 2] for i in range(2 * dim)])
 
         super().__init__(bound)
         self.tuple_identifier = tuple_identifier
