@@ -105,19 +105,23 @@ class RTree(object):
                     covering.plot("#009b00", self.ax)
 
                 for i in self.items:
-                    if len(i.tuple_identifier) == 2:
-                        self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
-                    elif len(i.tuple_identifier) == 3:
-                        self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], i.tuple_identifier[2], c=self.color, s=10, edgecolor='none'))
+                    p_obj = i.plot(self.color, self.ax)
+
+                    if isinstance(p_obj, list):
+                        self.points += p_obj
+                    else:
+                        self.points.append(p_obj)
 
         def plot(self):
 
             if self.ax:
                 for i in self.items:
-                    if len(i.tuple_identifier) == 2:
-                        self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
-                    elif len(i.tuple_identifier) == 3:
-                        self.points.append(self.ax.scatter(i.tuple_identifier[0], i.tuple_identifier[1], i.tuple_identifier[2], c=self.color, s=10, edgecolor='none'))
+                    p_obj = i.plot(self.color, self.ax)
+
+                    if isinstance(p_obj, list):
+                        self.points += p_obj
+                    else:
+                        self.points.append(p_obj)
 
         def add_entry(self, entry):
 
@@ -135,21 +139,23 @@ class RTree(object):
                 self.covering = entry.bound
 
             if self.ax:
-                if len(entry.tuple_identifier) == 2:
-                    self.points.append(self.ax.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))
-                elif len(entry.tuple_identifier) == 3:
-                    self.points.append(self.ax.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], entry.tuple_identifier[2], c=self.color, s=10, edgecolor='none'))
+                p_obj = entry.plot(self.color, self.ax)
+
+                if isinstance(p_obj, list):
+                    self.points += p_obj
+                else:
+                    self.points.append(p_obj)
 
         def rm_entry(self, entry):
 
             for i in range(len(self.items)):
-
                 if entry == self.items[i]:
 
                     # Remove index_entry, adjust leaf covering
+                    if self.ax:
+                        point_plot = self.points.pop(i)
+                        point_plot.remove()
                     self.items.pop(i)
-                    point_plot = self.points.pop(i)
-                    point_plot.remove()
                     self.update_bound(RTree.Bound.combine([j.bound for j in self.items]))
 
                     return True
