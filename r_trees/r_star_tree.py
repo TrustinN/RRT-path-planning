@@ -97,31 +97,19 @@ class RTree(object):
             self.ax = ax
 
             if self.ax:
-
                 self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
-                self.points = []
 
                 if self.covering:
                     covering.plot("#009b00", self.ax)
 
                 for i in self.items:
-                    p_obj = i.plot(self.color, self.ax)
-
-                    if isinstance(p_obj, list):
-                        self.points += p_obj
-                    else:
-                        self.points.append(p_obj)
+                    i.plot(self.color, self.ax)
 
         def plot(self):
 
             if self.ax:
                 for i in self.items:
-                    p_obj = i.plot(self.color, self.ax)
-
-                    if isinstance(p_obj, list):
-                        self.points += p_obj
-                    else:
-                        self.points.append(p_obj)
+                    i.plot(self.color, self.ax)
 
         def add_entry(self, entry):
 
@@ -139,12 +127,7 @@ class RTree(object):
                 self.covering = entry.bound
 
             if self.ax:
-                p_obj = entry.plot(self.color, self.ax)
-
-                if isinstance(p_obj, list):
-                    self.points += p_obj
-                else:
-                    self.points.append(p_obj)
+                entry.plot(self.color, self.ax)
 
         def rm_entry(self, entry):
 
@@ -153,8 +136,7 @@ class RTree(object):
 
                     # Remove index_entry, adjust leaf covering
                     if self.ax:
-                        point_plot = self.points.pop(i)
-                        point_plot.remove()
+                        entry.rm_plot()
                     self.items.pop(i)
                     self.update_bound(RTree.Bound.combine([j.bound for j in self.items]))
 
@@ -174,10 +156,9 @@ class RTree(object):
 
             if self.ax:
 
-                for h in self.points:
-                    h.remove()
+                for i in self.items:
+                    i.rm_plot()
 
-                self.points = []
                 self.covering.rm_plot()
 
         def __str__(self):
@@ -691,6 +672,7 @@ class RTree(object):
                     dist = RTree.Bound.get_dist(child_node.covering, entry.tuple_identifier)
                     e = PrioritizedItem(dist, child_node)
                     pq.put(e)
+
 
 
 

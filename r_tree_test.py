@@ -176,7 +176,7 @@ elif test == 3:
         print('closest: ', closest)
 
 
-rtree = RTree(40, dim=test, plotting=True)
+rtree = RTree(40, dim=test, plotting=False)
 p = test_insert(rtree, 1200)
 t_point = np.array([250, 250])
 found = test_search(rtree, nCircle(t_point, 200))

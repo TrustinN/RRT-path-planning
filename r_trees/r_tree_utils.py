@@ -394,13 +394,13 @@ class IndexRecord(Entry):
 
     def __init__(self, bound, tuple_identifier):
 
-        if not bound:
-            dim = len(tuple_identifier)
+        self.dim = len(tuple_identifier)
 
-            if dim == 2:
+        if not bound:
+            if self.dim == 2:
                 bound = Rect([tuple_identifier[i // 2] for i in range(2 * dim)])
 
-            elif dim == 3:
+            elif self.dim == 3:
                 bound = Cube([tuple_identifier[i // 2] for i in range(2 * dim)])
 
         super().__init__(bound)
@@ -408,9 +408,12 @@ class IndexRecord(Entry):
 
     def plot(self, color, ax):
         if self.dim == 2:
-            return ax.scatter(self.tuple_identifier[0], self.tuple_identifier[1], c=color, s=10, edgecolor='none')
+            self.p_obj = ax.scatter(self.tuple_identifier[0], self.tuple_identifier[1], c=color, s=10, edgecolor='none')
         elif self.dim == 3:
-            return ax.scatter(self.tuple_identifier[0], self.tuple_identifier[1], self.tuple_identifier[2], c=color, s=10, edgecolor='none')
+            self.p_obj = ax.scatter(self.tuple_identifier[0], self.tuple_identifier[1], self.tuple_identifier[2], c=color, s=10, edgecolor='none')
+
+    def rm_plot(self):
+        self.p_obj.remove()
 
     def __str__(self):
         return f"val: {self.tuple_identifier}"
