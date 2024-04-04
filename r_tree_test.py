@@ -175,18 +175,20 @@ elif test == 3:
         print('closest: ', closest)
 
 
-rtree = RTree(40, dim=test, plotting=False)
-p = test_insert(rtree, 12000)
-# t_point = np.array([250, 250, 250])
-# found = test_search(rtree, NCircle(t_point, 200))
-# test_delete(rtree, found)
-# test_nearest(rtree, t_point)
+rtree = RTree(40, dim=test, plotting=True)
+p = test_insert(rtree, 1000)
+t_point = np.array([250, 250])
+found = test_search(rtree, NCircle(t_point, 200))
+test_delete(rtree, found)
+test_nearest(rtree, t_point)
 # test_nearest_naive(p, t_point)
 
 # rtree.animate()
 
 
 print("Done!")
+
+
 
 
 
