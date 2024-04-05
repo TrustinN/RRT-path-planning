@@ -48,7 +48,6 @@ class RTree(object):
                 self.ax = None
 
             if self.ax:
-
                 if self.covering:
                     covering.plot("#ff0000", self.ax)
 
@@ -93,7 +92,6 @@ class RTree(object):
         def __init__(self, items, covering, level=0, ax=None):
 
             super().__init__(items, covering, level)
-
             self.ax = ax
 
             if self.ax:
@@ -137,9 +135,9 @@ class RTree(object):
                     # Remove index_entry, adjust leaf covering
                     if self.ax:
                         entry.rm_plot()
+
                     self.items.pop(i)
                     self.update_bound(RTree.Bound.combine([j.bound for j in self.items]))
-
                     return True
 
             return False
@@ -155,7 +153,6 @@ class RTree(object):
         def rm_plot(self):
 
             if self.ax:
-
                 for i in self.items:
                     i.rm_plot()
 
