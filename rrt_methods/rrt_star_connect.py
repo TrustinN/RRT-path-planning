@@ -5,7 +5,6 @@ from .rrt_utils import rrt_rewire
 from .rrt_utils import rrt_connect
 from .rrt_utils import rrt_connect_path
 from r_trees.r_tree_utils import IndexRecord
-from utils.map_utils import plot_path
 
 
 ###############################################################################
@@ -63,7 +62,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
         path = rrt_connect_path(v_start, v_end, t_start, t_end, c1, c2)
 
     if plotting:
-        plot_path(path, c="#000000", ax=map.ax)
+        map.plot_path(path)
 
     return path
 

@@ -51,7 +51,7 @@ if dim == 2:
 else:
     bounds = [(-200, 1000), (-200, 1000), (-200, 1000)]
     if choice == "rom":
-        map = RandObsMap(10, 200)
+        map = RandObsMap(15, 200)
     map.sample_init(Cube(bounds))
 
 

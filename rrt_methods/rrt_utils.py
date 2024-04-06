@@ -128,7 +128,9 @@ class Graph(RTree):
 
                 if self.view:
                     p = gl.GLLinePlotItem(pos=np.array([self.value, other.value]),
-                                          color=pg.mkColor("#00a5ff"))
+                                          color=pg.mkColor("#00a5ff"),
+                                          width=4,
+                                          )
                     self.view.addItem(p)
                     self.plots.append(p)
 
