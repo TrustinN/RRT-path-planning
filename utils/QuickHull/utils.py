@@ -1,8 +1,7 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from rrt_methods.rrt_utils import intersects_object
+import pyqtgraph.opengl as gl
 
 
 class Facet():
@@ -37,33 +36,6 @@ class Facet():
         c1 = np.vstack([self.o, p])
         c2 = np.c_[c1, np.ones(self.dim + 1)]
         return np.linalg.det(c2)
-
-    def plot(self, ax):
-        self.plots = [ax.add_collection3d(Poly3DCollection([self.vertices], alpha=1))]
-        for v in self.vertices:
-            self.plots.append(ax.scatter(v[0], v[1], v[2], s=10, edgecolor='none'))
-
-    def rm_plot(self):
-        for p in self.plots:
-            p.remove()
-
-    def __eq__(self, other):
-        if isinstance(other, Facet):
-            for i in range(len(self.vertices)):
-                if not np.array_equal(self.vertices[i], other.vertices[i]):
-                    return False
-            return True
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __str__(self):
-        return f"val: {self.vertices}"
-
-    def __repr__(self):
-        return f"val: {self.vertices}"
 
 
 def projection_angle(l1, l2):
@@ -137,6 +109,42 @@ def gift_wrap(vertices):
     return [vertices[i] for i in convex_poly]
 
 
+# Finds intersection points of line segments p2 - p1 and p4 - p3.
+# Calculates if there is an intersection within some tolerance and
+# returns true or false along with the intersection.
+# the intersection is determined by scaling p4 - p3
+def intersects(p1, p2, p3, p4, tol):
+    l1 = p2 - p1
+    l2 = p4 - p3
+    b = p3 - p1
+
+    matrix = np.array([[l2[0], -l1[0]], [l2[1], -l1[1]]])
+    det = (l2[0] * l1[1]) - (l1[0] * l2[1])
+    intersection = False
+    intersection_pt = np.array([])
+
+    if not abs(det) < tol:
+        inv_matrix = np.linalg.inv(matrix)
+        x = np.matmul(inv_matrix, b)
+
+        if -x[0] > 0 and -x[1] > 0 and 1 > -x[0] and 1 > -x[1]:
+            intersection_pt = -x[0] * l2 + p3
+            intersection = True
+
+    return intersection, intersection_pt
+
+
+def intersections(poly, p0, p1):
+    points = []
+    for j in range(len(poly)):
+        r_p0 = poly[j]
+        r_p1 = poly[(j + 1) % len(poly)]
+        intersection, intersection_pt = intersects(r_p0, r_p1, p0, p1, 0.005)
+        if intersection:
+            points.append(intersection_pt)
+    return points
+
+
 class ConvexPoly():
 
     def __init__(self, faces=[]):
@@ -173,21 +181,71 @@ class ConvexPoly():
         if intersects_object(self.z_projection, line[0], line[1]):
             z_int = True
 
-        return x_int and y_int and z_int
+        return (x_int and y_int) or (x_int and z_int) or (y_int and z_int)
 
-    def plot(self, ax):
-        for f in self.faces:
-            f.plot(ax=ax)
+    def intersection_pts(self, line):
+        p0 = line[0]
+        p1 = line[1]
+        x_int = intersections(self.x_projection, p0[1:], p1[1:])
+        y_int = intersections(self.x_projection, np.array([p0[0], p0[2]]), np.array([p1[0], p1[2]]))
+        z_int = intersections(self.x_projection, p0[0:2], p1[0:2])
+        intsects = []
 
-    def animate(self):
-        if self.plotting:
-            for angle in range(0, 1000, 2):
+        for points in x_int:
+            for p_y in y_int:
+                if abs(points[1] - p_y[1]) < 0.04:
+                    intsects.append(np.array([p_y[0], points[0], points[1]]))
 
-                self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
-                plt.draw()
-                plt.pause(.001)
+            for p_z in z_int:
+                if abs(points[0] - p_z[1]) < 0.04:
+                    intsects.append(np.array([p_z[0], points[0], points[1]]))
 
-            plt.show()
+        for points in y_int:
+            for p_z in z_int:
+                if abs(points[0] - p_z[0]) < 0.04:
+                    intsects.append(np.array([p_z[0], p_z[1], points[1]]))
+
+        return intsects
+
+    def plot(self, view):
+        faces = np.array([f.vertices for f in self.faces])
+        vertices = [f[i] for f in faces for i in range(3)]
+        indices = np.arange(3 * len(faces)).reshape(len(faces), 3)
+
+        md = gl.MeshData(vertexes=vertices, faces=indices)
+        colors = np.ones((md.faceCount(), 4), dtype=float)
+        colors[:, 3] = 0.3
+        colors[:, 2] = np.linspace(0, 1, colors.shape[0])
+
+        md.setFaceColors(colors=colors)
+        m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader='balloon')
+        m1.setGLOptions('additive')
+
+        view.addItem(m1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

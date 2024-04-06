@@ -38,18 +38,18 @@ class RTree(object):
 
     class BranchNode(Node):
 
-        def __init__(self, items, covering, level=0, ax=None):
+        def __init__(self, items, covering, level=0, view=None):
 
             super().__init__(items, covering, level)
 
             if covering.dim == 2:
-                self.ax = ax
+                self.view = view
             else:
-                self.ax = None
+                self.view= None
 
-            if self.ax:
+            if self.view:
                 if self.covering:
-                    covering.plot("#ff0000", self.ax)
+                    covering.plot("#ff0000", self.view)
 
         def add_entry(self, entry):
 
@@ -60,16 +60,16 @@ class RTree(object):
                 self.covering.rm_plot()
                 self.covering = RTree.Bound.combine([self.covering, entry.bound])
 
-                if self.ax:
-                    self.covering.plot("#ff0000", self.ax)
+                if self.view:
+                    self.covering.plot("#ff0000", self.view)
 
         def update_bound(self, bound):
 
             self.covering.rm_plot()
             self.covering = bound
 
-            if self.ax:
-                self.covering.plot("#ff0000", self.ax)
+            if self.view:
+                self.covering.plot("#ff0000", self.view)
 
         def rm_plot(self):
 
@@ -89,25 +89,25 @@ class RTree(object):
 
     class LeafNode(Node):
 
-        def __init__(self, items, covering, level=0, ax=None):
+        def __init__(self, items, covering, level=0, view=None):
 
             super().__init__(items, covering, level)
-            self.ax = ax
+            self.view = view
 
-            if self.ax:
+            if self.view:
                 self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
 
                 # if self.covering:
                 #     covering.plot("#009b00", self.ax)
 
                 for i in self.items:
-                    i.plot(self.color, self.ax)
+                    i.plot(self.color, self.view)
 
         def plot(self):
 
-            if self.ax:
+            if self.view:
                 for i in self.items:
-                    i.plot(self.color, self.ax)
+                    i.plot(self.color, self.view)
 
         def add_entry(self, entry):
 
@@ -124,8 +124,8 @@ class RTree(object):
             else:
                 self.covering = entry.bound
 
-            if self.ax:
-                entry.plot(self.color, self.ax)
+            if self.view:
+                entry.plot(self.color, self.view)
 
         def rm_entry(self, entry):
 
@@ -133,7 +133,7 @@ class RTree(object):
                 if entry == self.items[i]:
 
                     # Remove index_entry, adjust leaf covering
-                    if self.ax:
+                    if self.view:
                         entry.rm_plot()
 
                     self.items.pop(i)
@@ -152,7 +152,7 @@ class RTree(object):
 
         def rm_plot(self):
 
-            if self.ax:
+            if self.view:
                 for i in self.items:
                     i.rm_plot()
 
@@ -174,7 +174,7 @@ class RTree(object):
     # Methods                                                                 #
     ###########################################################################
 
-    def __init__(self, M, dim, plotting=False, ax=None):
+    def __init__(self, M, dim, plotting=False, view=None):
 
         self.max_num = M
         self.min_num = math.floor(M * .4)
@@ -186,19 +186,19 @@ class RTree(object):
         self.plotting = plotting
 
         if self.plotting:
-            if ax:
-                self.ax = ax
+            if view:
+                self.view = view
             else:
                 if self.dim == 2:
-                    _, self.ax = plt.subplots()
+                    _, self.view = plt.subplots()
 
                 elif self.dim == 3:
 
                     f = plt.figure()
                     ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
-                    self.ax = ax
+                    self.view= view 
         else:
-            self.ax = None
+            self.view= None
 
         if self.dim == 2:
             RTree.Bound = RTree.Rect
@@ -206,7 +206,7 @@ class RTree(object):
         elif self.dim == 3:
             RTree.Bound = RTree.Cube
 
-        self.root = RTree.LeafNode(items=[], covering=None, level=0, ax=self.ax)
+        self.root = RTree.LeafNode(items=[], covering=None, level=0, view=self.view)
 
     def __str__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
@@ -400,14 +400,14 @@ class RTree(object):
 
         if lvl == 0:
 
-            n1 = RTree.LeafNode(items=l1, covering=b1, level=lvl, ax=self.ax)
-            n2 = RTree.LeafNode(items=l2, covering=b2, level=lvl, ax=self.ax)
+            n1 = RTree.LeafNode(items=l1, covering=b1, level=lvl, view=self.view)
+            n2 = RTree.LeafNode(items=l2, covering=b2, level=lvl, view=self.view)
             return n1, n2
 
         else:
 
-            n1 = RTree.BranchNode(items=l1, covering=b1, level=lvl, ax=self.ax)
-            n2 = RTree.BranchNode(items=l2, covering=b2, level=lvl, ax=self.ax)
+            n1 = RTree.BranchNode(items=l1, covering=b1, level=lvl, view=self.view)
+            n2 = RTree.BranchNode(items=l2, covering=b2, level=lvl, view=self.view)
             return n1, n2
 
     def OverflowTreatment(self, node, level, overflow):
@@ -521,7 +521,7 @@ class RTree(object):
             self.root = RTree.BranchNode(items=[],
                                          covering=new_bound,
                                          level=self.height,
-                                         ax=self.ax,
+                                         view=self.view,
                                          )
             self.root.add_entry(p1)
             self.root.add_entry(p2)
@@ -657,17 +657,6 @@ class RTree(object):
                     e = PrioritizedItem(dist, child_node)
                     pq.put(e)
 
-    # For 3d plotting of the tree
-    def animate(self):
-
-        if self.dim == 3 and self.plotting:
-            for angle in range(0, 1000, 2):
-
-                self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
-                plt.draw()
-                plt.pause(.001)
-
-            plt.show()
 
 
 

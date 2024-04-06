@@ -1,5 +1,4 @@
 from .rrt_utils import graph_init
-from .rrt_utils import Sampler
 from .rrt_utils import rrt_step
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_rewire
@@ -19,7 +18,6 @@ from utils.map_utils import plot_path
 # from the starting position to the end position
 def rrt_run(map, step_size, max_iter, plotting=False):
 
-    sampler = Sampler(map)
     v_start, v_end, t_start, t_end = graph_init(map=map, connect=True, plotting=plotting)
     c1, c2 = None, None
 
@@ -27,7 +25,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
     while iter < max_iter:
         iter += 1
 
-        p_rand = sampler.sample()
+        p_rand = map.sample()
         p_test = IndexRecord(None, p_rand)
         v_near = t_start.NearestNeighbor(p_test)
         p_new = rrt_step(p_rand, v_near, step_size)

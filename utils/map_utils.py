@@ -3,7 +3,10 @@ import math
 from rrt_methods.rrt_utils import ray_cast
 from rrt_methods.rrt_utils import sample_free
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import pyqtgraph as pg
+import pyqtgraph.opengl as gl
+from .quickhull.utils import ConvexPoly
+from .quickhull.main import QuickHull
 
 
 ###############################################################################
@@ -17,7 +20,7 @@ class Map():
         self.region = region
         self.obstacles = obstacles
         self.dim = dim
-        self.ax = None
+        self.view = None
 
     def plot(self):
 
@@ -26,9 +29,14 @@ class Map():
 
         elif self.dim == 3:
 
-            f = plt.figure()
-            ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
-            self.ax = ax
+            pg.mkQApp("Map")
+            self.view = gl.GLViewWidget()
+            self.view.setCameraPosition(distance=1500)
+            self.view.pan(400, 400, 400)
+            self.view.show()
+            g = gl.GLGridItem()
+            g.scale(100, 100, 100)
+            self.view.addItem(g)
 
     def sample_init(self, scope):
         self.overlay = scope
@@ -48,18 +56,6 @@ class Map():
 
     def plot_path(self, path):
         return
-
-    # For 3d plotting of the tree
-    def animate(self):
-
-        if self.dim == 3 and self.ax:
-            for angle in range(0, 1000, 2):
-
-                self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
-                plt.draw()
-                plt.pause(.001)
-
-            plt.show()
 
 
 class Rectangle(object):
@@ -84,23 +80,20 @@ class Rectangle(object):
         ax.plot(self.x, self.y, linewidth=.5)
 
 
-class Cube(object):
+class Cube(ConvexPoly):
     def __init__(self, bounds):
-        self.min_x = bounds[0]
-        self.max_x = bounds[1]
-        self.min_y = bounds[2]
-        self.max_y = bounds[3]
-        self.min_z = bounds[4]
-        self.max_z = bounds[5]
-
-        self.length = self.max_x - self.min_x
-        self.width = self.max_y - self.min_y
-        self.height = self.max_z - self.min_z
-
-        self.center_x = self.min_x + self.length / 2
-        self.center_y = self.min_y + self.width / 2
-        self.center_z = self.min_z + self.height / 2
-        self.center = np.array([self.center_x, self.center_y, self.center_z])
+        self.vertices = []
+        self.min_x = bounds[0][0]
+        self.max_x = bounds[0][1]
+        self.min_y = bounds[1][0]
+        self.max_y = bounds[1][1]
+        self.min_z = bounds[2][0]
+        self.max_z = bounds[2][1]
+        for i in range(2):
+            for j in range(2):
+                for k in range(2):
+                    self.vertices.append(np.array([bounds[0][i], bounds[1][j], bounds[2][k]]))
+        self = QuickHull(self.vertices)
 
     def sample(self):
         rand_x = (self.max_x - self.min_x) * np.random.random_sample() + self.min_x
@@ -113,26 +106,6 @@ class Cube(object):
         y = self.min_y <= p[1] <= self.may_y
         z = self.min_z <= p[2] <= self.maz_z
         return x and y and z
-
-    def get_cube():
-
-        phi = np.arange(1, 10, 2) * np.pi / 4
-        Phi, Theta = np.meshgrid(phi, phi)
-
-        x = np.cos(Phi) * np.sin(Theta)
-        y = np.sin(Phi) * np.sin(Theta)
-        z = np.cos(Theta) / np.sqrt(2)
-
-        return x, y, z
-
-    def plot(self, ax):
-        x, y, z = Cube.get_cube()
-        ax.plot_surface(self.length * x + self.center[0],
-                        self.width * y + self.center[1],
-                        self.height * z + self.center[2],
-                        alpha=0.08,
-                        shade=False,
-                        )
 
 
 class Ellipse(object):

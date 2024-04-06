@@ -1,6 +1,8 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import pyqtgraph as pg
+import pyqtgraph.opengl as gl
 from r_trees.r_star_tree import RTree
 from r_trees.r_tree_utils import IndexRecord
 from r_trees.r_tree_utils import nCircle
@@ -37,8 +39,8 @@ def plot_poly(path, c="#000000"):
 
 
 class Graph(RTree):
-    def __init__(self, vertices=[], num_vertices=0, plotting=False, ax=None, dim=2):
-        super().__init__(50, dim=dim, plotting=plotting, ax=ax)
+    def __init__(self, vertices=[], num_vertices=0, plotting=False, view=None, dim=2):
+        super().__init__(50, dim=dim, plotting=plotting, view=view)
         self.vertices = vertices
         self.num_vertices = num_vertices
 
@@ -52,7 +54,7 @@ class Graph(RTree):
                            position=position,
                            parent=parent,
                            dist_to_root=dist_to_root,
-                           ax=self.ax)
+                           view=self.view)
 
     def add_vertex(self, vertex):
         self.Insert(vertex)
@@ -91,7 +93,7 @@ class Graph(RTree):
                      position=0,
                      parent=None,
                      dist_to_root=0,
-                     ax=None
+                     view=None
                      ):
             super().__init__(None, value)
             self.value = value
@@ -101,7 +103,7 @@ class Graph(RTree):
             self.parent = parent
             self.dist_to_root = dist_to_root
             self.plots = []
-            self.ax = ax
+            self.view = view
 
         def __hash__(self):
             return hash(self.value.tostring())
@@ -124,27 +126,22 @@ class Graph(RTree):
 
                 other.dist_to_root = self.dist_to_root + self.dist_to(other)
 
-                if self.ax:
-                    p = self.ax.plot(
-                        [self.value[0], other.value[0]],
-                        [self.value[1], other.value[1]],
-                        [self.value[2], other.value[2]],
-                        c="#7dafe6",
-                        linewidth=1,
-                        )
+                if self.view:
+                    p = gl.GLLinePlotItem(pos=np.array([self.value, other.value]),
+                                          color=pg.mkColor("#00a5ff"))
+                    self.view.addItem(p)
                     self.plots.append(p)
 
         def remove_neighbor(self, other_pos):
-            if self.ax:
-                c = self.plots[other_pos]
-                for handle in c:
-                    handle.remove()
-                self.plots.pop(other_pos)
-
             self.neighbors.pop(other_pos)
             self.num_neighbors -= 1
+
             for i in range(self.num_neighbors):
                 self.neighbors[i].position = i
+
+            if self.view:
+                c = self.plots.pop(other_pos)
+                self.view.removeItem(c)
 
         def remove_parent(self):
             if self.parent:
@@ -153,11 +150,10 @@ class Graph(RTree):
                 self.position = 0
                 self.parent = None
 
-        def clear_plots(self):
-            for c in self.plots:
-                for handle in c:
-                    handle.remove()
-            self.plots = []
+        # def clear_plots(self):
+        #     for c in self.plots:
+        #         self.view.removeItem(c)
+        #     self.plots = []
 
         def __repr__(self):
             return f"(value:{self.value})"
@@ -444,8 +440,8 @@ def graph_init(map, connect=False, plotting=False):
 
     start, end = map.path[0], map.path[1]
 
-    graph0 = Graph(plotting=plotting, ax=map.ax, dim=map.dim)
-    graph1 = Graph(plotting=plotting, ax=map.ax, dim=map.dim)
+    graph0 = Graph(plotting=plotting, view=map.view, dim=map.dim)
+    graph1 = Graph(plotting=plotting, view=map.view, dim=map.dim)
 
     v_start = graph0.make_vertex(value=start, neighbors=[])
     v_end = graph1.make_vertex(value=end, neighbors=[], dist_to_root=0)
@@ -492,8 +488,8 @@ def rrt_extend(p_rand, p_near, v_near, region, obstacles, step_size, graph0, gra
     return v_near
 
 
-def rrt_extend_connect(p_rand, p_near, v_near, region, obstacles, step_size, graph0, graph1):
-    c = intersections(region, obstacles, p_rand, p_near)
+def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
+    c = map.intersections([p_rand, p_near])
     min_dist = np.linalg.norm(p_rand - p_near)
     connect = False
 
@@ -516,7 +512,7 @@ def rrt_extend_connect(p_rand, p_near, v_near, region, obstacles, step_size, gra
         v_near.add_neighbor(v_new)
         graph0.add_vertex(v_new)
         prev_parent = v_near
-        connect = rrt_connect(v_new, graph0, graph1, region, obstacles, 5, step_size)
+        connect = rrt_connect(v_new, graph0, graph1, map.region, map.obstacles, 5, step_size)
         v_near = v_new
         if connect:
             return connect, v_near, prev_parent

@@ -1,4 +1,6 @@
 import numpy as np
+import pyqtgraph as pg
+import pyqtgraph.opengl as gl
 from .map_utils import Map
 from .map_utils import Cube
 from .quickhull.main import QuickHull
@@ -20,7 +22,7 @@ class RandObsMap(Map):
             z_rand = bounds[5] * np.random.random_sample()
 
             center = [x_rand, y_rand, z_rand]
-            c = [center[i // 2] + size * (-1) ** (i + 1) for i in range(6)]
+            c = [(center[i] - size, center[i] + size) for i in range(3)]
             cube = Cube(c)
 
             o = []
@@ -35,20 +37,25 @@ class RandObsMap(Map):
         super().__init__(region=region, obstacles=obstacles, dim=3)
         self.add_path([start_pos, end_pos])
 
+    def intersections(self, line):
+        ints = self.region.intersection_pts(line)
+        for o in self.obstacles:
+            ints += o.intersection_pts(line)
+        return ints
+
     def plot(self):
         super().plot()
-        for o in self.obstacles:
-            o.plot(ax=self.ax)
+        for hull in self.obstacles:
+            hull.plot(self.view)
 
     def plot_path(self, path):
-        path_x, path_y, path_z = [], [], []
-        for i in range(len(path)):
-            idx = i % len(path)
-            path_x.append(path[idx][0])
-            path_y.append(path[idx][1])
-            path_z.append(path[idx][2])
+        for i in range(len(path) - 1):
+            line = gl.GLLinePlotItem(pos=np.array([path[i], path[i + 1]]),
+                                     color=pg.mkColor("#ff0000"),
+                                     width=10)
+            self.view.addItem(line)
 
-        self.ax.plot(path_x, path_y, zs=path_z, c="#000000")
+
 
 
 

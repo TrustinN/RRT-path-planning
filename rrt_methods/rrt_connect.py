@@ -34,8 +34,7 @@ def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
             connect, c1, c2 = rrt_extend_connect(p_rand,
                                                  p_near,
                                                  v_near,
-                                                 map.region,
-                                                 map.obstacles,
+                                                 map,
                                                  step_size,
                                                  t_start, t_end,
                                                  )
@@ -51,8 +50,7 @@ def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
             connect, c1, c2 = rrt_extend_connect(p_rand,
                                                  p_near,
                                                  v_near,
-                                                 map.region,
-                                                 map.obstacles,
+                                                 map,
                                                  step_size,
                                                  t_end, t_start,
                                                  )
@@ -70,9 +68,27 @@ def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
         path = rrt_connect_path(v_start, v_end, t_start, t_end, c1, c2)
 
     if plotting:
-        plot_path(path, c="#000000", ax=map.ax)
+        map.plot_path(path)
 
     return path
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

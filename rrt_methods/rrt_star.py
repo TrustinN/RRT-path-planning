@@ -42,7 +42,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
         path = graph.backtrack(v_start, v_end)
 
     if plotting:
-        plot_path(path, c="#000000", ax=map.ax)
+        map.plot_path(path)
 
     return path
 
