@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from r_trees.r_star_tree import RTree
 from r_trees.r_tree_utils import IndexRecord
 from r_trees.r_tree_utils import nCircle
-from mpl_toolkits.mplot3d import Axes3D
 
 
 ###############################################################################
@@ -38,8 +37,8 @@ def plot_poly(path, c="#000000"):
 
 
 class Graph(RTree):
-    def __init__(self, vertices=[], num_vertices=0, plotting=False, ax=None):
-        super().__init__(50, dim=2, plotting=plotting, ax=ax)
+    def __init__(self, vertices=[], num_vertices=0, plotting=False, ax=None, dim=2):
+        super().__init__(50, dim=dim, plotting=plotting, ax=ax)
         self.vertices = vertices
         self.num_vertices = num_vertices
 
@@ -129,6 +128,7 @@ class Graph(RTree):
                     p = self.ax.plot(
                         [self.value[0], other.value[0]],
                         [self.value[1], other.value[1]],
+                        [self.value[2], other.value[2]],
                         c="#7dafe6",
                         linewidth=1,
                         )
@@ -163,28 +163,6 @@ class Graph(RTree):
             return f"(value:{self.value})"
 
 
-class Ellipse(object):
-    def __init__(self, f0, f1, d):
-        self.f0 = f0
-        self.f1 = f1
-
-        diff_vec = f0 - f1
-
-        self.center = 0.5 * diff_vec + f1
-        self.a = d / 2
-        self.c = 0.5 * np.linalg.norm(diff_vec)
-        self.b = math.sqrt(pow(self.a, 2) - pow(self.c, 2))
-
-        x_vec = np.array([1, 0])
-        cos_theta = np.dot(x_vec, diff_vec) / (np.linalg.norm(x_vec) * np.linalg.norm(diff_vec))
-        if cos_theta > 1:
-            cos_theta = 1
-        elif cos_theta < -1:
-            cos_theta = -1
-
-        self.angle = np.arccos(cos_theta)
-
-
 ###############################################################################
 # Search Methods                                                              #
 ###############################################################################
@@ -202,13 +180,15 @@ def search(f, graph, *args):
 
 
 def search_visible_neighbors(f, region, obstacles, graph, v, r, step_size):
-    # neighbors = search(f, graph, v, r * step_size)
+
     scope = nCircle(v.value, r * step_size)
     neighbors = graph.Search(scope)
     visible_neighbors = []
+
     for n in neighbors:
         if not n.equals(v) and not intersects_objects(region, obstacles, n.value, v.value):
             visible_neighbors.append(n)
+
     return visible_neighbors
 
 
@@ -238,17 +218,21 @@ def normalize(v):
 def ray_cast(polygon, point):
     num_sides = len(polygon)
     inside = False
+
     for i in range(num_sides):
         p1 = polygon[i]
         p2 = polygon[(i + 1) % num_sides]
         change_x = p1[0] - p2[0]
         change_y = p1[1] - p2[1]
+
         if (p1[1] > point[1]) != (p2[1] > point[1]) and change_y != 0:
             inv_slope = change_x / change_y
             y_scale = point[1] - p1[1]
             x_on_line = p1[0] + inv_slope * y_scale
+
             if x_on_line <= point[0]:
                 inside = not inside
+
     return inside
 
 
@@ -265,12 +249,15 @@ def intersects(p1, p2, p3, p4, tol):
     det = (l2[0] * l1[1]) - (l1[0] * l2[1])
     intersection = False
     intersection_pt = np.array([])
+
     if not abs(det) < tol:
         inv_matrix = np.linalg.inv(matrix)
         x = np.matmul(inv_matrix, b)
+
         if -x[0] > 0 and -x[1] > 0 and 1 > -x[0] and 1 > -x[1]:
             intersection_pt = -x[0] * l2 + p3
             intersection = True
+
     return intersection, intersection_pt
 
 
@@ -312,14 +299,22 @@ def intersects_object(region, p0, p1):
     return False
 
 
+# def intersects_objects(region, obstacles, v1, v2):
+#     visible = True
+#     if intersects_object(region, v1, v2):
+#         visible = False
+#     for o in obstacles:
+#         visible = visible and not intersects_object(o, v1, v2)
+#     return not visible
+
 def intersects_objects(region, obstacles, v1, v2):
     visible = True
-    if intersects_object(region, v1, v2):
+    line = [v1, v2]
+    if region.intersects_line(line):
         visible = False
     for o in obstacles:
-        visible = visible and not intersects_object(o, v1, v2)
+        visible = visible and not o.intersects_line(line)
     return not visible
-
 
 ###############################################################################
 # Conditions                                                                  #
@@ -335,72 +330,16 @@ def within_dist(p0, p1, dist):
 
 def in_free_space(p, region, obstacles):
     valid_pos = False
-    if ray_cast(region, p):
+    if region.contains_point(p):
         valid_pos = True
         for o in obstacles:
-            valid_pos = valid_pos and not ray_cast(o, p)
+            valid_pos = valid_pos and not o.contains_point(p)
     return valid_pos
 
 
 ###############################################################################
 # Sampling random point                                                       #
 ###############################################################################
-
-class Sample_Scope():
-
-    def __init__(self, name, scope, map=None):
-        self.name = name
-        self.overlay = scope
-
-
-class Map():
-
-    def __init__(self, region, obstacles, dim=2):
-        self.region = region
-        self.obstacles = obstacles
-        self.dim = dim
-        self.ax = None
-
-    def plot(self):
-
-        if self.dim == 2:
-            _, self.ax = plt.subplots()
-
-        elif self.dim == 3:
-
-            f = plt.figure()
-            ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
-            self.ax = ax
-
-    def sample_init(self, name, scope):
-        self.scope = Sample_Scope(name, scope)
-
-    def add_path(self, path):
-        self.path = path
-
-
-# Need to create a separate sample space object
-class Sampler(object):
-
-    def __init__(self, map):
-        self.scope = map.scope.name
-        self.region = map.region
-        self.obstacles = map.obstacles
-        self.overlay = map.scope.overlay
-
-    def sample(self):
-        if self.scope == "box":
-            return sample_free(self.overlay, self.region, self.obstacles)
-        if self.scope == "ellipse":
-            return sample_ellipse(self.overlay, buffer=1)
-
-
-# samples point in a given rectangular area bounded
-# west, east, north, and south by some coordinate number
-def sample_point(bounds):
-    rand_x = (bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0]
-    rand_y = (bounds[2] - bounds[3]) * np.random.random_sample() + bounds[3]
-    return np.array([rand_x, rand_y])
 
 
 def sample_circle(r, c):
@@ -410,49 +349,35 @@ def sample_circle(r, c):
                      c[1] + r_rand * math.sin(theta)])
 
 
-# Sample from and ellipse with foci at p0, p1, defined by distance d
-def sample_ellipse(ellipse, buffer=1):
-    center = ellipse.center
-
-    r1 = np.random.random_sample()
-    r2 = np.random.random_sample()
-    x_rand = buffer * ellipse.a * (math.sqrt(r1) + r1) / 2
-    y_rand = buffer * ellipse.b * (math.sqrt(r2) + r2) / 2
-    theta = np.random.random_sample() * 2 * math.pi
-    p = np.array([x_rand * math.cos(theta),
-                  y_rand * math.sin(theta)])
-
-    cos_theta = math.cos(-ellipse.angle)
-    sin_theta = math.sin(-ellipse.angle)
-    rotate = np.array([[cos_theta, -sin_theta],
-                      [sin_theta, cos_theta]])
-
-    p = np.dot(rotate, p)
-    return np.array([p[0] + center[0], p[1] + center[1]])
-
-
 # finds the right, left, north and south bounds
 # of a polygon, given its points
 def find_bounding_box(polygon):
+
     p0 = polygon[0]
     min_x, max_x, max_y, min_y = p0[0], p0[0], p0[1], p0[1]
+
     for i in range(len(polygon)):
         curr_p = polygon[i]
+
         if curr_p[0] < min_x:
             min_x = curr_p[0]
+
         if curr_p[0] > max_x:
             max_x = curr_p[0]
+
         if curr_p[1] > max_y:
             max_y = curr_p[1]
+
         if curr_p[1] < min_y:
             min_y = curr_p[1]
-    return [min_x, max_x, max_y, min_y]
+
+    return [min_x, max_x, min_y, max_y]
 
 
 def sample_free(bounds, region, obstacles):
     p_rand = np.array([])
     while True:
-        p_rand = sample_point(bounds)
+        p_rand = bounds.sample()
         if in_free_space(p_rand, region, obstacles):
             break
     return p_rand
@@ -518,7 +443,10 @@ def graph_init(map, connect=False, plotting=False):
         map.plot()
 
     start, end = map.path[0], map.path[1]
-    graph0, graph1 = Graph(plotting=plotting, ax=map.ax), Graph(plotting=plotting, ax=map.ax)
+
+    graph0 = Graph(plotting=plotting, ax=map.ax, dim=map.dim)
+    graph1 = Graph(plotting=plotting, ax=map.ax, dim=map.dim)
+
     v_start = graph0.make_vertex(value=start, neighbors=[])
     v_end = graph1.make_vertex(value=end, neighbors=[], dist_to_root=0)
 
@@ -693,11 +621,6 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                 end.remove_parent()
                 v.add_neighbor(end)
-
-
-
-
-
 
 
 

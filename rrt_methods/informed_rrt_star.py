@@ -19,6 +19,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
     start, end = map.path[0], map.path[1]
     path = rrt_connect.rrt_run(map, step_size, max_iter, clear=True, plotting=False)
     d_worst = 0
+
     for i in range(len(path) - 2):
         p = path[i + 1]
         curr_dist = np.linalg.norm(p - start) + np.linalg.norm(p - end)
@@ -28,7 +29,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
     # start informed rrt sampling
     ellipse_scope = Ellipse(start, end, d_worst)
     map.add_path([start, end])
-    map.sample_init("ellipse", ellipse_scope)
+    map.sample_init(ellipse_scope)
 
     # sample number of points proportional to area of ellipse
     scale = d_worst / np.linalg.norm(start - end)

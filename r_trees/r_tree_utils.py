@@ -398,10 +398,10 @@ class IndexRecord(Entry):
 
         if not bound:
             if self.dim == 2:
-                bound = Rect([tuple_identifier[i // 2] for i in range(2 * dim)])
+                bound = Rect([tuple_identifier[i // 2] for i in range(2 * self.dim)])
 
             elif self.dim == 3:
-                bound = Cube([tuple_identifier[i // 2] for i in range(2 * dim)])
+                bound = Cube([tuple_identifier[i // 2] for i in range(2 * self.dim)])
 
         super().__init__(bound)
         self.tuple_identifier = tuple_identifier

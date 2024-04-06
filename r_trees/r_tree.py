@@ -87,8 +87,8 @@ class BranchNode(object):
 class LeafNode(object):
     def __init__(self, indices=[], covering=Bound()):
         self.covering = covering
-        if self.covering:
-            covering.plot("#009b00")
+        # if self.covering:
+        #     covering.plot("#009b00")
         self.items = indices
         self.overlap = 0
         self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
@@ -101,7 +101,7 @@ class LeafNode(object):
         if self.covering:
             self.covering.rm_plot()
             self.covering = Bound.combine(self.covering, entry.bound)
-            self.covering.plot("#009b00")
+            # self.covering.plot("#009b00")
         else:
             self.covering = entry.bound
         self.points.append(plt.scatter(entry.tuple_identifier[0], entry.tuple_identifier[1], c=self.color, s=10, edgecolor='none'))

@@ -97,8 +97,8 @@ class RTree(object):
             if self.ax:
                 self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
 
-                if self.covering:
-                    covering.plot("#009b00", self.ax)
+                # if self.covering:
+                #     covering.plot("#009b00", self.ax)
 
                 for i in self.items:
                     i.plot(self.color, self.ax)
@@ -118,8 +118,8 @@ class RTree(object):
                 self.covering.rm_plot()
                 self.covering = RTree.Bound.combine([self.covering, entry.bound])
 
-                if self.ax:
-                    self.covering.plot("#009b00", self.ax)
+                # if self.ax:
+                #     self.covering.plot("#009b00", self.ax)
 
             else:
                 self.covering = entry.bound
@@ -147,8 +147,8 @@ class RTree(object):
             self.covering.rm_plot()
             self.covering = bound
 
-            if self.ax:
-                self.covering.plot("#009b00", self.ax)
+            # if self.ax:
+            #     self.covering.plot("#009b00", self.ax)
 
         def rm_plot(self):
 
@@ -631,19 +631,6 @@ class RTree(object):
         helper_func(self.root, found)
         return found
 
-    # For 3d plotting of the tree
-    def animate(self):
-
-        if self.dim == 3 and self.plotting:
-            if self.plotting:
-                for angle in range(0, 1000, 2):
-
-                    self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
-                    plt.draw()
-                    plt.pause(.001)
-
-                plt.show()
-
     def NearestNeighbor(self, entry):
 
         pq = PriorityQueue()
@@ -669,6 +656,18 @@ class RTree(object):
                     dist = RTree.Bound.get_dist(child_node.covering, entry.tuple_identifier)
                     e = PrioritizedItem(dist, child_node)
                     pq.put(e)
+
+    # For 3d plotting of the tree
+    def animate(self):
+
+        if self.dim == 3 and self.plotting:
+            for angle in range(0, 1000, 2):
+
+                self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
+                plt.draw()
+                plt.pause(.001)
+
+            plt.show()
 
 
 

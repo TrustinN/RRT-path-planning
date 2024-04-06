@@ -1,9 +1,7 @@
 from .rrt_utils import graph_init
-from .rrt_utils import Sampler
 from .rrt_utils import intersects_objects
 from .rrt_utils import in_free_space
 from r_trees.r_tree_utils import IndexRecord
-from utils.map_utils import plot_path
 
 
 ###############################################################################
@@ -16,14 +14,13 @@ from utils.map_utils import plot_path
 # from the starting position to the end position
 def rrt_run(map, step_size, max_iter, plotting=False):
 
-    sampler = Sampler(map)
     v_start, v_end, graph, _ = graph_init(map=map, plotting=plotting)
 
     iter = 0
     while v_end.num_neighbors < 1 and iter < max_iter:
         iter += 1
 
-        p_rand = sampler.sample()
+        p_rand = map.sample()
 
         p_test = IndexRecord(None, p_rand)
         v_near = graph.NearestNeighbor(p_test)
@@ -47,7 +44,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
     path = graph.backtrack(v_start, v_end)
 
     if plotting:
-        plot_path(path, c="#000000", ax=map.ax)
+        map.plot_path(path)
 
     return path
 
