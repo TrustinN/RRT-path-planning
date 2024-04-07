@@ -29,7 +29,7 @@ from rrt_methods.rrt_star import rrt_run
 # from rrt_methods.quick_rrt_star import rrt_run
 # from rrt_methods.informed_rrt_star import rrt_run
 
-###############################################################################
+##############################################################################
 # Generate Regions                                                            #
 ###############################################################################
 
@@ -58,7 +58,7 @@ else:
 # box_scope = find_bounding_box(map.region)
 
 start = timeit.default_timer()
-path = rrt_run(map=map, step_size=20, max_iter=1000, plotting=True)
+path = rrt_run(map=map, step_size=20, max_iter=500, plotting=True)
 stop = timeit.default_timer()
 
 pg.exec()

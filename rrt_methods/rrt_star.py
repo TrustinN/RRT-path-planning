@@ -4,7 +4,6 @@ from .rrt_utils import rrt_step
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_rewire
 from r_trees.r_tree_utils import IndexRecord
-from utils.map_utils import plot_path
 
 
 ###############################################################################

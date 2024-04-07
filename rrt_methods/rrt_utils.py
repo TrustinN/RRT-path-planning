@@ -306,13 +306,13 @@ def intersects_object(region, p0, p1):
 #     return not visible
 
 def intersects_objects(region, obstacles, v1, v2):
-    visible = True
     line = [v1, v2]
     if region.intersects_line(line):
-        visible = False
+        return True
     for o in obstacles:
-        visible = visible and not o.intersects_line(line)
-    return not visible
+        if o.intersects_line(line):
+            return True
+    return False
 
 ###############################################################################
 # Conditions                                                                  #
@@ -327,12 +327,13 @@ def within_dist(p0, p1, dist):
 
 
 def in_free_space(p, region, obstacles):
-    valid_pos = False
     if region.contains_point(p):
-        valid_pos = True
         for o in obstacles:
-            valid_pos = valid_pos and not o.contains_point(p)
-    return valid_pos
+            if o.contains_point(p):
+                return False
+    else:
+        return False
+    return True
 
 
 ###############################################################################
@@ -619,6 +620,9 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                 end.remove_parent()
                 v.add_neighbor(end)
+
+
+
 
 
 

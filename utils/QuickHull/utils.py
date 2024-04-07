@@ -56,19 +56,20 @@ class ConvexPoly():
         end = line[1]
         vec = end - start
         for f in self.faces:
-            if np.sign(f.orient(start)) != np.sign(f.orient(end)):
-                d = -np.dot(f.normal, f.vertices[0])
-                na = np.dot(f.normal, start)
-                nv = np.dot(f.normal, vec)
-                t = (d - na) / nv
-                if 0 <= t <= 1:
-                    inter = t * vec + start
-                    num = 0
-                    for fn in f.neighbors:
-                        if fn.orient(inter) < 0:
-                            num += 1
-                    if num == 3:
-                        return True
+            if f.in_conv_poly:
+                if np.sign(f.orient(start)) != np.sign(f.orient(end)):
+                    d = np.dot(f.normal, f.vertices[0])
+                    na = np.dot(f.normal, start)
+                    nv = np.dot(f.normal, vec)
+                    t = (d - na) / nv
+                    if 0 <= t <= 1:
+                        inter = t * vec + start
+                        num = 0
+                        for fn in f.neighbors:
+                            if fn.orient(inter) >= 0:
+                                num += 1
+                        if num == 3:
+                            return True
         return False
 
     def plot(self, view):
