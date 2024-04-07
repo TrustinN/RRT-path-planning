@@ -450,15 +450,3 @@ class IndexPointer(Entry):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-

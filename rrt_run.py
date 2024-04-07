@@ -1,11 +1,11 @@
 import timeit
+import numpy as np
 import pyqtgraph as pg
 
 ###############################################################################
 # Make Test Regions for RRT                                                   #
 ###############################################################################
 
-import matplotlib.pyplot as plt
 from utils.maps2d import RaceMap
 from utils.maps2d import SquareObsMap
 from utils.maps2d import Maze
@@ -33,6 +33,7 @@ from rrt_methods.rrt_star import rrt_run
 # Generate Regions                                                            #
 ###############################################################################
 
+np.random.seed(100)
 dim = 3
 
 # choice = "rm"
@@ -51,27 +52,18 @@ if dim == 2:
 else:
     bounds = [(-200, 1000), (-200, 1000), (-200, 1000)]
     if choice == "rom":
-        map = RandObsMap(15, 200)
+        map = RandObsMap(10, 200)
     map.sample_init(Cube(bounds))
 
 
 # box_scope = find_bounding_box(map.region)
 
 start = timeit.default_timer()
-path = rrt_run(map=map, step_size=20, max_iter=500, plotting=True)
+path = rrt_run(map=map, step_size=30, max_iter=1000, plotting=True)
 stop = timeit.default_timer()
 
-pg.exec()
 print('Time: ', stop - start)
-
-
-# map.animate()
-plt.axis("equal")
-
-
-
-
-
+pg.exec()
 
 
 

@@ -1,5 +1,8 @@
+import timeit
+import math
 import numpy as np
 import pyqtgraph.opengl as gl
+from r_trees.r_tree_utils import Cube
 
 
 class Facet():
@@ -21,6 +24,27 @@ class Facet():
             v2 = self.vertices[2] - self.vertices[0]
             n = np.cross(v1, v2)
             self.normal = n / np.linalg.norm(n)
+        min_x, min_y, min_z = math.inf, math.inf, math.inf
+        max_x, max_y, max_z = -math.inf, -math.inf, -math.inf
+        for v in self.vertices:
+            c_x = v[0]
+            c_y = v[1]
+            c_z = v[2]
+            if c_x < min_x:
+                min_x = c_x
+            if c_x > max_x:
+                max_x = c_x
+
+            if c_y < min_y:
+                min_y = c_y
+            if c_y > max_y:
+                max_y = c_y
+
+            if c_z < min_z:
+                min_z = c_z
+            if c_z > max_z:
+                max_z = c_z
+        self.bound = Cube([min_x, max_x, min_y, max_y, min_z, max_z])
 
     def add_neighbor(self, f):
         self.neighbors.append(f)
@@ -40,6 +64,8 @@ class ConvexPoly():
     def __init__(self, faces=[]):
 
         self.faces = faces
+        self.bound = Cube.combine([f.bound for f in self.faces])
+        self.num_calc = 0
 
     def contains_point(self, p):
         for f in self.faces:
@@ -52,11 +78,14 @@ class ConvexPoly():
         return True
 
     def intersects_line(self, line):
+        # self.num_calc += 1
+        # time_s = timeit.default_timer()
         start = line[0]
         end = line[1]
+        l_bound = Cube([min(start[0], end[0]), max(start[0], end[0]), min(start[1], end[1]), max(start[1], end[1]), min(start[2], end[2]), max(start[2], end[2])])
         vec = end - start
-        for f in self.faces:
-            if f.in_conv_poly:
+        if l_bound.vol > l_bound.overlap(self.bound) > 0:
+            for f in self.faces:
                 if np.sign(f.orient(start)) != np.sign(f.orient(end)):
                     d = np.dot(f.normal, f.vertices[0])
                     na = np.dot(f.normal, start)
@@ -69,7 +98,11 @@ class ConvexPoly():
                             if fn.orient(inter) >= 0:
                                 num += 1
                         if num == 3:
+                            # time_e = timeit.default_timer()
+                            # print(self.num_calc, "Num", time_e - time_s)
                             return True
+        # time_e = timeit.default_timer()
+        # print(self.num_calc, "Num", time_e - time_s)
         return False
 
     def plot(self, view):
