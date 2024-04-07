@@ -17,24 +17,25 @@ class PrioritizedItem:
     item: Any = field(compare=False)
 
 
+class Node:
+
+    def __init__(self, items, covering, level):
+
+        self.items = items
+        self.covering = covering
+        self.level = level
+
+    def add_entry(self, entry):
+        """
+        Add an entry to the node's list of items
+        """
+        return
+
+
 class RTree(object):
 
     from .r_tree_utils import Rect
     from .r_tree_utils import Cube
-
-    class Node:
-
-        def __init__(self, items, covering, level):
-
-            self.items = items
-            self.covering = covering
-            self.level = level
-
-        def add_entry(self, entry):
-            """
-            Add an entry to the node's list of items
-            """
-            return
 
     class BranchNode(Node):
 
@@ -45,7 +46,7 @@ class RTree(object):
             if covering.dim == 2:
                 self.view = view
             else:
-                self.view= None
+                self.view = None
 
             if self.view:
                 if self.covering:
@@ -177,10 +178,10 @@ class RTree(object):
     def __init__(self, M, dim, plotting=False, view=None):
 
         self.max_num = M
-        self.min_num = math.floor(M * .4)
+        self.min_num = max(math.floor(M * .4), 1)
 
         self.height = 0
-        self.p = min(math.floor(M * .3), 32)
+        self.p = max(min(math.floor(M * .3), 32), 1)
         self.dim = dim
 
         self.plotting = plotting
@@ -196,9 +197,9 @@ class RTree(object):
 
                     f = plt.figure()
                     ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
-                    self.view= view 
+                    self.view = view 
         else:
-            self.view= None
+            self.view = None
 
         if self.dim == 2:
             RTree.Bound = RTree.Rect

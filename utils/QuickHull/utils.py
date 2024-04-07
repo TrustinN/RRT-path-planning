@@ -1,4 +1,3 @@
-import timeit
 import math
 import numpy as np
 import pyqtgraph.opengl as gl
@@ -78,31 +77,32 @@ class ConvexPoly():
         return True
 
     def intersects_line(self, line):
-        # self.num_calc += 1
-        # time_s = timeit.default_timer()
         start = line[0]
         end = line[1]
         l_bound = Cube([min(start[0], end[0]), max(start[0], end[0]), min(start[1], end[1]), max(start[1], end[1]), min(start[2], end[2]), max(start[2], end[2])])
         vec = end - start
-        if l_bound.vol > l_bound.overlap(self.bound) > 0:
+
+        if l_bound.overlap(self.bound) > 0:
             for f in self.faces:
-                if np.sign(f.orient(start)) != np.sign(f.orient(end)):
-                    d = np.dot(f.normal, f.vertices[0])
-                    na = np.dot(f.normal, start)
-                    nv = np.dot(f.normal, vec)
-                    t = (d - na) / nv
-                    if 0 <= t <= 1:
-                        inter = t * vec + start
-                        num = 0
-                        for fn in f.neighbors:
-                            if fn.orient(inter) >= 0:
-                                num += 1
-                        if num == 3:
-                            # time_e = timeit.default_timer()
-                            # print(self.num_calc, "Num", time_e - time_s)
-                            return True
-        # time_e = timeit.default_timer()
-        # print(self.num_calc, "Num", time_e - time_s)
+                if l_bound.overlap(f.bound) > 0:
+                    if np.sign(f.orient(start)) != np.sign(f.orient(end)):
+
+                        d = np.dot(f.normal, f.vertices[0])
+                        na = np.dot(f.normal, start)
+                        nv = np.dot(f.normal, vec)
+                        t = (d - na) / nv
+                        if 0 <= t <= 1:
+
+                            inter = t * vec + start
+                            iter = 0
+                            while iter < 3:
+                                if f.neighbors[iter].orient(inter) < 0:
+                                    break
+                                iter += 1
+
+                            if iter == 3:
+                                return True
+
         return False
 
     def plot(self, view):

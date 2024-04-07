@@ -33,7 +33,7 @@ from rrt_methods.rrt_star import rrt_run
 # Generate Regions                                                            #
 ###############################################################################
 
-np.random.seed(100)
+# np.random.seed(100)
 dim = 3
 
 # choice = "rm"

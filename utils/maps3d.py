@@ -51,7 +51,7 @@ class RandObsMap(Map):
     def plot_path(self, path):
         for i in range(len(path) - 1):
             line = gl.GLLinePlotItem(pos=np.array([path[i], path[i + 1]]),
-                                     color=pg.mkColor("#ff0000"),
+                                     color=pg.mkColor("#ff00ff"),
                                      width=10)
             self.view.addItem(line)
 
