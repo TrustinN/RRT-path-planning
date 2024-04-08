@@ -26,7 +26,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
             d_worst = curr_dist
 
     # start informed rrt sampling
-    ellipse_scope = Spheroid(start, end, d_worst)
+    ellipse_scope = Spheroid(end, start, d_worst)
     map.add_path([start, end])
     map.sample_init(ellipse_scope)
 

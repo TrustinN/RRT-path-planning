@@ -50,14 +50,14 @@ if dim == 2:
 else:
     bounds = [(-200, 1000), (-200, 1000), (-200, 1000)]
     if choice == "rom":
-        map = RandObsMap(5, 150)
+        map = RandObsMap(15, 150)
     map.sample_init(Cube(bounds))
 
 
 # box_scope = find_bounding_box(map.region)
 
 start = timeit.default_timer()
-path = rrt_run(map=map, step_size=50, max_iter=700, plotting=True)
+path = rrt_run(map=map, step_size=20, max_iter=2000, plotting=True)
 stop = timeit.default_timer()
 
 print('Time: ', stop - start)
