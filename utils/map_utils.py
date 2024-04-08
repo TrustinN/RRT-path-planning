@@ -52,6 +52,9 @@ class Map():
         if type(self.overlay) is Cube:
             return self.overlay.sample()
 
+        if type(self.overlay) is Spheroid:
+            return self.overlay.sample()
+
     def add_path(self, path):
         self.path = path
 
@@ -150,6 +153,85 @@ class Ellipse(object):
         p = np.dot(rotate, p)
         return np.array([p[0] + center[0], p[1] + center[1]])
 
+
+class Spheroid(object):
+    def __init__(self, f0, f1, d):
+        self.f0 = f0
+        self.f1 = f1
+
+        diff_vec = f0 - f1
+
+        self.center = 0.5 * diff_vec + f1
+        self.a = d / 2
+        self.c = 0.5 * np.linalg.norm(diff_vec)
+        self.b = math.sqrt(pow(self.a, 2) - pow(self.c, 2))
+
+        x_vec = np.array([1, 0])
+        p_z_vec = diff_vec[:2]
+        cos_theta = np.dot(x_vec, p_z_vec) / np.linalg.norm(p_z_vec)
+
+        if cos_theta > 1:
+            cos_theta = 1
+        elif cos_theta < -1:
+            cos_theta = -1
+
+        self.theta = np.arccos(cos_theta)
+
+        y_vec = np.array([1, 0])
+        p_x_vec = diff_vec[1:]
+        cos_phi = np.dot(y_vec, p_x_vec) / np.linalg.norm(p_x_vec)
+
+        if cos_phi > 1:
+            cos_phi = 1
+        elif cos_phi < -1:
+            cos_phi = -1
+
+        self.phi = np.arccos(cos_phi)
+
+        cos_theta = math.cos(-self.theta)
+        sin_theta = math.sin(-self.theta)
+        cos_phi = math.cos(-self.phi)
+        sin_phi = math.sin(-self.phi)
+        self.rotate_z = np.array([[cos_theta, -sin_theta, 0],
+                                  [sin_theta, cos_theta, 0],
+                                  [0, 0, 1]
+                                  ])
+
+        self.rotate_y = np.array([[-cos_theta, 0, -sin_theta],
+                                  [0, 1, 0],
+                                  [sin_theta, 0, -cos_theta],
+                                  ])
+
+        self.rotate_x = np.array([[1, 0, 0],
+                                  [0, cos_phi, -sin_phi],
+                                  [0, sin_phi, cos_phi],
+                                  ])
+
+    def sample(self, buffer=1):
+        center = self.center
+
+        r1 = np.random.random_sample()
+        r2 = np.random.random_sample()
+        r3 = np.random.random_sample()
+
+        x_rand = buffer * self.a * (math.sqrt(r1) + r1) / 2
+        y_rand = buffer * self.b * (math.sqrt(r2) + r2) / 2
+        z_rand = buffer * self.b * (math.sqrt(r3) + r3) / 2
+
+        theta = np.random.random_sample() * 2 * math.pi
+        phi = np.random.random_sample() * 2 * math.pi
+
+        p = np.array([x_rand * math.cos(theta) * math.cos(phi),
+                      y_rand * math.sin(theta) * math.cos(phi),
+                      z_rand * math.sin(phi)])
+
+        p = np.dot(self.rotate_x, p)
+        p = np.dot(self.rotate_y, p)
+        p = np.dot(self.rotate_z, p)
+        return np.array([p[0] + center[0],
+                         p[1] + center[1],
+                         p[2] + center[2]
+                         ])
 
 ###############################################################################
 # Plotting                                                                    #

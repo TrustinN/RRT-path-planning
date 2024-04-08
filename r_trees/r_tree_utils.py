@@ -409,6 +409,7 @@ class IndexRecord(Entry):
 
     def plot(self, color, view):
         self.p = gl.GLScatterPlotItem(pos=np.array([self.tuple_identifier]))
+        self.p.setGLOptions("additive")
         self.view = view
         view.addItem(self.p)
 
@@ -446,6 +447,8 @@ class IndexPointer(Entry):
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
+
+
 
 
 

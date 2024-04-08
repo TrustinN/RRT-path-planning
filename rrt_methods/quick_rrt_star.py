@@ -1,7 +1,6 @@
 import math
 from .rrt_utils import intersects_objects
 from .rrt_utils import graph_init
-from .rrt_utils import Sampler
 from .rrt_utils import rrt_step
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_q_rewire
@@ -18,14 +17,13 @@ from utils.map_utils import plot_path
 # from the starting position to the end position
 def rrt_run(map, step_size, max_iter, plotting=False):
 
-    sampler = Sampler(map)
     v_start, v_end, graph, _ = graph_init(map=map, plotting=plotting)
 
     iter = 0
     while iter < max_iter:
         iter += 1
 
-        p_rand = sampler.sample()
+        p_rand = map.sample()
         p_test = IndexRecord(None, p_rand)
         v_near = graph.NearestNeighbor(p_test)
         p_new = rrt_step(p_rand, v_near, step_size)
@@ -49,7 +47,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
         path = graph.backtrack(v_start, v_end)
 
     if plotting:
-        plot_path(path, c="#000000", ax=map.ax)
+        map.plot_path(path)
 
     return path
 

@@ -15,7 +15,7 @@ from r_trees.r_tree_utils import IndexRecord
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(map, step_size, max_iter, plotting=False):
+def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
 
     v_start, v_end, t_start, t_end = graph_init(map=map, connect=True, plotting=plotting)
     c1, c2 = None, None
@@ -55,6 +55,10 @@ def rrt_run(map, step_size, max_iter, plotting=False):
                 if connect:
                     c1 = v_new
                     break
+
+    if clear:
+        t_start.clear()
+        t_end.clear()
 
     if iter == max_iter:
         path = []

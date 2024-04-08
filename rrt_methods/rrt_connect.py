@@ -3,7 +3,6 @@ from .rrt_utils import in_free_space
 from .rrt_utils import rrt_extend_connect
 from .rrt_utils import rrt_connect_path
 from r_trees.r_tree_utils import IndexRecord
-from utils.map_utils import plot_path
 
 
 ###############################################################################

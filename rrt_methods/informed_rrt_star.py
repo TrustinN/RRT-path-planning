@@ -1,8 +1,7 @@
 import numpy as np
-from .rrt_utils import Ellipse
+from utils.map_utils import Spheroid
 from . import rrt_star
-from . import rrt_connect
-from utils.map_utils import plot_path
+from . import rrt_star_connect
 
 
 ###############################################################################
@@ -17,7 +16,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
 
     # Find a path first
     start, end = map.path[0], map.path[1]
-    path = rrt_connect.rrt_run(map, step_size, max_iter, clear=True, plotting=False)
+    path = rrt_star_connect.rrt_run(map, step_size, max_iter, clear=True, plotting=False)
     d_worst = 0
 
     for i in range(len(path) - 2):
@@ -27,7 +26,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
             d_worst = curr_dist
 
     # start informed rrt sampling
-    ellipse_scope = Ellipse(start, end, d_worst)
+    ellipse_scope = Spheroid(start, end, d_worst)
     map.add_path([start, end])
     map.sample_init(ellipse_scope)
 
@@ -38,7 +37,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
     path = rrt_star.rrt_run(map, step_size, max_iter, plotting=plotting)
 
     if plotting:
-        plot_path(path, c="#000000", ax=map.ax)
+        map.plot_path(path)
 
     return path
 

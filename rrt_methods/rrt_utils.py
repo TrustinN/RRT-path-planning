@@ -129,8 +129,8 @@ class Graph(RTree):
                 if self.view:
                     p = gl.GLLinePlotItem(pos=np.array([self.value, other.value]),
                                           color=pg.mkColor("#00a5ff"),
-                                          width=4,
                                           )
+                    p.setGLOptions("opaque")
                     self.view.addItem(p)
                     self.plots.append(p)
 
@@ -152,10 +152,10 @@ class Graph(RTree):
                 self.position = 0
                 self.parent = None
 
-        # def clear_plots(self):
-        #     for c in self.plots:
-        #         self.view.removeItem(c)
-        #     self.plots = []
+        def clear_plots(self):
+            for c in self.plots:
+                self.view.removeItem(c)
+            self.plots = []
 
         def __repr__(self):
             return f"(value:{self.value})"

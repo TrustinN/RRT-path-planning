@@ -105,6 +105,36 @@ class ConvexPoly():
 
         return False
 
+    def intersections(self, line):
+        start = line[0]
+        end = line[1]
+        l_bound = Cube([min(start[0], end[0]), max(start[0], end[0]), min(start[1], end[1]), max(start[1], end[1]), min(start[2], end[2]), max(start[2], end[2])])
+        vec = end - start
+        inters = []
+
+        if l_bound.overlap(self.bound) > 0:
+            for f in self.faces:
+                if l_bound.overlap(f.bound) > 0:
+                    if np.sign(f.orient(start)) != np.sign(f.orient(end)):
+
+                        d = np.dot(f.normal, f.vertices[0])
+                        na = np.dot(f.normal, start)
+                        nv = np.dot(f.normal, vec)
+                        t = (d - na) / nv
+                        if 0 <= t <= 1:
+
+                            inter = t * vec + start
+                            iter = 0
+                            while iter < 3:
+                                if f.neighbors[iter].orient(inter) < 0:
+                                    break
+                                iter += 1
+
+                            if iter == 3:
+                                inters.append(inter)
+
+        return inters
+
     def plot(self, view):
         faces = np.array([f.vertices for f in self.faces])
         vertices = [f[i] for f in faces for i in range(3)]
@@ -116,8 +146,7 @@ class ConvexPoly():
         colors[:, 2] = np.linspace(0, 1, colors.shape[0])
 
         md.setFaceColors(colors=colors)
-        m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader='balloon')
-        m1.setGLOptions('additive')
+        m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader="shaded", glOptions='opaque')
 
         view.addItem(m1)
 

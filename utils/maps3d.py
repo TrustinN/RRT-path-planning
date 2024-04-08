@@ -16,10 +16,11 @@ class RandObsMap(Map):
         region = QuickHull(vertices)
 
         obstacles = []
+        bounds = [100, 700, 100, 700, 100, 700]
         while n > 0:
-            x_rand = bounds[1] * np.random.random_sample()
-            y_rand = bounds[3] * np.random.random_sample()
-            z_rand = bounds[5] * np.random.random_sample()
+            x_rand = (bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0]
+            y_rand = (bounds[3] - bounds[2]) * np.random.random_sample() + bounds[2]
+            z_rand = (bounds[5] - bounds[4]) * np.random.random_sample() + bounds[4]
 
             center = [x_rand, y_rand, z_rand]
             c = [(center[i] - size, center[i] + size) for i in range(3)]
@@ -38,9 +39,9 @@ class RandObsMap(Map):
         self.add_path([start_pos, end_pos])
 
     def intersections(self, line):
-        ints = self.region.intersection_pts(line)
+        ints = self.region.intersections(line)
         for o in self.obstacles:
-            ints += o.intersection_pts(line)
+            ints += o.intersections(line)
         return ints
 
     def plot(self):
@@ -53,6 +54,7 @@ class RandObsMap(Map):
             line = gl.GLLinePlotItem(pos=np.array([path[i], path[i + 1]]),
                                      color=pg.mkColor("#ff00ff"),
                                      width=10)
+            line.setGLOptions("opaque")
             self.view.addItem(line)
 
 
