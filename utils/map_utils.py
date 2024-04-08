@@ -35,7 +35,7 @@ class Map():
             self.view.pan(400, 400, 400)
             self.view.show()
             g = gl.GLGridItem()
-            g.translate(400, 400, 0)
+            g.translate(400, 400, -200)
             g.scale(100, 100, 100)
             self.view.addItem(g)
 
