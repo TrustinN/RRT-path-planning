@@ -53,11 +53,14 @@ methods = ["rrt",                        # 0
            ]
 
 start = timeit.default_timer()
+
 rrt = RRTsolver(map=map, step_size=20, max_iter=2000, method=methods[4])
+
 stop = timeit.default_timer()
+print('Time: ', stop - start)
+
 rrt.plot(branches=False, leaves=False)
 
-print('Time: ', stop - start)
 pg.exec()
 
 
