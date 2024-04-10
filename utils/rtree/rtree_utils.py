@@ -1,6 +1,9 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
+from colorutils import Color
+import pyqtgraph as pg
+import pyqtgraph.opengl as gl
+import PyQt5
 
 
 class Bound:
@@ -24,25 +27,16 @@ class Bound:
         return
 
 
-class nCircle(Bound):
+class NCircle(Bound):
 
     def __init__(self, center, radius):
         super().__init__(len(center))
         self.center = center
         self.radius = radius
 
-    def get_sphere():
-
-        phi, theta = np.mgrid[0:np.pi:100j, 0:2 * np.pi:100j]
-        x = np.cos(theta) * np.sin(phi)
-        y = np.sin(theta) * np.sin(phi)
-        z = np.cos(phi)
-
-        return x, y, z
-
     def overlap(self, other):
 
-        if type(other) is nCircle:
+        if type(other) is NCircle:
             return np.linalg.norm(self.center - other.center) >= self.radius + other.radius
 
         elif type(other) is Rect:
@@ -51,22 +45,38 @@ class nCircle(Bound):
         elif type(other) is Cube:
             return Cube.get_dist(other, self.center) <= self.radius
 
-    def plot(self, c, ax):
+    def plot(self, color, view):
 
         if self.dim == 2:
+            circle = PyQt5.QtWidgets.QGraphicsEllipseItem(self.center[0] - self.radius,
+                                                          self.center[1] - self.radius,
+                                                          2 * self.radius,
+                                                          2 * self.radius)
 
-            cc = plt.Circle((self.center[0], self.center[1]), self.radius, fill=False)
-            ax.add_artist(cc)
+            circle.setBrush(pg.mkBrush(color))
+            view.addItem(circle)
 
         elif self.dim == 3:
+            md = gl.MeshData.sphere(rows=10, cols=20, radius=self.radius)
+            c = Color(web=color)
+            rgb = c.rgb
+            p0, p1, p2 = rgb[0], rgb[1], rgb[2]
+            colors = np.ones((md.faceCount(), 4), dtype=float)
+            colors[:, 3] = 0.2
+            colors[:, 2] = np.linspace(p2/255, 1, colors.shape[0])
+            colors[:, 1] = np.linspace(p1/255, 1, colors.shape[0])
+            colors[:, 0] = np.linspace(p0/255, 1, colors.shape[0])
 
-            x, y, z = nCircle.get_sphere()
-            ax.plot_surface(self.radius * x + self.center[0],
-                            self.radius * y + self.center[1],
-                            self.radius * z + self.center[2],
-                            alpha=0.08,
-                            shade=False,
-                            )
+            md.setFaceColors(colors=colors)
+            m1 = gl.GLMeshItem(
+                meshdata=md,
+                smooth=True,
+                shader="balloon",
+                glOptions="additive",
+            )
+
+            m1.translate(self.center[0], self.center[1], self.center[2])
+            view.addItem(m1)
 
     def contains(self, other):
 
@@ -197,15 +207,27 @@ class Rect(Bound):
 
         return math.sqrt(x_dist ** 2 + y_dist ** 2)
 
-    def plot(self, c, ax):
-        self.p_obj = ax.plot([self.min_x, self.min_x, self.max_x, self.max_x, self.min_x],
-                             [self.min_y, self.max_y, self.max_y, self.min_y, self.min_y],
-                             c=c, linewidth=.5)
+    def plot(self, color, view):
+        self.p_obj = pg.PlotDataItem(np.array([np.array([self.min_x, self.min_y]),
+                                               np.array([self.min_x, self.max_y]),
+
+                                               np.array([self.min_x, self.max_y]),
+                                               np.array([self.max_x, self.max_y]),
+
+                                               np.array([self.max_x, self.max_y]),
+                                               np.array([self.max_x, self.min_y]),
+
+                                               np.array([self.max_x, self.min_y]),
+                                               np.array([self.min_x, self.min_y]),
+                                               ]),
+                                     connect="pairs", pen=pg.mkPen(color))
+
+        self.view = view
+        view.addItem(self.p_obj)
 
     def rm_plot(self):
         if self.p_obj:
-            for handle in self.p_obj:
-                handle.remove()
+            self.view.removeItem(self.p_obj)
         self.p_obj = None
 
     def __str__(self):
@@ -221,6 +243,7 @@ class Cube(Bound):
 
         super().__init__(3)
         self.bound = bound
+        self.hull = None
 
         if bound:
 
@@ -254,6 +277,19 @@ class Cube(Bound):
         z_check = (self.min_z <= other.min_z) and (self.max_z >= other.max_z)
 
         return x_check and y_check and z_check
+
+    def contains_point(self, p):
+
+        if not (self.min_x <= p[0] <= self.max_x):
+            return False
+
+        if not (self.min_y <= p[1] <= self.max_y):
+            return False
+
+        if not (self.min_z <= p[2] <= self.max_z):
+            return False
+
+        return True
 
     # returns bounds and area
     def expand(b1, b2):
@@ -317,17 +353,6 @@ class Cube(Bound):
         else:
             return overlap_x * overlap_y * overlap_z
 
-    def get_cube():
-
-        phi = np.arange(1, 10, 2) * np.pi / 4
-        Phi, Theta = np.meshgrid(phi, phi)
-
-        x = np.cos(Phi) * np.sin(Theta)
-        y = np.sin(Phi) * np.sin(Theta)
-        z = np.cos(Theta) / np.sqrt(2)
-
-        return x, y, z
-
     def get_dist(b, point):
 
         bound = b.bound
@@ -362,19 +387,63 @@ class Cube(Bound):
 
         return math.sqrt(x_dist ** 2 + y_dist ** 2 + z_dist ** 2)
 
-    def plot(self, c, ax):
-        x, y, z = Cube.get_cube()
-        self.p_obj = ax.plot_surface(self.length * x + self.center_x,
-                                     self.width * y + self.center_y,
-                                     self.height * z + self.center_z,
-                                     alpha=0.08,
-                                     shade=False,
-                                     )
+    def plot(self, color, view):
+        vertices = [np.array([self.min_x, self.min_y, self.min_z]),  # 0
+                    np.array([self.max_x, self.min_y, self.min_z]),  # 1
+                    np.array([self.min_x, self.max_y, self.min_z]),  # 2
+                    np.array([self.min_x, self.min_y, self.max_z]),  # 3
+                    np.array([self.max_x, self.max_y, self.min_z]),  # 4
+                    np.array([self.min_x, self.max_y, self.max_z]),  # 5
+                    np.array([self.max_x, self.min_y, self.max_z]),  # 6
+                    np.array([self.max_x, self.max_y, self.max_z]),  # 7
+                    ]
 
-    def rm_plot(self):
+        md = gl.MeshData(vertexes=vertices,
+                         faces=np.array([
+                             # bottom plane
+                             [0, 1, 4],
+                             [0, 4, 2],
+
+                             # left plane
+                             [0, 1, 6],
+                             [0, 6, 3],
+
+                             # back plane
+                             [0, 2, 5],
+                             [0, 5, 3],
+
+                             # right plane
+                             [2, 7, 5],
+                             [2, 4, 7],
+
+                             # top plane
+                             [3, 7, 5],
+                             [3, 6, 7],
+
+                             # front plane
+                             [4, 6, 1],
+                             [4, 7, 6]
+                             ]),
+                         )
+
+        c = Color(web=color)
+        rgb = c.rgb
+        p0, p1, p2 = rgb[0], rgb[1], rgb[2]
+        colors = np.ones((md.faceCount(), 4), dtype=float)
+        colors[:, 3] = 0.2
+        colors[:, 2] = np.linspace(p2/255, 1, colors.shape[0])
+        colors[:, 1] = np.linspace(p1/255, 1, colors.shape[0])
+        colors[:, 0] = np.linspace(p0/255, 1, colors.shape[0])
+
+        md.setFaceColors(colors=colors)
+        m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader='shaded')
+        m1.setGLOptions('additive')
+        self.p_obj = m1
+        view.addItem(m1)
+
+    def rm_plot(self, view):
         if self.p_obj:
-            self.p_obj.remove()
-        self.p_obj = None
+            view.removeItem(self.p_obj)
 
     def __str__(self):
         return f"{[self.min_x, self.max_x, self.min_y, self.max_y, self.min_z, self.max_z]}"
@@ -398,22 +467,30 @@ class IndexRecord(Entry):
 
         if not bound:
             if self.dim == 2:
-                bound = Rect([tuple_identifier[i // 2] for i in range(2 * dim)])
+                bound = Rect([tuple_identifier[i // 2] for i in range(2 * self.dim)])
 
             elif self.dim == 3:
-                bound = Cube([tuple_identifier[i // 2] for i in range(2 * dim)])
+                bound = Cube([tuple_identifier[i // 2] for i in range(2 * self.dim)])
 
         super().__init__(bound)
         self.tuple_identifier = tuple_identifier
 
-    def plot(self, color, ax):
+    def plot(self, color, view):
+
         if self.dim == 2:
-            self.p_obj = ax.scatter(self.tuple_identifier[0], self.tuple_identifier[1], c=color, s=10, edgecolor='none')
+            self.p = pg.ScatterPlotItem(pos=np.array([self.tuple_identifier]))
+            self.p.setBrush(color)
+
         elif self.dim == 3:
-            self.p_obj = ax.scatter(self.tuple_identifier[0], self.tuple_identifier[1], self.tuple_identifier[2], c=color, s=10, edgecolor='none')
+            self.p = gl.GLScatterPlotItem(pos=np.array([self.tuple_identifier]), size=5, color=pg.mkColor(color))
+            self.p.setGLOptions("additive")
+
+        self.view = view
+        view.addItem(self.p)
 
     def rm_plot(self):
-        self.p_obj.remove()
+        if self.view:
+            self.view.removeItem(self.p)
 
     def __str__(self):
         return f"val: {self.tuple_identifier}"
@@ -446,9 +523,6 @@ class IndexPointer(Entry):
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
-
-
-
 
 
 

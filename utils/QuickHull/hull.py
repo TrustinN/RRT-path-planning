@@ -1,7 +1,7 @@
 import math
 import numpy as np
-from utils import Facet
-from utils import ConvexPoly
+from .utils import Facet
+from .utils import ConvexPoly
 
 
 # Creates a tetrahedral based on given vertices
@@ -157,7 +157,7 @@ def QuickHull(vertices):
     while queue:
 
         face = queue.pop()
-        if face.in_conv_poly:
+        if face.in_conv_poly and len(face.outside_vertices) > 0:
 
             # Get farthest point from the current facet
             max_dist = -math.inf

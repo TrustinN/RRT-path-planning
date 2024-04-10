@@ -1,12 +1,10 @@
 from .rrt_utils import graph_init
-from .rrt_utils import Sampler
 from .rrt_utils import rrt_step
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_rewire
 from .rrt_utils import rrt_connect
 from .rrt_utils import rrt_connect_path
-from r_trees.r_tree_utils import IndexRecord
-from utils.map_utils import plot_path
+from utils.rtree.rtree_utils import IndexRecord
 
 
 ###############################################################################
@@ -17,17 +15,16 @@ from utils.map_utils import plot_path
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(map, step_size, max_iter, plotting=False):
+def rrt_run(map, step_size, max_iter, clear=False):
 
-    sampler = Sampler(map)
-    v_start, v_end, t_start, t_end = graph_init(map=map, connect=True, plotting=plotting)
+    v_start, v_end, t_start, t_end = graph_init(map=map, connect=True)
     c1, c2 = None, None
 
     iter = 0
     while iter < max_iter:
         iter += 1
 
-        p_rand = sampler.sample()
+        p_rand = map.sample()
         p_test = IndexRecord(None, p_rand)
         v_near = t_start.NearestNeighbor(p_test)
         p_new = rrt_step(p_rand, v_near, step_size)
@@ -37,9 +34,9 @@ def rrt_run(map, step_size, max_iter, plotting=False):
                                         position=0,
                                         parent=None,
                                         )
-            if rrt_rewire(v_new, t_start, map.region, map.obstacles, 5, step_size, v_end, connect=True):
+            if rrt_rewire(v_new, t_start, map, 5, step_size, v_end, connect=True):
                 c1 = v_new.parent
-                connect = rrt_connect(v_new, t_start, t_end, map.region, map.obstacles, 5, step_size)
+                connect = rrt_connect(v_new, t_start, t_end, map, 5, step_size)
                 if connect:
                     c2 = v_new
                     break
@@ -52,22 +49,23 @@ def rrt_run(map, step_size, max_iter, plotting=False):
                                       position=0,
                                       parent=None,
                                       )
-            if rrt_rewire(v_new, t_end, map.region, map.obstacles, 5, step_size, v_end, connect=True):
+            if rrt_rewire(v_new, t_end, map, 5, step_size, v_end, connect=True):
                 c2 = v_new.parent
-                connect = rrt_connect(v_new, t_end, t_start, map.region, map.obstacles, 5, step_size)
+                connect = rrt_connect(v_new, t_end, t_start, map, 5, step_size)
                 if connect:
                     c1 = v_new
                     break
+
+    if clear:
+        t_start.clear()
+        t_end.clear()
 
     if iter == max_iter:
         path = []
     else:
         path = rrt_connect_path(v_start, v_end, t_start, t_end, c1, c2)
 
-    if plotting:
-        plot_path(path, c="#000000", ax=map.ax)
-
-    return path
+    return path, t_start, t_end
 
 
 

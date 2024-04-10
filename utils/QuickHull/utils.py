@@ -1,11 +1,12 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from mpl_toolkits.mplot3d import Axes3D
+from colorutils import Color
+import pyqtgraph.opengl as gl
+from utils.rtree.rtree_utils import Cube
+from utils.rtree.rtree_utils import IndexRecord
 
 
-class Facet():
+class Facet(IndexRecord):
 
     def __init__(self, vertices):
 
@@ -19,88 +20,176 @@ class Facet():
         self.neighbors = []
         self.visited = False
         self.in_conv_poly = True
+        if self.num_vertices >= 3:
+            v1 = self.vertices[1] - self.vertices[0]
+            v2 = self.vertices[2] - self.vertices[0]
+            n = np.cross(v1, v2)
+            self.normal = n / np.linalg.norm(n)
+        min_x, min_y, min_z = math.inf, math.inf, math.inf
+        max_x, max_y, max_z = -math.inf, -math.inf, -math.inf
+        for v in self.vertices:
+            c_x = v[0]
+            c_y = v[1]
+            c_z = v[2]
+            if c_x < min_x:
+                min_x = c_x
+            if c_x > max_x:
+                max_x = c_x
+
+            if c_y < min_y:
+                min_y = c_y
+            if c_y > max_y:
+                max_y = c_y
+
+            if c_z < min_z:
+                min_z = c_z
+            if c_z > max_z:
+                max_z = c_z
+        self.bound = Cube([min_x, max_x, min_y, max_y, min_z, max_z])
+        super().__init__(self.bound, self.vertices[0])
 
     def add_neighbor(self, f):
         self.neighbors.append(f)
-
-    def normal(self):
-        v1 = self.vertices[1] - self.vertices[0]
-        v2 = self.vertices[2] - self.vertices[0]
-        n = np.cross(v1, v2)
-        return n / np.linalg.norm(n)
 
     def get_projection(self, p):
         approx = np.linalg.lstsq(self.subspace, p - self.b)[0]
         return p - (np.dot(self.subspace, approx) + self.b)
 
     def orient(self, p):
-        c1 = np.vstack([self.o, p])
-        c2 = np.c_[c1, np.ones(self.dim + 1)]
-        return np.linalg.det(c2)
+        return np.dot(self.normal, self.b - p)
 
-    def plot(self, ax):
-        self.plots = [ax.add_collection3d(Poly3DCollection([self.vertices], alpha=0.08))]
-        for v in self.vertices:
-            self.plots.append(ax.scatter(v[0], v[1], v[2], s=10, edgecolor='none'))
+    def plot(self, color, view):
+        md = gl.MeshData(vertexes=self.vertices, faces=np.array([[0, 1, 2]]))
+        c = Color(web=color)
+        rgb = c.rgb
+        p0, p1, p2 = rgb[0], rgb[1], rgb[2]
+        colors = np.ones((md.faceCount(), 4), dtype=float)
+        colors[:, 3] = 0.2
+        colors[:, 2] = np.linspace(p2/255, 1, colors.shape[0])
+        colors[:, 1] = np.linspace(p1/255, 1, colors.shape[0])
+        colors[:, 0] = np.linspace(p0/255, 1, colors.shape[0])
 
-    def rm_plot(self):
-        for p in self.plots:
-            p.remove()
+        md.setFaceColors(colors=colors)
+        m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader='shaded')
+        m1.setGLOptions('opaque')
+        self.p = m1
+        self.view = view
+        view.addItem(m1)
 
-    def __eq__(self, other):
-        if isinstance(other, Facet):
-            for i in range(len(self.vertices)):
-                if not np.array_equal(self.vertices[i], other.vertices[i]):
+
+class ConvexPoly():
+
+    def __init__(self, faces=[]):
+
+        self.faces = faces
+        self.bound = Cube.combine([f.bound for f in self.faces])
+        self.num_calc = 0
+
+    def contains_point(self, p):
+        if self.bound.contains_point(p):
+            for f in self.faces:
+                curr_face = f.vertices
+                p2f = curr_face[0] - p
+                n = f.normal
+                d = np.dot(p2f, n) / np.linalg.norm(p2f)
+                if d < 0:
                     return False
             return True
         else:
             return False
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
+    def intersects_line(self, line):
+        start = line[0]
+        end = line[1]
+        l_bound = Cube([min(start[0], end[0]), max(start[0], end[0]), min(start[1], end[1]), max(start[1], end[1]), min(start[2], end[2]), max(start[2], end[2])])
+        vec = end - start
 
-    def __str__(self):
-        return f"val: {self.vertices}"
-
-    def __repr__(self):
-        return f"val: {self.vertices}"
-
-
-class ConvexPoly():
-
-    def __init__(self, faces=[], plotting=False):
-
-        self.plotting = plotting
-        self.faces = faces
-
-        if self.plotting:
-
-            f = plt.figure()
-            ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
-            self.ax = ax
-
+        if l_bound.overlap(self.bound) > 0:
             for f in self.faces:
-                f.plot(ax=self.ax)
+                if l_bound.overlap(f.bound) > 0:
+                    if np.sign(f.orient(start)) != np.sign(f.orient(end)):
 
-    def contains_point(self, p):
+                        d = np.dot(f.normal, f.vertices[0])
+                        na = np.dot(f.normal, start)
+                        nv = np.dot(f.normal, vec)
+                        t = (d - na) / nv
+                        if 0 <= t <= 1:
+
+                            inter = t * vec + start
+                            iter = 0
+                            if f.bound.contains_point(inter):
+                                while iter < 3:
+                                    if f.neighbors[iter].orient(inter) < 0:
+                                        break
+                                    iter += 1
+
+                                if iter == 3:
+                                    return True
+
+        return False
+
+    def intersections(self, line):
+        start = line[0]
+        end = line[1]
+        l_bound = Cube([min(start[0], end[0]), max(start[0], end[0]), min(start[1], end[1]), max(start[1], end[1]), min(start[2], end[2]), max(start[2], end[2])])
+        vec = end - start
+        inters = []
+
+        if l_bound.overlap(self.bound) > 0:
+            for f in self.faces:
+                if l_bound.overlap(f.bound) > 0:
+                    if np.sign(f.orient(start)) != np.sign(f.orient(end)):
+
+                        d = np.dot(f.normal, f.vertices[0])
+                        na = np.dot(f.normal, start)
+                        nv = np.dot(f.normal, vec)
+                        t = (d - na) / nv
+                        if 0 <= t <= 1:
+
+                            inter = t * vec + start
+                            iter = 0
+                            while iter < 3:
+                                if f.neighbors[iter].orient(inter) < 0:
+                                    break
+                                iter += 1
+
+                            if iter == 3:
+                                inters.append(inter)
+
+        return inters
+
+    def plot(self, view):
         for f in self.faces:
-            curr_face = f.vertices
-            p2f = curr_face[0] - p
-            n = f.normal()
-            d = np.dot(p2f, n) / np.linalg.norm(p2f)
-            if d < 0:
-                return False
-        return True
+            f.plot("#ffffff", view)
 
-    def animate(self):
-        if self.plotting:
-            for angle in range(0, 1000, 2):
+    def rm_plot(self):
+        for f in self.faces:
+            f.rm_plot()
 
-                self.ax.view_init(elev=angle + math.sin(1 / (angle + 1)) / 5, azim=.7 * angle, roll=.8 * angle)
-                plt.draw()
-                plt.pause(.001)
 
-            plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

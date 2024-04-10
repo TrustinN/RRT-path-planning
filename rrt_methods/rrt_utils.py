@@ -1,35 +1,10 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
-from r_trees.r_star_tree import RTree
-from r_trees.r_tree_utils import IndexRecord
-from r_trees.r_tree_utils import nCircle
-from mpl_toolkits.mplot3d import Axes3D
-
-
-###############################################################################
-# Plotting                                                                    #
-###############################################################################
-
-
-def plot_path(path, c="#000000"):
-    path_x = []
-    path_y = []
-    for i in range(len(path)):
-        idx = i % len(path)
-        path_x.append(path[idx][0])
-        path_y.append(path[idx][1])
-    plt.plot(path_x, path_y, c=c)
-
-
-def plot_poly(path, c="#000000"):
-    path_x = []
-    path_y = []
-    for i in range(len(path) + 1):
-        idx = i % len(path)
-        path_x.append(path[idx][0])
-        path_y.append(path[idx][1])
-    plt.plot(path_x, path_y, c=c)
+import pyqtgraph as pg
+import pyqtgraph.opengl as gl
+from utils.rtree.rstar_tree import RTree
+from utils.rtree.rtree_utils import IndexRecord
+from utils.rtree.rtree_utils import NCircle
 
 
 ###############################################################################
@@ -38,8 +13,8 @@ def plot_poly(path, c="#000000"):
 
 
 class Graph(RTree):
-    def __init__(self, vertices=[], num_vertices=0, plotting=False, ax=None):
-        super().__init__(50, dim=2, plotting=plotting, ax=ax)
+    def __init__(self, vertices=[], num_vertices=0, dim=2):
+        super().__init__(10, dim=dim)
         self.vertices = vertices
         self.num_vertices = num_vertices
 
@@ -53,7 +28,7 @@ class Graph(RTree):
                            position=position,
                            parent=parent,
                            dist_to_root=dist_to_root,
-                           ax=self.ax)
+                           )
 
     def add_vertex(self, vertex):
         self.Insert(vertex)
@@ -82,9 +57,13 @@ class Graph(RTree):
 
     def clear(self):
         for v in self.vertices:
-            v.clear_plots()
             self.num_vertices = 0
             self.vertices = []
+
+    def plot(self, view, branches, leaves):
+        super().plot(view, branches, leaves)
+        start = self.vertices[0]
+        start.plot_connections("#00a5ff", view)
 
     class vertex(IndexRecord):
         def __init__(self, value=np.array([]),
@@ -92,7 +71,6 @@ class Graph(RTree):
                      position=0,
                      parent=None,
                      dist_to_root=0,
-                     ax=None
                      ):
             super().__init__(None, value)
             self.value = value
@@ -101,8 +79,6 @@ class Graph(RTree):
             self.num_neighbors = len(self.neighbors)
             self.parent = parent
             self.dist_to_root = dist_to_root
-            self.plots = []
-            self.ax = ax
 
         def __hash__(self):
             return hash(self.value.tostring())
@@ -125,24 +101,10 @@ class Graph(RTree):
 
                 other.dist_to_root = self.dist_to_root + self.dist_to(other)
 
-                if self.ax:
-                    p = self.ax.plot(
-                        [self.value[0], other.value[0]],
-                        [self.value[1], other.value[1]],
-                        c="#7dafe6",
-                        linewidth=1,
-                        )
-                    self.plots.append(p)
-
         def remove_neighbor(self, other_pos):
-            if self.ax:
-                c = self.plots[other_pos]
-                for handle in c:
-                    handle.remove()
-                self.plots.pop(other_pos)
-
             self.neighbors.pop(other_pos)
             self.num_neighbors -= 1
+
             for i in range(self.num_neighbors):
                 self.neighbors[i].position = i
 
@@ -153,36 +115,18 @@ class Graph(RTree):
                 self.position = 0
                 self.parent = None
 
-        def clear_plots(self):
-            for c in self.plots:
-                for handle in c:
-                    handle.remove()
-            self.plots = []
+        def plot_connections(self, color, view):
+            for n in self.neighbors:
+                line = gl.GLLinePlotItem(pos=np.array([self.value, n.value]),
+                                         color=pg.mkColor(color),
+                                         width=0.1)
+
+                line.setGLOptions("opaque")
+                view.addItem(line)
+                n.plot_connections(color, view)
 
         def __repr__(self):
             return f"(value:{self.value})"
-
-
-class Ellipse(object):
-    def __init__(self, f0, f1, d):
-        self.f0 = f0
-        self.f1 = f1
-
-        diff_vec = f0 - f1
-
-        self.center = 0.5 * diff_vec + f1
-        self.a = d / 2
-        self.c = 0.5 * np.linalg.norm(diff_vec)
-        self.b = math.sqrt(pow(self.a, 2) - pow(self.c, 2))
-
-        x_vec = np.array([1, 0])
-        cos_theta = np.dot(x_vec, diff_vec) / (np.linalg.norm(x_vec) * np.linalg.norm(diff_vec))
-        if cos_theta > 1:
-            cos_theta = 1
-        elif cos_theta < -1:
-            cos_theta = -1
-
-        self.angle = np.arccos(cos_theta)
 
 
 ###############################################################################
@@ -201,14 +145,16 @@ def search(f, graph, *args):
     return candidates
 
 
-def search_visible_neighbors(f, region, obstacles, graph, v, r, step_size):
-    # neighbors = search(f, graph, v, r * step_size)
-    scope = nCircle(v.value, r * step_size)
+def search_visible_neighbors(f, map, graph, v, r, step_size):
+
+    scope = NCircle(v.value, r * step_size)
     neighbors = graph.Search(scope)
     visible_neighbors = []
+
     for n in neighbors:
-        if not n.equals(v) and not intersects_objects(region, obstacles, n.value, v.value):
+        if not n.equals(v) and not intersects_objects(map, n.value, v.value):
             visible_neighbors.append(n)
+
     return visible_neighbors
 
 
@@ -238,17 +184,21 @@ def normalize(v):
 def ray_cast(polygon, point):
     num_sides = len(polygon)
     inside = False
+
     for i in range(num_sides):
         p1 = polygon[i]
         p2 = polygon[(i + 1) % num_sides]
         change_x = p1[0] - p2[0]
         change_y = p1[1] - p2[1]
+
         if (p1[1] > point[1]) != (p2[1] > point[1]) and change_y != 0:
             inv_slope = change_x / change_y
             y_scale = point[1] - p1[1]
             x_on_line = p1[0] + inv_slope * y_scale
+
             if x_on_line <= point[0]:
                 inside = not inside
+
     return inside
 
 
@@ -265,12 +215,15 @@ def intersects(p1, p2, p3, p4, tol):
     det = (l2[0] * l1[1]) - (l1[0] * l2[1])
     intersection = False
     intersection_pt = np.array([])
+
     if not abs(det) < tol:
         inv_matrix = np.linalg.inv(matrix)
         x = np.matmul(inv_matrix, b)
+
         if -x[0] > 0 and -x[1] > 0 and 1 > -x[0] and 1 > -x[1]:
             intersection_pt = -x[0] * l2 + p3
             intersection = True
+
     return intersection, intersection_pt
 
 
@@ -312,14 +265,9 @@ def intersects_object(region, p0, p1):
     return False
 
 
-def intersects_objects(region, obstacles, v1, v2):
-    visible = True
-    if intersects_object(region, v1, v2):
-        visible = False
-    for o in obstacles:
-        visible = visible and not intersects_object(o, v1, v2)
-    return not visible
-
+def intersects_objects(map, v1, v2):
+    line = [v1, v2]
+    return map.intersects_line(line)
 
 ###############################################################################
 # Conditions                                                                  #
@@ -334,73 +282,18 @@ def within_dist(p0, p1, dist):
 
 
 def in_free_space(p, region, obstacles):
-    valid_pos = False
-    if ray_cast(region, p):
-        valid_pos = True
+    if region.contains_point(p):
         for o in obstacles:
-            valid_pos = valid_pos and not ray_cast(o, p)
-    return valid_pos
+            if o.contains_point(p):
+                return False
+    else:
+        return False
+    return True
 
 
 ###############################################################################
 # Sampling random point                                                       #
 ###############################################################################
-
-class Sample_Scope():
-
-    def __init__(self, name, scope, map=None):
-        self.name = name
-        self.overlay = scope
-
-
-class Map():
-
-    def __init__(self, region, obstacles, dim=2):
-        self.region = region
-        self.obstacles = obstacles
-        self.dim = dim
-        self.ax = None
-
-    def plot(self):
-
-        if self.dim == 2:
-            _, self.ax = plt.subplots()
-
-        elif self.dim == 3:
-
-            f = plt.figure()
-            ax = f.add_subplot(1, 1, 1, projection=Axes3D.name)
-            self.ax = ax
-
-    def sample_init(self, name, scope):
-        self.scope = Sample_Scope(name, scope)
-
-    def add_path(self, path):
-        self.path = path
-
-
-# Need to create a separate sample space object
-class Sampler(object):
-
-    def __init__(self, map):
-        self.scope = map.scope.name
-        self.region = map.region
-        self.obstacles = map.obstacles
-        self.overlay = map.scope.overlay
-
-    def sample(self):
-        if self.scope == "box":
-            return sample_free(self.overlay, self.region, self.obstacles)
-        if self.scope == "ellipse":
-            return sample_ellipse(self.overlay, buffer=1)
-
-
-# samples point in a given rectangular area bounded
-# west, east, north, and south by some coordinate number
-def sample_point(bounds):
-    rand_x = (bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0]
-    rand_y = (bounds[2] - bounds[3]) * np.random.random_sample() + bounds[3]
-    return np.array([rand_x, rand_y])
 
 
 def sample_circle(r, c):
@@ -410,49 +303,35 @@ def sample_circle(r, c):
                      c[1] + r_rand * math.sin(theta)])
 
 
-# Sample from and ellipse with foci at p0, p1, defined by distance d
-def sample_ellipse(ellipse, buffer=1):
-    center = ellipse.center
-
-    r1 = np.random.random_sample()
-    r2 = np.random.random_sample()
-    x_rand = buffer * ellipse.a * (math.sqrt(r1) + r1) / 2
-    y_rand = buffer * ellipse.b * (math.sqrt(r2) + r2) / 2
-    theta = np.random.random_sample() * 2 * math.pi
-    p = np.array([x_rand * math.cos(theta),
-                  y_rand * math.sin(theta)])
-
-    cos_theta = math.cos(-ellipse.angle)
-    sin_theta = math.sin(-ellipse.angle)
-    rotate = np.array([[cos_theta, -sin_theta],
-                      [sin_theta, cos_theta]])
-
-    p = np.dot(rotate, p)
-    return np.array([p[0] + center[0], p[1] + center[1]])
-
-
 # finds the right, left, north and south bounds
 # of a polygon, given its points
 def find_bounding_box(polygon):
+
     p0 = polygon[0]
     min_x, max_x, max_y, min_y = p0[0], p0[0], p0[1], p0[1]
+
     for i in range(len(polygon)):
         curr_p = polygon[i]
+
         if curr_p[0] < min_x:
             min_x = curr_p[0]
+
         if curr_p[0] > max_x:
             max_x = curr_p[0]
+
         if curr_p[1] > max_y:
             max_y = curr_p[1]
+
         if curr_p[1] < min_y:
             min_y = curr_p[1]
-    return [min_x, max_x, max_y, min_y]
+
+    return [min_x, max_x, min_y, max_y]
 
 
 def sample_free(bounds, region, obstacles):
     p_rand = np.array([])
     while True:
-        p_rand = sample_point(bounds)
+        p_rand = bounds.sample()
         if in_free_space(p_rand, region, obstacles):
             break
     return p_rand
@@ -512,13 +391,13 @@ def expected_num(area, density):
 ###############################################################################
 
 
-def graph_init(map, connect=False, plotting=False):
-
-    if plotting:
-        map.plot()
+def graph_init(map, connect=False):
 
     start, end = map.path[0], map.path[1]
-    graph0, graph1 = Graph(plotting=plotting, ax=map.ax), Graph(plotting=plotting, ax=map.ax)
+
+    graph0 = Graph(vertices=[], num_vertices=0, dim=map.dim)
+    graph1 = Graph(vertices=[], num_vertices=0, dim=map.dim)
+
     v_start = graph0.make_vertex(value=start, neighbors=[])
     v_end = graph1.make_vertex(value=end, neighbors=[], dist_to_root=0)
 
@@ -564,8 +443,8 @@ def rrt_extend(p_rand, p_near, v_near, region, obstacles, step_size, graph0, gra
     return v_near
 
 
-def rrt_extend_connect(p_rand, p_near, v_near, region, obstacles, step_size, graph0, graph1):
-    c = intersections(region, obstacles, p_rand, p_near)
+def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
+    c = map.intersections([p_rand, p_near])
     min_dist = np.linalg.norm(p_rand - p_near)
     connect = False
 
@@ -588,7 +467,7 @@ def rrt_extend_connect(p_rand, p_near, v_near, region, obstacles, step_size, gra
         v_near.add_neighbor(v_new)
         graph0.add_vertex(v_new)
         prev_parent = v_near
-        connect = rrt_connect(v_new, graph0, graph1, region, obstacles, 5, step_size)
+        connect = rrt_connect(v_new, graph0, graph1, map, 5, step_size)
         v_near = v_new
         if connect:
             return connect, v_near, prev_parent
@@ -599,10 +478,9 @@ def rrt_extend_connect(p_rand, p_near, v_near, region, obstacles, step_size, gra
 # for vertices that can be connected to within a radius of
 # r * step_size returns a boolean value for if a connection was
 # made
-def rrt_connect(v, graph0, graph1, region, obstacles, r, step_size):
+def rrt_connect(v, graph0, graph1, map, r, step_size):
     neighbors = search_visible_neighbors(within_dist,
-                                         region,
-                                         obstacles,
+                                         map,
                                          graph1,
                                          v, r,
                                          step_size
@@ -626,10 +504,9 @@ def rrt_connect_path(v_start, v_end, graph0, graph1, c1, c2):
 # Looks through graph for vertices within r of vertex
 # If distance candidate -> vertex -> root is less than
 # distance candidate -> root we reroute.
-def rrt_rewire(v, graph, region, obstacles, r, step_size, end, connect=False):
+def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
     neighbors = search_visible_neighbors(within_dist,
-                                         region,
-                                         obstacles,
+                                         map,
                                          graph,
                                          v, r,
                                          step_size
@@ -654,20 +531,20 @@ def rrt_rewire(v, graph, region, obstacles, r, step_size, end, connect=False):
                 n.remove_parent()
                 v.add_neighbor(n)
         if not connect:
-            if not intersects_objects(region, obstacles, end.value, v.value):
+            if not intersects_objects(map, end.value, v.value):
                 if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                     end.remove_parent()
                     v.add_neighbor(end)
+
     return added_to_graph
 
 
 # Looks through graph for vertices within r of vertex
 # If distance candidate -> vertex -> root is less than
 # distance candidate -> root we reroute.
-def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=False):
+def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
     neighbors = set(search_visible_neighbors(within_dist,
-                                             region,
-                                             obstacles,
+                                             map,
                                              graph,
                                              v, r,
                                              step_size
@@ -679,7 +556,7 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
         for i in range(depth):
             if curr_node:
                 if curr_node.dist_to_root + curr_node.dist_to(v) < v.dist_to_root:
-                    if not intersects_objects(region, obstacles, v.value, curr_node.value):
+                    if not intersects_objects(map, v.value, curr_node.value):
                         v.remove_parent()
                         curr_node.add_neighbor(v)
                         added_to_graph = True
@@ -689,12 +566,10 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
         graph.add_vertex(v)
 
     if v.parent:
-        if not intersects_objects(region, obstacles, end.value, v.value):
+        if not intersects_objects(map, end.value, v.value):
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                 end.remove_parent()
                 v.add_neighbor(end)
-
-
 
 
 

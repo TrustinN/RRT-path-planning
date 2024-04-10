@@ -1,6 +1,6 @@
 import numpy as np
 from utils.maps.map_utils import Spheroid
-from . import rrt_star
+from . import quick_rrt_star
 from . import rrt_star_connect
 
 
@@ -16,7 +16,7 @@ def rrt_run(map, step_size, max_iter):
 
     # Find a path first
     start, end = map.path[0], map.path[1]
-    path, graph, _ = rrt_star_connect.rrt_run(map, step_size, max_iter, clear=True)
+    path, _, _ = rrt_star_connect.rrt_run(map, step_size, max_iter, clear=True)
     d_worst = 0
 
     for i in range(len(path) - 2):
@@ -34,15 +34,9 @@ def rrt_run(map, step_size, max_iter):
     scale = d_worst / np.linalg.norm(start - end)
     max_iter = max_iter * scale / 1.5
 
-    path, graph, _ = rrt_star.rrt_run(map, step_size, max_iter)
+    path, graph, _ = quick_rrt_star.rrt_run(map, step_size, max_iter)
 
     return path, graph, _
-
-
-
-
-
-
 
 
 

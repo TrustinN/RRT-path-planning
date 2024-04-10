@@ -1,10 +1,8 @@
 from .rrt_utils import graph_init
-from .rrt_utils import Sampler
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_extend_connect
 from .rrt_utils import rrt_connect_path
-from r_trees.r_tree_utils import IndexRecord
-from utils.map_utils import plot_path
+from utils.rtree.rtree_utils import IndexRecord
 
 
 ###############################################################################
@@ -15,10 +13,9 @@ from utils.map_utils import plot_path
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
+def rrt_run(map, step_size, max_iter, clear=False):
 
-    sampler = Sampler(map)
-    v_start, v_end, t_start, t_end = graph_init(map=map, plotting=plotting)
+    v_start, v_end, t_start, t_end = graph_init(map=map)
 
     connect = False
     c1, c2 = None, None
@@ -27,7 +24,7 @@ def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
     while iter < max_iter:
         iter += 1
 
-        p_rand = sampler.sample()
+        p_rand = map.sample()
         p_test = IndexRecord(None, p_rand)
         v_near = t_start.NearestNeighbor(p_test)
         p_near = v_near.value
@@ -36,8 +33,7 @@ def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
             connect, c1, c2 = rrt_extend_connect(p_rand,
                                                  p_near,
                                                  v_near,
-                                                 map.region,
-                                                 map.obstacles,
+                                                 map,
                                                  step_size,
                                                  t_start, t_end,
                                                  )
@@ -53,8 +49,7 @@ def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
             connect, c1, c2 = rrt_extend_connect(p_rand,
                                                  p_near,
                                                  v_near,
-                                                 map.region,
-                                                 map.obstacles,
+                                                 map,
                                                  step_size,
                                                  t_end, t_start,
                                                  )
@@ -71,10 +66,25 @@ def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
     else:
         path = rrt_connect_path(v_start, v_end, t_start, t_end, c1, c2)
 
-    if plotting:
-        plot_path(path, c="#000000", ax=map.ax)
+    return path, t_start, t_end
 
-    return path
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
