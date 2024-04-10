@@ -145,17 +145,12 @@ def search(f, graph, *args):
     return candidates
 
 
-def search_visible_neighbors(f, map, graph, v, r, step_size):
+def search_neighbors(f, map, graph, v, r, step_size):
 
     scope = NCircle(v.value, r * step_size)
     neighbors = graph.Search(scope)
-    visible_neighbors = []
-
-    for n in neighbors:
-        if not n.equals(v) and not intersects_objects(map, n.value, v.value):
-            visible_neighbors.append(n)
-
-    return visible_neighbors
+    neighbors.sort(key=lambda x: x.dist_to_root)
+    return neighbors
 
 
 # Given p, return closest point to p in vertices
@@ -479,17 +474,25 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
 # r * step_size returns a boolean value for if a connection was
 # made
 def rrt_connect(v, graph0, graph1, map, r, step_size):
-    neighbors = search_visible_neighbors(within_dist,
-                                         map,
-                                         graph1,
-                                         v, r,
-                                         step_size
-                                         )
+    neighbors = search_neighbors(within_dist,
+                                 map,
+                                 graph1,
+                                 v, r,
+                                 step_size)
 
-    if len(neighbors) != 0:
-        neighbors[0].add_neighbor(v)
-        graph1.add_vertex(v)
-        return True
+    i = 0
+
+    while i < len(neighbors):
+        curr_neighbor = neighbors[i]
+
+        if not intersects_objects(map, curr_neighbor.value, v.value):
+            curr_neighbor.add_neighbor(v)
+            graph1.add_vertex(v)
+
+            return True
+
+        i += 1
+
     return False
 
 
@@ -505,21 +508,22 @@ def rrt_connect_path(v_start, v_end, graph0, graph1, c1, c2):
 # If distance candidate -> vertex -> root is less than
 # distance candidate -> root we reroute.
 def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
-    neighbors = search_visible_neighbors(within_dist,
-                                         map,
-                                         graph,
-                                         v, r,
-                                         step_size
-                                         )
+    neighbors = search_neighbors(within_dist,
+                                 map,
+                                 graph,
+                                 v, r,
+                                 step_size
+                                 )
 
     new_parent = None
     added_to_graph = False
-    min_dist_to_root = math.inf
-    for n in neighbors:
-        curr_dist_to_root = n.dist_to(v) + n.dist_to_root
-        if curr_dist_to_root < min_dist_to_root:
-            new_parent = n
-            min_dist_to_root = curr_dist_to_root
+    i = 0
+    while i < len(neighbors):
+        curr_neighbor = neighbors[i]
+        if not intersects_objects(map, curr_neighbor.value, v.value):
+            new_parent = curr_neighbor
+            break
+        i += 1
 
     if new_parent:
         new_parent.add_neighbor(v)
@@ -543,27 +547,36 @@ def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
 # If distance candidate -> vertex -> root is less than
 # distance candidate -> root we reroute.
 def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
-    neighbors = set(search_visible_neighbors(within_dist,
-                                             map,
-                                             graph,
-                                             v, r,
-                                             step_size
-                                             ))
+    neighbors = search_neighbors(within_dist,
+                                 map,
+                                 graph,
+                                 v, r,
+                                 step_size
+                                 )
 
-    added_to_graph = False
-    for n in neighbors:
-        curr_node = n
-        for i in range(depth):
-            if curr_node:
-                if curr_node.dist_to_root + curr_node.dist_to(v) < v.dist_to_root:
-                    if not intersects_objects(map, v.value, curr_node.value):
-                        v.remove_parent()
-                        curr_node.add_neighbor(v)
-                        added_to_graph = True
-                curr_node = curr_node.parent
+    new_parent = None
+    i = 0
 
-    if added_to_graph:
+    while i < len(neighbors):
+        curr_neighbor = neighbors[i]
+        if not intersects_objects(map, curr_neighbor.value, v.value):
+            new_parent = curr_neighbor
+            break
+        i += 1
+
+    if new_parent:
+        new_parent.add_neighbor(v)
         graph.add_vertex(v)
+
+        for i in range(depth):
+            new_parent = new_parent.parent
+            if new_parent:
+                if not intersects_objects(map, new_parent.value, v.value):
+                    v.remove_parent()
+                    new_parent.add_neighbor(v)
+
+            else:
+                break
 
     if v.parent:
         if not intersects_objects(map, end.value, v.value):

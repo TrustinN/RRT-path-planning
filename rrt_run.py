@@ -1,4 +1,3 @@
-import timeit
 import pyqtgraph as pg
 from rrt_methods.RRTsolver import RRTsolver
 
@@ -52,14 +51,10 @@ methods = ["rrt",                        # 0
            "informed_quick_rrt_star"     # 6
            ]
 
-start = timeit.default_timer()
+rrt = RRTsolver(map=map, step_size=20, max_iter=2000, method=methods[0])
+rrt.plot(branches=True, leaves=False)
 
-rrt = RRTsolver(map=map, step_size=20, max_iter=2000, method=methods[4])
-
-stop = timeit.default_timer()
-print('Time: ', stop - start)
-
-rrt.plot(branches=False, leaves=False)
+print(rrt.get_time())
 
 pg.exec()
 

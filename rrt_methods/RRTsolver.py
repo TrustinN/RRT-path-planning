@@ -1,3 +1,4 @@
+import timeit
 import numpy as np
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
@@ -27,11 +28,17 @@ class RRTsolver():
         elif method == "informed_quick_rrt_star":
             from .informed_quick_rrt_star import rrt_run
 
+        time_start = timeit.default_timer()
         path, t_start, t_end = rrt_run(map=map, step_size=step_size, max_iter=max_iter)
+        time_stop = timeit.default_timer()
+
+        self.time = time_stop - time_start
+        self.method = method
+
+        self.map = map
         self.path = path
         self.t_start = t_start
         self.t_end = t_end
-        self.map = map
 
     def plot(self, branches, leaves):
 
@@ -59,6 +66,29 @@ class RRTsolver():
                                          width=10)
                 line.setGLOptions("opaque")
                 self.view.addItem(line)
+
+    def get_time(self):
+        return "Time (" + self.method + f"): {self.time}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

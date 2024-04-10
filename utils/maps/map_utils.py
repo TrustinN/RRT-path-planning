@@ -176,7 +176,7 @@ class Spheroid(object):
         rot_z = rot_z / np.linalg.norm(rot_z)
         self.rotate = np.c_[rot_x, rot_y, rot_z]
 
-    def sample(self, buffer=1):
+    def sample(self, buffer=1.2):
         center = self.center
 
         r1 = np.random.random_sample()
