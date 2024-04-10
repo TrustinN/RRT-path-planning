@@ -2,9 +2,6 @@ import numpy as np
 import math
 from rrt_methods.rrt_utils import ray_cast
 from rrt_methods.rrt_utils import sample_free
-import matplotlib.pyplot as plt
-import pyqtgraph as pg
-import pyqtgraph.opengl as gl
 from utils.quickhull.utils import ConvexPoly
 from utils.quickhull.hull import QuickHull
 
@@ -20,24 +17,6 @@ class Map():
         self.region = region
         self.obstacles = obstacles
         self.dim = dim
-        self.view = None
-
-    def plot(self):
-
-        if self.dim == 2:
-            _, self.ax = plt.subplots()
-
-        elif self.dim == 3:
-
-            pg.mkQApp("Map")
-            self.view = gl.GLViewWidget()
-            self.view.setCameraPosition(distance=1500)
-            self.view.pan(400, 400, 400)
-            self.view.show()
-            g = gl.GLGridItem()
-            g.translate(400, 400, -200)
-            g.scale(100, 100, 100)
-            self.view.addItem(g)
 
     def sample_init(self, scope):
         self.overlay = scope

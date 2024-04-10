@@ -81,18 +81,9 @@ class RandObsMap(Map):
             ints += o.intersections(line)
         return ints
 
-    def plot(self):
-        super().plot()
+    def plot(self, view):
         for hull in self.obstacles:
-            hull.plot(self.view)
-
-    def plot_path(self, path):
-        for i in range(len(path) - 1):
-            line = gl.GLLinePlotItem(pos=np.array([path[i], path[i + 1]]),
-                                     color=pg.mkColor("#ff00ff"),
-                                     width=10)
-            line.setGLOptions("opaque")
-            self.view.addItem(line)
+            hull.plot(view)
 
 
 

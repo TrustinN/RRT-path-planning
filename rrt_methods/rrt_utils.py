@@ -13,9 +13,8 @@ from utils.rtree.rtree_utils import NCircle
 
 
 class Graph(RTree):
-    def __init__(self, vertices=[], num_vertices=0, plotting=False, view=None, dim=2):
+    def __init__(self, vertices=[], num_vertices=0, dim=2):
         super().__init__(10, dim=dim)
-        self.view = view
         self.vertices = vertices
         self.num_vertices = num_vertices
 
@@ -29,7 +28,7 @@ class Graph(RTree):
                            position=position,
                            parent=parent,
                            dist_to_root=dist_to_root,
-                           view=self.view)
+                           )
 
     def add_vertex(self, vertex):
         self.Insert(vertex)
@@ -58,9 +57,13 @@ class Graph(RTree):
 
     def clear(self):
         for v in self.vertices:
-            v.clear_plots()
             self.num_vertices = 0
             self.vertices = []
+
+    def plot(self, view, branches, leaves):
+        super().plot(view, branches, leaves)
+        start = self.vertices[0]
+        start.plot_connections("#00a5ff", view)
 
     class vertex(IndexRecord):
         def __init__(self, value=np.array([]),
@@ -68,7 +71,6 @@ class Graph(RTree):
                      position=0,
                      parent=None,
                      dist_to_root=0,
-                     view=None
                      ):
             super().__init__(None, value)
             self.value = value
@@ -77,8 +79,6 @@ class Graph(RTree):
             self.num_neighbors = len(self.neighbors)
             self.parent = parent
             self.dist_to_root = dist_to_root
-            self.plots = []
-            self.view = view
 
         def __hash__(self):
             return hash(self.value.tostring())
@@ -101,24 +101,12 @@ class Graph(RTree):
 
                 other.dist_to_root = self.dist_to_root + self.dist_to(other)
 
-                if self.view:
-                    p = gl.GLLinePlotItem(pos=np.array([self.value, other.value]),
-                                          color=pg.mkColor("#00a5ff"),
-                                          width=0.1)
-                    p.setGLOptions("opaque")
-                    self.view.addItem(p)
-                    self.plots.append(p)
-
         def remove_neighbor(self, other_pos):
             self.neighbors.pop(other_pos)
             self.num_neighbors -= 1
 
             for i in range(self.num_neighbors):
                 self.neighbors[i].position = i
-
-            if self.view:
-                c = self.plots.pop(other_pos)
-                self.view.removeItem(c)
 
         def remove_parent(self):
             if self.parent:
@@ -127,10 +115,15 @@ class Graph(RTree):
                 self.position = 0
                 self.parent = None
 
-        def clear_plots(self):
-            for c in self.plots:
-                self.view.removeItem(c)
-            self.plots = []
+        def plot_connections(self, color, view):
+            for n in self.neighbors:
+                line = gl.GLLinePlotItem(pos=np.array([self.value, n.value]),
+                                         color=pg.mkColor(color),
+                                         width=0.1)
+
+                line.setGLOptions("opaque")
+                view.addItem(line)
+                n.plot_connections(color, view)
 
         def __repr__(self):
             return f"(value:{self.value})"
@@ -398,15 +391,12 @@ def expected_num(area, density):
 ###############################################################################
 
 
-def graph_init(map, connect=False, plotting=False):
-
-    if plotting:
-        map.plot()
+def graph_init(map, connect=False):
 
     start, end = map.path[0], map.path[1]
 
-    graph0 = Graph(plotting=plotting, view=map.view, dim=map.dim)
-    graph1 = Graph(plotting=plotting, view=map.view, dim=map.dim)
+    graph0 = Graph(vertices=[], num_vertices=0, dim=map.dim)
+    graph1 = Graph(vertices=[], num_vertices=0, dim=map.dim)
 
     v_start = graph0.make_vertex(value=start, neighbors=[])
     v_end = graph1.make_vertex(value=end, neighbors=[], dist_to_root=0)

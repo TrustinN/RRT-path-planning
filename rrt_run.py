@@ -1,5 +1,6 @@
 import timeit
 import pyqtgraph as pg
+from rrt_methods.RRTsolver import RRTsolver
 
 ###############################################################################
 # Make Test Regions for RRT                                                   #
@@ -16,18 +17,6 @@ from utils.maps.maps3d import RandObsMap
 
 from utils.maps.map_utils import Rectangle
 from utils.maps.map_utils import Cube
-
-###############################################################################
-# RRT Methods and Variations                                                  #
-###############################################################################
-
-# from rrt_methods.rrt import rrt_run
-# from rrt_methods.rrt_connect import rrt_run
-# from rrt_methods.rrt_star import rrt_run
-# from rrt_methods.rrt_star_connect import rrt_run
-# from rrt_methods.quick_rrt_star import rrt_run
-# from rrt_methods.informed_rrt_star import rrt_run
-from rrt_methods.informed_quick_rrt_star import rrt_run
 
 ###############################################################################
 # Generate Regions                                                            #
@@ -54,12 +43,23 @@ else:
         map = RandObsMap(25, 180)
     map.sample_init(Cube(bounds))
 
+methods = ["rrt",                        # 0
+           "rrt_connect",                # 1
+           "rrt_star",                   # 2
+           "rrt_star_connect",           # 3
+           "informed_rrt_star",          # 4
+           "quick_rrt_star",             # 5
+           "informed_quick_rrt_star"     # 6
+           ]
+
 start = timeit.default_timer()
-path = rrt_run(map=map, step_size=20, max_iter=2000, plotting=True)
+rrt = RRTsolver(map=map, step_size=20, max_iter=2000, method=methods[4])
 stop = timeit.default_timer()
+rrt.plot(branches=False, leaves=False)
 
 print('Time: ', stop - start)
 pg.exec()
+
 
 
 

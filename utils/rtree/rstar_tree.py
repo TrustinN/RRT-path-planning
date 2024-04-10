@@ -52,11 +52,11 @@ class RTree(object):
         def update_bound(self, bound):
             self.covering = bound
 
-        def plot(self, view):
+        def plot(self, view, branches, leaves):
             for i in self.items:
-                i.pointer.plot(view)
+                i.pointer.plot(view, branches, leaves)
 
-            if self.covering.dim < 3:
+            if branches:
                 self.covering.plot("#ff0000", view)
 
         def __str__(self):
@@ -78,8 +78,11 @@ class RTree(object):
             super().__init__(items, covering, level)
             self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
 
-        def plot(self, view):
-            self.covering.plot("#009b00", view)
+        def plot(self, view, branches, leaves):
+
+            if leaves:
+                self.covering.plot("#009b00", view)
+
             for i in self.items:
                 i.plot(self.color, view)
 
@@ -147,15 +150,8 @@ class RTree(object):
 
         self.root = RTree.LeafNode(items=[], covering=None, level=0)
 
-    def plot(self):
-
-        if self.dim == 3:
-            self.view.show()
-            mid = self.root.covering.center
-            self.view.setCameraPosition(distance=np.linalg.norm(mid))
-            self.view.pan(mid[0], mid[1], mid[2])
-
-        self.root.plot(self.view)
+    def plot(self, view, branches=False, leaves=True):
+        self.root.plot(view, branches, leaves)
 
     def __str__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
@@ -617,6 +613,7 @@ class RTree(object):
                     dist = RTree.Bound.get_dist(child_node.covering, entry.tuple_identifier)
                     e = PrioritizedItem(dist, child_node)
                     pq.put(e)
+
 
 
 

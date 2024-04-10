@@ -12,11 +12,11 @@ from . import rrt_star_connect
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(map, step_size, max_iter, plotting=False):
+def rrt_run(map, step_size, max_iter):
 
     # Find a path first
     start, end = map.path[0], map.path[1]
-    path = rrt_star_connect.rrt_run(map, step_size, max_iter, clear=True, plotting=False)
+    path, graph, _ = rrt_star_connect.rrt_run(map, step_size, max_iter, clear=True)
     d_worst = 0
 
     for i in range(len(path) - 2):
@@ -34,12 +34,9 @@ def rrt_run(map, step_size, max_iter, plotting=False):
     scale = d_worst / np.linalg.norm(start - end)
     max_iter = max_iter * scale / 1.5
 
-    path = rrt_star.rrt_run(map, step_size, max_iter, plotting=plotting)
+    path, graph, _ = rrt_star.rrt_run(map, step_size, max_iter)
 
-    if plotting:
-        map.plot_path(path)
-
-    return path
+    return path, graph, _
 
 
 

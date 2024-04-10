@@ -160,7 +160,7 @@ class ConvexPoly():
 
     def plot(self, view):
         for f in self.faces:
-            f.plot("#505050", view)
+            f.plot("#ffffff", view)
 
     def rm_plot(self):
         for f in self.faces:

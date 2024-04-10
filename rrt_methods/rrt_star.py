@@ -14,13 +14,12 @@ from utils.rtree.rtree_utils import IndexRecord
 # Takes in a region that our object can travel in along
 # with obstacles and computes the shortest route
 # from the starting position to the end position
-def rrt_run(map, step_size, max_iter, plotting=False):
+def rrt_run(map, step_size, max_iter):
 
-    v_start, v_end, graph, _ = graph_init(map=map, plotting=plotting)
+    v_start, v_end, graph, _ = graph_init(map=map)
 
     iter = 0
     while iter < max_iter:
-        iter += 1
 
         p_rand = map.sample()
         p_test = IndexRecord(None, p_rand)
@@ -28,6 +27,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
         p_new = rrt_step(p_rand, v_near, step_size)
 
         if in_free_space(p_new, map.region, map.obstacles):
+            iter += 1
             v_new = graph.make_vertex(value=p_new,
                                       neighbors=[],
                                       position=0,
@@ -40,10 +40,18 @@ def rrt_run(map, step_size, max_iter, plotting=False):
     else:
         path = graph.backtrack(v_start, v_end)
 
-    if plotting:
-        map.plot_path(path)
+    return path, graph, None
 
-    return path
+
+
+
+
+
+
+
+
+
+
 
 
 
