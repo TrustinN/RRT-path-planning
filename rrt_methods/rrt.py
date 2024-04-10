@@ -1,7 +1,7 @@
 from .rrt_utils import graph_init
 from .rrt_utils import intersects_objects
 from .rrt_utils import in_free_space
-from r_trees.r_tree_utils import IndexRecord
+from utils.rtree.rtree_utils import IndexRecord
 
 
 ###############################################################################

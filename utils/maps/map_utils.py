@@ -5,8 +5,8 @@ from rrt_methods.rrt_utils import sample_free
 import matplotlib.pyplot as plt
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from .quickhull.utils import ConvexPoly
-from .quickhull.main import QuickHull
+from utils.quickhull.utils import ConvexPoly
+from utils.quickhull.hull import QuickHull
 
 
 ###############################################################################

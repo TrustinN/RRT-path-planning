@@ -3,9 +3,9 @@ import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 from .map_utils import Map
 from .map_utils import Cube
-from .quickhull.main import QuickHull
-from r_trees.r_star_tree import RTree
-from r_trees.r_tree_utils import Cube as CubeBound
+from utils.quickhull.hull import QuickHull
+from utils.rtree.rstar_tree import RTree
+from utils.rtree.rtree_utils import Cube as CubeBound
 
 
 class RandObsMap(Map):
@@ -17,7 +17,7 @@ class RandObsMap(Map):
         vertices = [np.array([bounds[i], bounds[j + 2], bounds[k + 4]]) for i in range(2) for j in range(2) for k in range(2)]
         region = QuickHull(vertices)
 
-        self.obs_tree = RTree(10, dim=3, plotting=False, view=None)
+        self.obs_tree = RTree(10, dim=3)
         obstacles = []
         bounds = [100, 700, 100, 700, 100, 700]
         while n > 0:

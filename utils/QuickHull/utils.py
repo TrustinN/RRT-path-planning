@@ -1,9 +1,9 @@
 import math
 import numpy as np
-import pyqtgraph as pg
+from colorutils import Color
 import pyqtgraph.opengl as gl
-from r_trees.r_tree_utils import Cube
-from r_trees.r_tree_utils import IndexRecord
+from utils.rtree.rtree_utils import Cube
+from utils.rtree.rtree_utils import IndexRecord
 
 
 class Facet(IndexRecord):
@@ -57,6 +57,24 @@ class Facet(IndexRecord):
 
     def orient(self, p):
         return np.dot(self.normal, self.b - p)
+
+    def plot(self, color, view):
+        md = gl.MeshData(vertexes=self.vertices, faces=np.array([[0, 1, 2]]))
+        c = Color(web=color)
+        rgb = c.rgb
+        p0, p1, p2 = rgb[0], rgb[1], rgb[2]
+        colors = np.ones((md.faceCount(), 4), dtype=float)
+        colors[:, 3] = 0.2
+        colors[:, 2] = np.linspace(p2/255, 1, colors.shape[0])
+        colors[:, 1] = np.linspace(p1/255, 1, colors.shape[0])
+        colors[:, 0] = np.linspace(p0/255, 1, colors.shape[0])
+
+        md.setFaceColors(colors=colors)
+        m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader='shaded')
+        m1.setGLOptions('opaque')
+        self.p = m1
+        self.view = view
+        view.addItem(m1)
 
 
 class ConvexPoly():
@@ -141,21 +159,13 @@ class ConvexPoly():
         return inters
 
     def plot(self, view):
-        faces = np.array([f.vertices for f in self.faces])
-        vertices = [f[i] for f in faces for i in range(3)]
-        indices = np.arange(3 * len(faces)).reshape(len(faces), 3)
+        for f in self.faces:
+            f.plot("#505050", view)
 
-        md = gl.MeshData(vertexes=vertices, faces=indices)
-        colors = np.ones((md.faceCount(), 4), dtype=float)
-        colors[:, 3] = 0.5
-        colors[:, 2] = np.linspace(0.3, 1, colors.shape[0])
-        colors[:, 1] = np.linspace(0.3, 1, colors.shape[0])
-        colors[:, 0] = np.linspace(0.3, 1, colors.shape[0])
+    def rm_plot(self):
+        for f in self.faces:
+            f.rm_plot()
 
-        md.setFaceColors(colors=colors)
-        m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader="shaded", glOptions='opaque')
-
-        view.addItem(m1)
 
 
 

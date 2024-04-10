@@ -5,17 +5,17 @@ import pyqtgraph as pg
 # Make Test Regions for RRT                                                   #
 ###############################################################################
 
-from utils.maps2d import RaceMap
-from utils.maps2d import SquareObsMap
-from utils.maps2d import Maze
-from utils.maps3d import RandObsMap
+from utils.maps.maps2d import RaceMap
+from utils.maps.maps2d import SquareObsMap
+from utils.maps.maps2d import Maze
+from utils.maps.maps3d import RandObsMap
 
 ###############################################################################
 # Sampling                                                                    #
 ###############################################################################
 
-from utils.map_utils import Rectangle
-from utils.map_utils import Cube
+from utils.maps.map_utils import Rectangle
+from utils.maps.map_utils import Cube
 
 ###############################################################################
 # RRT Methods and Variations                                                  #

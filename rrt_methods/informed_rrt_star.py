@@ -1,5 +1,5 @@
 import numpy as np
-from utils.map_utils import Spheroid
+from utils.maps.map_utils import Spheroid
 from . import rrt_star
 from . import rrt_star_connect
 

@@ -2,7 +2,7 @@ from .rrt_utils import graph_init
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_extend_connect
 from .rrt_utils import rrt_connect_path
-from r_trees.r_tree_utils import IndexRecord
+from utils.rtree.rtree_utils import IndexRecord
 
 
 ###############################################################################

@@ -2,9 +2,9 @@ import math
 import numpy as np
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from r_trees.r_star_tree import RTree
-from r_trees.r_tree_utils import IndexRecord
-from r_trees.r_tree_utils import nCircle
+from utils.rtree.rstar_tree import RTree
+from utils.rtree.rtree_utils import IndexRecord
+from utils.rtree.rtree_utils import NCircle
 
 
 ###############################################################################
@@ -14,7 +14,8 @@ from r_trees.r_tree_utils import nCircle
 
 class Graph(RTree):
     def __init__(self, vertices=[], num_vertices=0, plotting=False, view=None, dim=2):
-        super().__init__(10, dim=dim, plotting=plotting, view=view)
+        super().__init__(10, dim=dim)
+        self.view = view
         self.vertices = vertices
         self.num_vertices = num_vertices
 
@@ -153,7 +154,7 @@ def search(f, graph, *args):
 
 def search_visible_neighbors(f, map, graph, v, r, step_size):
 
-    scope = nCircle(v.value, r * step_size)
+    scope = NCircle(v.value, r * step_size)
     neighbors = graph.Search(scope)
     visible_neighbors = []
 

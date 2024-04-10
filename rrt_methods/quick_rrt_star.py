@@ -4,7 +4,7 @@ from .rrt_utils import graph_init
 from .rrt_utils import rrt_step
 from .rrt_utils import in_free_space
 from .rrt_utils import rrt_q_rewire
-from r_trees.r_tree_utils import IndexRecord
+from utils.rtree.rtree_utils import IndexRecord
 
 ###############################################################################
 # RRT Method                                                                  #
