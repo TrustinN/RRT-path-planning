@@ -1,36 +1,10 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 from r_trees.r_star_tree import RTree
 from r_trees.r_tree_utils import IndexRecord
 from r_trees.r_tree_utils import nCircle
-
-
-###############################################################################
-# Plotting                                                                    #
-###############################################################################
-
-
-def plot_path(path, c="#000000"):
-    path_x = []
-    path_y = []
-    for i in range(len(path)):
-        idx = i % len(path)
-        path_x.append(path[idx][0])
-        path_y.append(path[idx][1])
-    plt.plot(path_x, path_y, c=c)
-
-
-def plot_poly(path, c="#000000"):
-    path_x = []
-    path_y = []
-    for i in range(len(path) + 1):
-        idx = i % len(path)
-        path_x.append(path[idx][0])
-        path_y.append(path[idx][1])
-    plt.plot(path_x, path_y, c=c)
 
 
 ###############################################################################
@@ -40,7 +14,7 @@ def plot_poly(path, c="#000000"):
 
 class Graph(RTree):
     def __init__(self, vertices=[], num_vertices=0, plotting=False, view=None, dim=2):
-        super().__init__(50, dim=dim, plotting=plotting, view=view)
+        super().__init__(10, dim=dim, plotting=plotting, view=view)
         self.vertices = vertices
         self.num_vertices = num_vertices
 
@@ -129,7 +103,7 @@ class Graph(RTree):
                 if self.view:
                     p = gl.GLLinePlotItem(pos=np.array([self.value, other.value]),
                                           color=pg.mkColor("#00a5ff"),
-                                          )
+                                          width=0.1)
                     p.setGLOptions("opaque")
                     self.view.addItem(p)
                     self.plots.append(p)
@@ -177,14 +151,14 @@ def search(f, graph, *args):
     return candidates
 
 
-def search_visible_neighbors(f, region, obstacles, graph, v, r, step_size):
+def search_visible_neighbors(f, map, graph, v, r, step_size):
 
     scope = nCircle(v.value, r * step_size)
     neighbors = graph.Search(scope)
     visible_neighbors = []
 
     for n in neighbors:
-        if not n.equals(v) and not intersects_objects(region, obstacles, n.value, v.value):
+        if not n.equals(v) and not intersects_objects(map, n.value, v.value):
             visible_neighbors.append(n)
 
     return visible_neighbors
@@ -297,22 +271,9 @@ def intersects_object(region, p0, p1):
     return False
 
 
-# def intersects_objects(region, obstacles, v1, v2):
-#     visible = True
-#     if intersects_object(region, v1, v2):
-#         visible = False
-#     for o in obstacles:
-#         visible = visible and not intersects_object(o, v1, v2)
-#     return not visible
-
-def intersects_objects(region, obstacles, v1, v2):
+def intersects_objects(map, v1, v2):
     line = [v1, v2]
-    if region.intersects_line(line):
-        return True
-    for o in obstacles:
-        if o.intersects_line(line):
-            return True
-    return False
+    return map.intersects_line(line)
 
 ###############################################################################
 # Conditions                                                                  #
@@ -515,7 +476,7 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
         v_near.add_neighbor(v_new)
         graph0.add_vertex(v_new)
         prev_parent = v_near
-        connect = rrt_connect(v_new, graph0, graph1, map.region, map.obstacles, 5, step_size)
+        connect = rrt_connect(v_new, graph0, graph1, map, 5, step_size)
         v_near = v_new
         if connect:
             return connect, v_near, prev_parent
@@ -526,10 +487,9 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
 # for vertices that can be connected to within a radius of
 # r * step_size returns a boolean value for if a connection was
 # made
-def rrt_connect(v, graph0, graph1, region, obstacles, r, step_size):
+def rrt_connect(v, graph0, graph1, map, r, step_size):
     neighbors = search_visible_neighbors(within_dist,
-                                         region,
-                                         obstacles,
+                                         map,
                                          graph1,
                                          v, r,
                                          step_size
@@ -553,10 +513,9 @@ def rrt_connect_path(v_start, v_end, graph0, graph1, c1, c2):
 # Looks through graph for vertices within r of vertex
 # If distance candidate -> vertex -> root is less than
 # distance candidate -> root we reroute.
-def rrt_rewire(v, graph, region, obstacles, r, step_size, end, connect=False):
+def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
     neighbors = search_visible_neighbors(within_dist,
-                                         region,
-                                         obstacles,
+                                         map,
                                          graph,
                                          v, r,
                                          step_size
@@ -581,20 +540,20 @@ def rrt_rewire(v, graph, region, obstacles, r, step_size, end, connect=False):
                 n.remove_parent()
                 v.add_neighbor(n)
         if not connect:
-            if not intersects_objects(region, obstacles, end.value, v.value):
+            if not intersects_objects(map, end.value, v.value):
                 if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                     end.remove_parent()
                     v.add_neighbor(end)
+
     return added_to_graph
 
 
 # Looks through graph for vertices within r of vertex
 # If distance candidate -> vertex -> root is less than
 # distance candidate -> root we reroute.
-def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=False):
+def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
     neighbors = set(search_visible_neighbors(within_dist,
-                                             region,
-                                             obstacles,
+                                             map,
                                              graph,
                                              v, r,
                                              step_size
@@ -606,7 +565,7 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
         for i in range(depth):
             if curr_node:
                 if curr_node.dist_to_root + curr_node.dist_to(v) < v.dist_to_root:
-                    if not intersects_objects(region, obstacles, v.value, curr_node.value):
+                    if not intersects_objects(map, v.value, curr_node.value):
                         v.remove_parent()
                         curr_node.add_neighbor(v)
                         added_to_graph = True
@@ -616,7 +575,7 @@ def rrt_q_rewire(v, graph, region, obstacles, r, depth, step_size, end, connect=
         graph.add_vertex(v)
 
     if v.parent:
-        if not intersects_objects(region, obstacles, end.value, v.value):
+        if not intersects_objects(map, end.value, v.value):
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                 end.remove_parent()
                 v.add_neighbor(end)

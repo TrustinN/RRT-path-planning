@@ -33,7 +33,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
                                       position=0,
                                       parent=None,
                                       )
-            rrt_rewire(v_new, graph, map.region, map.obstacles, 5, step_size, v_end)
+            rrt_rewire(v_new, graph, map, 5, step_size, v_end)
 
     if v_end.dist_to_root == math.inf:
         path = []

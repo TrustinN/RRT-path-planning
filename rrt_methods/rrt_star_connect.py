@@ -34,9 +34,9 @@ def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
                                         position=0,
                                         parent=None,
                                         )
-            if rrt_rewire(v_new, t_start, map.region, map.obstacles, 5, step_size, v_end, connect=True):
+            if rrt_rewire(v_new, t_start, map, 5, step_size, v_end, connect=True):
                 c1 = v_new.parent
-                connect = rrt_connect(v_new, t_start, t_end, map.region, map.obstacles, 5, step_size)
+                connect = rrt_connect(v_new, t_start, t_end, map, 5, step_size)
                 if connect:
                     c2 = v_new
                     break
@@ -49,9 +49,9 @@ def rrt_run(map, step_size, max_iter, clear=False, plotting=False):
                                       position=0,
                                       parent=None,
                                       )
-            if rrt_rewire(v_new, t_end, map.region, map.obstacles, 5, step_size, v_end, connect=True):
+            if rrt_rewire(v_new, t_end, map, 5, step_size, v_end, connect=True):
                 c2 = v_new.parent
-                connect = rrt_connect(v_new, t_end, t_start, map.region, map.obstacles, 5, step_size)
+                connect = rrt_connect(v_new, t_end, t_start, map, 5, step_size)
                 if connect:
                     c1 = v_new
                     break

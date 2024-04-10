@@ -26,9 +26,10 @@ from utils.map_utils import Cube
 # from rrt_methods.rrt_star import rrt_run
 # from rrt_methods.rrt_star_connect import rrt_run
 # from rrt_methods.quick_rrt_star import rrt_run
-from rrt_methods.informed_rrt_star import rrt_run
+# from rrt_methods.informed_rrt_star import rrt_run
+from rrt_methods.informed_quick_rrt_star import rrt_run
 
-##############################################################################
+###############################################################################
 # Generate Regions                                                            #
 ###############################################################################
 
@@ -50,11 +51,8 @@ if dim == 2:
 else:
     bounds = [(-200, 1000), (-200, 1000), (-200, 1000)]
     if choice == "rom":
-        map = RandObsMap(15, 150)
+        map = RandObsMap(25, 180)
     map.sample_init(Cube(bounds))
-
-
-# box_scope = find_bounding_box(map.region)
 
 start = timeit.default_timer()
 path = rrt_run(map=map, step_size=20, max_iter=2000, plotting=True)
@@ -62,9 +60,6 @@ stop = timeit.default_timer()
 
 print('Time: ', stop - start)
 pg.exec()
-
-
-
 
 
 

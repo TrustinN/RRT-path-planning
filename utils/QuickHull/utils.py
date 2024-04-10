@@ -1,10 +1,12 @@
 import math
 import numpy as np
+import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 from r_trees.r_tree_utils import Cube
+from r_trees.r_tree_utils import IndexRecord
 
 
-class Facet():
+class Facet(IndexRecord):
 
     def __init__(self, vertices):
 
@@ -44,6 +46,7 @@ class Facet():
             if c_z > max_z:
                 max_z = c_z
         self.bound = Cube([min_x, max_x, min_y, max_y, min_z, max_z])
+        super().__init__(self.bound, self.vertices[0])
 
     def add_neighbor(self, f):
         self.neighbors.append(f)
@@ -53,9 +56,7 @@ class Facet():
         return p - (np.dot(self.subspace, approx) + self.b)
 
     def orient(self, p):
-        c1 = np.vstack([self.o, p])
-        c2 = np.c_[c1, np.ones(self.dim + 1)]
-        return np.linalg.det(c2)
+        return np.dot(self.normal, self.b - p)
 
 
 class ConvexPoly():
@@ -67,14 +68,17 @@ class ConvexPoly():
         self.num_calc = 0
 
     def contains_point(self, p):
-        for f in self.faces:
-            curr_face = f.vertices
-            p2f = curr_face[0] - p
-            n = f.normal
-            d = np.dot(p2f, n) / np.linalg.norm(p2f)
-            if d < 0:
-                return False
-        return True
+        if self.bound.contains_point(p):
+            for f in self.faces:
+                curr_face = f.vertices
+                p2f = curr_face[0] - p
+                n = f.normal
+                d = np.dot(p2f, n) / np.linalg.norm(p2f)
+                if d < 0:
+                    return False
+            return True
+        else:
+            return False
 
     def intersects_line(self, line):
         start = line[0]
@@ -95,13 +99,14 @@ class ConvexPoly():
 
                             inter = t * vec + start
                             iter = 0
-                            while iter < 3:
-                                if f.neighbors[iter].orient(inter) < 0:
-                                    break
-                                iter += 1
+                            if f.bound.contains_point(inter):
+                                while iter < 3:
+                                    if f.neighbors[iter].orient(inter) < 0:
+                                        break
+                                    iter += 1
 
-                            if iter == 3:
-                                return True
+                                if iter == 3:
+                                    return True
 
         return False
 
@@ -142,8 +147,10 @@ class ConvexPoly():
 
         md = gl.MeshData(vertexes=vertices, faces=indices)
         colors = np.ones((md.faceCount(), 4), dtype=float)
-        colors[:, 3] = 0.3
-        colors[:, 2] = np.linspace(0, 1, colors.shape[0])
+        colors[:, 3] = 0.5
+        colors[:, 2] = np.linspace(0.3, 1, colors.shape[0])
+        colors[:, 1] = np.linspace(0.3, 1, colors.shape[0])
+        colors[:, 0] = np.linspace(0.3, 1, colors.shape[0])
 
         md.setFaceColors(colors=colors)
         m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader="shaded", glOptions='opaque')

@@ -4,6 +4,8 @@ import pyqtgraph.opengl as gl
 from .map_utils import Map
 from .map_utils import Cube
 from .quickhull.main import QuickHull
+from r_trees.r_star_tree import RTree
+from r_trees.r_tree_utils import Cube as CubeBound
 
 
 class RandObsMap(Map):
@@ -15,6 +17,7 @@ class RandObsMap(Map):
         vertices = [np.array([bounds[i], bounds[j + 2], bounds[k + 4]]) for i in range(2) for j in range(2) for k in range(2)]
         region = QuickHull(vertices)
 
+        self.obs_tree = RTree(10, dim=3, plotting=False, view=None)
         obstacles = []
         bounds = [100, 700, 100, 700, 100, 700]
         while n > 0:
@@ -33,10 +36,44 @@ class RandObsMap(Map):
 
             if not o.contains_point(start_pos) and not o.contains_point(start_pos):
                 obstacles.append(o)
+                for f in o.faces:
+                    self.obs_tree.Insert(f)
                 n -= 1
 
         super().__init__(region=region, obstacles=obstacles, dim=3)
         self.add_path([start_pos, end_pos])
+
+    def intersects_line(self, line):
+        if self.region.intersects_line(line):
+            return True
+
+        start = line[0]
+        end = line[1]
+        vec = end - start
+        l_bound = CubeBound([min(start[0], end[0]), max(start[0], end[0]), min(start[1], end[1]), max(start[1], end[1]), min(start[2], end[2]), max(start[2], end[2])])
+        potential = self.obs_tree.SearchOverlap(l_bound)
+        for f in potential:
+            if l_bound.overlap(f.bound) > 0:
+                if np.sign(f.orient(start)) != np.sign(f.orient(end)):
+
+                    d = np.dot(f.normal, f.vertices[0])
+                    na = np.dot(f.normal, start)
+                    nv = np.dot(f.normal, vec)
+                    t = (d - na) / nv
+                    if 0 <= t <= 1:
+
+                        inter = t * vec + start
+                        iter = 0
+                        if f.bound.contains_point(inter):
+                            while iter < 3:
+                                if f.neighbors[iter].orient(inter) < 0:
+                                    break
+                                iter += 1
+
+                            if iter == 3:
+                                return True
+
+        return False
 
     def intersections(self, line):
         ints = self.region.intersections(line)

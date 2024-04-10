@@ -27,7 +27,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
         p_near = v_near.value
 
         if in_free_space(p_rand, map.region, map.obstacles):
-            if not intersects_objects(map.region, map.obstacles, p_rand, p_near):
+            if not intersects_objects(map, p_rand, p_near):
                 v_new = graph.make_vertex(value=p_rand,
                                           neighbors=[],
                                           position=0,
@@ -36,7 +36,7 @@ def rrt_run(map, step_size, max_iter, plotting=False):
                 v_near.add_neighbor(v_new)
                 graph.add_vertex(v_new)
                 iter += 1
-                if not intersects_objects(map.region, map.obstacles, v_end.value, v_new.value):
+                if not intersects_objects(map, v_end.value, v_new.value):
                     if v_new.dist_to_root + v_new.dist_to(v_end) < v_end.dist_to_root:
                         v_end.remove_parent()
                         v_new.add_neighbor(v_end)

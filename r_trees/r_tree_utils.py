@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 
 
@@ -256,6 +257,19 @@ class Cube(Bound):
 
         return x_check and y_check and z_check
 
+    def contains_point(self, p):
+
+        if not (self.min_x <= p[0] <= self.max_x):
+            return False
+
+        if not (self.min_y <= p[1] <= self.max_y):
+            return False
+
+        if not (self.min_z <= p[2] <= self.max_z):
+            return False
+
+        return True
+
     # returns bounds and area
     def expand(b1, b2):
 
@@ -408,13 +422,14 @@ class IndexRecord(Entry):
         self.tuple_identifier = tuple_identifier
 
     def plot(self, color, view):
-        self.p = gl.GLScatterPlotItem(pos=np.array([self.tuple_identifier]))
+        self.p = gl.GLScatterPlotItem(pos=np.array([self.tuple_identifier]), size=5, color=pg.mkColor(color))
         self.p.setGLOptions("additive")
         self.view = view
         view.addItem(self.p)
 
     def rm_plot(self):
-        self.view.removeItem(self.p)
+        if self.view:
+            self.view.removeItem(self.p)
 
     def __str__(self):
         return f"val: {self.tuple_identifier}"
@@ -447,6 +462,9 @@ class IndexPointer(Entry):
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
+
+
+
 
 
 

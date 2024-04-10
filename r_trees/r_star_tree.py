@@ -632,6 +632,27 @@ class RTree(object):
         helper_func(self.root, found)
         return found
 
+    # given a scope (search rectangle/Bound) returns list of index records
+    # contained in that scope
+    def SearchOverlap(self, scope):
+
+        found = []
+
+        def helper_func(node, found):
+
+            if type(node) is RTree.LeafNode:
+                for record in node.items:
+                    if scope.overlap(record.bound) > 0:
+                        found.append(record)
+
+            else:
+                for b in node.items:
+                    if scope.overlap(b.bound):
+                        helper_func(b.pointer, found)
+
+        helper_func(self.root, found)
+        return found
+
     def NearestNeighbor(self, entry):
 
         pq = PriorityQueue()
@@ -657,6 +678,7 @@ class RTree(object):
                     dist = RTree.Bound.get_dist(child_node.covering, entry.tuple_identifier)
                     e = PrioritizedItem(dist, child_node)
                     pq.put(e)
+
 
 
 
