@@ -12,7 +12,7 @@ def CreateSimplex(vertices):
     hull = []
 
     # Choose two points farthest wrt x dim, y dim, or z dim
-    while dim < 3:
+    while dim < len(vertices[0]):
         min, max = math.inf, -math.inf
 
         for v in vertices:
@@ -34,37 +34,49 @@ def CreateSimplex(vertices):
     # Initialize a line with those points
     hull.append(min_v), hull.append(max_v)
     hyperplane = Facet(hull)
-    closest_pt = None
 
     # Choose the next two points of the tetrahedral by projection
     # onto the line and subsequently the plane
+    iter = 0
+    case = 0
     while True:
 
-        closest_pt = None
-        max_dist = -math.inf
+        farthest_pt = None
+        found = False
+        max_dist = 0.00001
 
         for v in vertices:
             dist = np.linalg.norm(hyperplane.get_projection(v))
 
             if dist > max_dist:
                 max_dist = dist
-                closest_pt = v
+                farthest_pt = v
+                found = True
 
-        if len(hull) == 3:
+        iter += 1
+        if iter == 2:
+            if found:
+                case = 3
+            else:
+                case = 2
             break
 
-        hull.append(closest_pt)
+        hull.append(farthest_pt)
         hyperplane = Facet(hull)
 
-    # Reverse direction of the first three vertices if the last chosen point
-    # is on the wrong side of oriented plane
-    if hyperplane.orient(closest_pt) < 0:
-        hull = hull[::-1]
+    if case == 2:
+        hull.pop()
+        return [Facet([hull[i], hull[(i + 1) % len(hull)]]) for i in range(len(hull))]
 
-    # Returns first plane and cone faces created by new point
-    # this is a tetrahedral
-    hull = [Facet(hull)] + [Facet([closest_pt, hull[(i + 1) % len(hull)], hull[i % len(hull)]]) for i in range(3)]
-    return hull
+    elif case == 3:
+        # Reverse direction of the first three vertices if the last chosen point
+        # is on the wrong side of oriented plane
+        if hyperplane.orient(farthest_pt) < 0:
+            hull = hull[::-1]
+
+        # Returns first plane and cone faces created by new point
+        # this is a tetrahedral
+        return [Facet(hull)] + [Facet([farthest_pt, hull[(i + 1) % len(hull)], hull[i % len(hull)]]) for i in range(3)]
 
 
 # Assigns unclaimed points to a face's set of outside vertices
@@ -139,101 +151,138 @@ def QuickHull(vertices):
     for f in facets:
         AddToOutside(f, vertices)
 
-    # Create convex hull which starts a tetrahedral
     num_points = len(facets)
 
-    for i in range(num_points):
-        f = facets[i]
+    if num_points == 2:
 
-        # connect faces as neighbors if they share an edge
-        f.add_neighbor(facets[(i + 1) % num_points])
-        f.add_neighbor(facets[(i + 2) % num_points])
-        f.add_neighbor(facets[(i + 3) % num_points])
+        queue = facets[:]
 
-    # Run the loop until there are no more facets with outside vertices
-    # left
-    queue = facets[:]
+        while queue:
 
-    while queue:
+            face = queue.pop()
+            if face.in_conv_poly and len(face.outside_vertices) > 0:
 
-        face = queue.pop()
-        if face.in_conv_poly and len(face.outside_vertices) > 0:
+                face.in_conv_poly = False
 
-            # Get farthest point from the current facet
-            max_dist = -math.inf
-            farthest_pt = None
+                # Get farthest point from the current facet
+                max_dist = -math.inf
+                farthest_pt = None
 
-            for v in face.outside_vertices:
-                curr_dist = np.linalg.norm(face.get_projection(v))
+                for v in face.outside_vertices:
+                    curr_dist = np.linalg.norm(face.get_projection(v))
 
-                if curr_dist > max_dist:
-                    farthest_pt = v
-                    max_dist = curr_dist
+                    if curr_dist > max_dist:
+                        farthest_pt = v
+                        max_dist = curr_dist
 
-            # Calculate Horizon will add to the list of unclaimed vertices
-            # along with giving us the horizon edges/faces from our eyepoint
-            horizon_edges, horizon_faces = [], []
-            unclaimed = []
-            CalculateHorizon(farthest_pt, None, 0, face, horizon_edges, horizon_faces, unclaimed)
+                unclaimed = face.outside_vertices
 
-            # Building the cone from eyepoint to the horizon edges
-            first_f, prev_f = None, None
-            for i in range(len(horizon_edges)):
+                f1 = Facet([face.vertices[0], farthest_pt])
+                f2 = Facet([farthest_pt, face.vertices[1]])
+                AddToOutside(f1, unclaimed), AddToOutside(f2, unclaimed)
 
-                # Create a facet of the cone and add unclaimed vertices
-                # to its outside vertices set
-                ne = horizon_edges[i]
-                ne.append(farthest_pt)
-                f = Facet(ne)
-                AddToOutside(f, unclaimed)
+                if len(f1.outside_vertices) > 0:
+                    queue.append(f1)
+                facets.append(f1)
 
-                # Add to queue if this facet is not part of final convex poly
-                if len(f.outside_vertices) > 0:
-                    queue.append(f)
-                facets.append(f)
+                if len(f2.outside_vertices) > 0:
+                    queue.append(f2)
+                facets.append(f2)
 
-                # Connect the current facet and the facet connected by and edge
-                # to the current facet, but not visible from the eyepoint
-                curr_hface = horizon_faces[i]
-                curr_hface.add_neighbor(f)
-                f.add_neighbor(curr_hface)
+    elif num_points == 4:
 
-                # Connect current facet to the one built before, since we build
-                # in a ccw manner
-                if prev_f:
-                    f.add_neighbor(prev_f)
-                    prev_f.add_neighbor(f)
-                prev_f = f
+        # Create convex hull which starts a tetrahedral
+        for i in range(num_points):
+            f = facets[i]
 
-                # For when we create the last facet
-                if i == 0:
-                    first_f = f
+            # connect faces as neighbors if they share an edge
+            f.add_neighbor(facets[(i + 1) % num_points])
+            f.add_neighbor(facets[(i + 2) % num_points])
+            f.add_neighbor(facets[(i + 3) % num_points])
 
-                elif i == len(horizon_edges) - 1:
-                    f.add_neighbor(first_f)
-                    first_f.add_neighbor(f)
+        # Run the loop until there are no more facets with outside vertices
+        # left
+        queue = facets[:]
 
-                # Removing old neighbors from horizon facets
-                n, cont = 0, True
+        while queue:
 
-                while cont:
-                    f = curr_hface.neighbors[n]
-                    vert = f.vertices
+            face = queue.pop()
+            if face.in_conv_poly and len(face.outside_vertices) > 0:
 
-                    for j in range(len(vert)):
-                        l1 = [vert[j], vert[(j + 1) % len(f.vertices)]]
-                        l2 = ne
+                # Get farthest point from the current facet
+                max_dist = -math.inf
+                farthest_pt = None
 
-                        if np.array_equal(l1[0], l2[0]) and np.array_equal(l1[1], l2[1]):
-                            curr_hface.neighbors.pop(n)
-                            cont = False
-                    n += 1
+                for v in face.outside_vertices:
+                    curr_dist = np.linalg.norm(face.get_projection(v))
+
+                    if curr_dist > max_dist:
+                        farthest_pt = v
+                        max_dist = curr_dist
+
+                # Calculate Horizon will add to the list of unclaimed vertices
+                # along with giving us the horizon edges/faces from our eyepoint
+                horizon_edges, horizon_faces = [], []
+                unclaimed = []
+                CalculateHorizon(farthest_pt, None, 0, face, horizon_edges, horizon_faces, unclaimed)
+
+                # Building the cone from eyepoint to the horizon edges
+                first_f, prev_f = None, None
+                for i in range(len(horizon_edges)):
+
+                    # Create a facet of the cone and add unclaimed vertices
+                    # to its outside vertices set
+                    ne = horizon_edges[i]
+                    ne.append(farthest_pt)
+                    f = Facet(ne)
+                    AddToOutside(f, unclaimed)
+
+                    # Add to queue if this facet is not part of final convex poly
+                    if len(f.outside_vertices) > 0:
+                        queue.append(f)
+                    facets.append(f)
+
+                    # Connect the current facet and the facet connected by and edge
+                    # to the current facet, but not visible from the eyepoint
+                    curr_hface = horizon_faces[i]
+                    curr_hface.add_neighbor(f)
+                    f.add_neighbor(curr_hface)
+
+                    # Connect current facet to the one built before, since we build
+                    # in a ccw manner
+                    if prev_f:
+                        f.add_neighbor(prev_f)
+                        prev_f.add_neighbor(f)
+                    prev_f = f
+
+                    # For when we create the last facet
+                    if i == 0:
+                        first_f = f
+
+                    elif i == len(horizon_edges) - 1:
+                        f.add_neighbor(first_f)
+                        first_f.add_neighbor(f)
+
+                    # Removing old neighbors from horizon facets
+                    n, cont = 0, True
+
+                    while cont:
+                        f = curr_hface.neighbors[n]
+                        vert = f.vertices
+
+                        for j in range(len(vert)):
+                            l1 = [vert[j], vert[(j + 1) % len(f.vertices)]]
+                            l2 = ne
+
+                            if np.array_equal(l1[0], l2[0]) and np.array_equal(l1[1], l2[1]):
+                                curr_hface.neighbors.pop(n)
+                                cont = False
+                        n += 1
 
     # returns conv poly object found in utils.py
     # relevant facets are ones that were not excluded in the
     # CalculateHorizon process
     return ConvexPoly([f for f in facets if f.in_conv_poly])
-
 
 
 

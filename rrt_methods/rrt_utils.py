@@ -116,14 +116,24 @@ class Graph(RTree):
                 self.parent = None
 
         def plot_connections(self, color, view):
-            for n in self.neighbors:
-                line = gl.GLLinePlotItem(pos=np.array([self.value, n.value]),
-                                         color=pg.mkColor(color),
-                                         width=0.1)
+            if len(self.value) == 2:
+                for n in self.neighbors:
+                    line = pg.PlotDataItem(np.array([self.value, n.value]),
+                                           connect="all",
+                                           width=0.1,
+                                           color=pg.mkColor(color),)
+                    view.addItem(line)
+                    n.plot_connections(color, view)
 
-                line.setGLOptions("opaque")
-                view.addItem(line)
-                n.plot_connections(color, view)
+            elif len(self.value) == 3:
+                for n in self.neighbors:
+                    line = gl.GLLinePlotItem(pos=np.array([self.value, n.value]),
+                                             color=pg.mkColor(color),
+                                             width=0.1,)
+
+                    line.setGLOptions("opaque")
+                    view.addItem(line)
+                    n.plot_connections(color, view)
 
         def __repr__(self):
             return f"(value:{self.value})"

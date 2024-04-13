@@ -1,6 +1,4 @@
 import numpy as np
-import pyqtgraph as pg
-import pyqtgraph.opengl as gl
 from .map_utils import Map
 from .map_utils import Cube
 from utils.quickhull.hull import QuickHull

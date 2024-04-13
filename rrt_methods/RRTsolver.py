@@ -42,7 +42,25 @@ class RRTsolver():
 
     def plot(self, branches, leaves):
 
-        if self.map.dim == 3:
+        if self.map.dim == 2:
+
+            pg.mkQApp("Map")
+            self.view = pg.plot().getViewBox()
+            self.view.show()
+
+            self.map.plot(self.view)
+            self.t_start.plot(self.view, branches, leaves)
+            if self.t_end:
+                self.t_end.plot(self.view, branches, leaves)
+
+            for i in range(len(self.path) - 1):
+                line = pg.PlotDataItem(np.array([self.path[i], self.path[i + 1]]),
+                                       connect="all",
+                                       pen=pg.mkPen("#ff00ff"),
+                                       width=10)
+                self.view.addItem(line)
+
+        elif self.map.dim == 3:
 
             pg.mkQApp("Map")
             self.view = gl.GLViewWidget()

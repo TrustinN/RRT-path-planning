@@ -37,19 +37,29 @@ class Map():
     def add_path(self, path):
         self.path = path
 
+    def intersects_line(self, line):
+        return
+
+    def intersections(self, line):
+        return
+
     def plot_path(self, path):
         return
 
 
-class Rectangle(object):
+class Rectangle(ConvexPoly):
     def __init__(self, bounds):
-        self.min_x = bounds[0]
-        self.max_x = bounds[1]
-        self.min_y = bounds[2]
-        self.max_y = bounds[3]
+        self.min_x = bounds[0][0]
+        self.max_x = bounds[0][1]
+        self.min_y = bounds[1][0]
+        self.max_y = bounds[1][1]
         self.x = [self.min_x, self.min_x, self.max_x, self.max_x, self.min_x]
         self.y = [self.min_y, self.max_y, self.max_y, self.min_y, self.min_y]
-        self.vertices = [np.array([self.x[i], self.y[i]]) for i in range(4)]
+        self.vertices = []
+        for i in range(2):
+            for j in range(2):
+                self.vertices.append(np.array([bounds[0][i], bounds[1][j]]))
+        self = QuickHull(self.vertices)
 
     def sample(self):
         rand_x = (self.max_x - self.min_x) * np.random.random_sample() + self.min_x
@@ -57,21 +67,20 @@ class Rectangle(object):
         return np.array([rand_x, rand_y])
 
     def contains_point(self, p):
-        return ray_cast(self.vertices, p)
-
-    def plot(self, ax):
-        ax.plot(self.x, self.y, linewidth=.5)
+        x = self.min_x <= p[0] <= self.max_x
+        y = self.min_y <= p[1] <= self.max_y
+        return x and y
 
 
 class Cube(ConvexPoly):
     def __init__(self, bounds):
-        self.vertices = []
         self.min_x = bounds[0][0]
         self.max_x = bounds[0][1]
         self.min_y = bounds[1][0]
         self.max_y = bounds[1][1]
         self.min_z = bounds[2][0]
         self.max_z = bounds[2][1]
+        self.vertices = []
         for i in range(2):
             for j in range(2):
                 for k in range(2):
@@ -86,8 +95,8 @@ class Cube(ConvexPoly):
 
     def contains_point(self, p):
         x = self.min_x <= p[0] <= self.max_x
-        y = self.min_y <= p[1] <= self.may_y
-        z = self.min_z <= p[2] <= self.maz_z
+        y = self.min_y <= p[1] <= self.max_y
+        z = self.min_z <= p[2] <= self.max_z
         return x and y and z
 
 

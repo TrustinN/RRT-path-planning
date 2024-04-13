@@ -4,6 +4,9 @@ import numpy as np
 # from .make_race import new_race
 from .map_utils import Map
 from .map_utils import Rectangle
+from utils.rtree.rstar_tree import RTree
+from utils.rtree.rtree_utils import Rect as RectBound
+from utils.quickhull.hull import QuickHull
 
 
 # # Hacky obstacle maker (rectangle)
@@ -73,32 +76,60 @@ class RaceMap():
         return
 
 
-class SquareObsMap(Map):
+class RandomObsMap(Map):
     def __init__(self, n, size):
 
         start_pos = np.array([10, 10])
         end_pos = np.array([790, 790])
-        bounds = [-200, 1000, -200, 1000]
+        bounds = [(-200, 1000), (-200, 1000)]
         region = Rectangle(bounds)
 
+        self.obs_tree = RTree(10, dim=2)
         obstacles = []
+        bounds = [100, 700, 100, 700]
         while n > 0:
-            x_rand = bounds[3] * np.random.random_sample()
-            y_rand = bounds[1] * np.random.random_sample()
-            bound = [x_rand - size, x_rand + size, y_rand - size, y_rand + size]
-            o = Rectangle(bound)
+            x_rand = (bounds[1] - bounds[0]) * np.random.random_sample() + bounds[0]
+            y_rand = (bounds[3] - bounds[2]) * np.random.random_sample() + bounds[2]
+
+            center = [x_rand, y_rand]
+            c = [(center[i] - size, center[i] + size) for i in range(2)]
+            cube = Rectangle(c)
+
+            o = []
+            for i in range(10):
+                o.append(cube.sample())
+            o = QuickHull(o)
+
             if not o.contains_point(start_pos) and not o.contains_point(end_pos):
                 obstacles.append(o)
+                for f in o.faces:
+                    self.obs_tree.Insert(f)
                 n -= 1
 
         super().__init__(region=region, obstacles=obstacles, dim=2)
         self.add_path([start_pos, end_pos])
 
-    def plot(self):
-        super().plot()
-        self.region.plot(self.ax)
-        for o in self.obstacles:
-            o.plot(self.ax)
+    def intersects_line(self, line):
+        def ccw(A, B, C):
+            return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
+
+        # Return true if line segments AB and CD intersect
+        def intersect(A, B, C, D):
+            return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
+
+        start = line[0]
+        end = line[1]
+        l_bound = RectBound([min(start[0], end[0]), max(start[0], end[0]), min(start[1], end[1]), max(start[1], end[1])])
+        potential = self.obs_tree.SearchOverlap(l_bound)
+        for f in potential:
+            if intersect(start, end, f.vertices[0], f.vertices[1]):
+                return True
+
+        return False
+
+    def plot(self, view):
+        for hull in self.obstacles:
+            hull.plot(view)
 
 
 # Grid is the number of divisions of our maze we want from

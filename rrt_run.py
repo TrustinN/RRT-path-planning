@@ -6,7 +6,7 @@ from rrt_methods.RRTsolver import RRTsolver
 ###############################################################################
 
 from utils.maps.maps2d import RaceMap
-from utils.maps.maps2d import SquareObsMap
+from utils.maps.maps2d import RandomObsMap
 from utils.maps.maps2d import Maze
 from utils.maps.maps3d import RandObsMap
 
@@ -21,7 +21,7 @@ from utils.maps.map_utils import Cube
 # Generate Regions                                                            #
 ###############################################################################
 
-dim = 3
+dim = 2
 
 # choice = "rm"
 choice = "rom"
@@ -32,7 +32,7 @@ if dim == 2:
     if choice == "rm":
         map = RaceMap()
     elif choice == "rom":
-        map = SquareObsMap(10, 100)
+        map = RandomObsMap(10, 100)
     elif choice == "maze":
         map = Maze(20)
     map.sample_init(Rectangle(bounds))
@@ -51,8 +51,8 @@ methods = ["rrt",                        # 0
            "informed_quick_rrt_star"     # 6
            ]
 
-rrt = RRTsolver(map=map, step_size=20, max_iter=2000, method=methods[0])
-rrt.plot(branches=True, leaves=False)
+rrt = RRTsolver(map=map, step_size=20, max_iter=1000, method=methods[3])
+rrt.plot(branches=False, leaves=False)
 
 print(rrt.get_time())
 

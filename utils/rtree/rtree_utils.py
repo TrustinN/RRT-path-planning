@@ -135,6 +135,16 @@ class Rect(Bound):
     def contains(self, other):
         return (self.min_x <= other.min_x) and (self.max_x >= other.max_x) and (self.min_y <= other.min_y) and (self.max_y >= other.max_y)
 
+    def contains_point(self, p):
+
+        if not (self.min_x <= p[0] <= self.max_x):
+            return False
+
+        if not (self.min_y <= p[1] <= self.max_y):
+            return False
+
+        return True
+
     # returns bounds and area
     def expand(b1, b2):
 
