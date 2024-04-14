@@ -18,10 +18,10 @@ methods = {
     6: "informed_quick_rrt_star"
 }
 
-builder = MapBuilder(dim=2, seed=100, map=maps[0])
-rrt = RRTSolver(map=builder.map, step_size=20, max_iter=1000, method=methods[4])
+builder = MapBuilder(dim=2, seed=None, map=maps[0])
+rrt = RRTSolver(map=builder.map, step_size=20, max_iter=500, method=methods[4])
 print(rrt.get_time())
-rrt.plot(branches=False, leaves=False)
+rrt.plot(branches=False, leaves=True)
 
 
 pg.exec()

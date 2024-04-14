@@ -4,7 +4,7 @@ import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 
 
-class RRTsolver():
+class RRTSolver():
     def __init__(self, map, step_size, max_iter, method="rrt_star"):
 
         if method == "rrt":
