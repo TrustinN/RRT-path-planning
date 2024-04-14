@@ -1,4 +1,3 @@
-import math
 import numpy as np
 from colorutils import Color
 import pyqtgraph as pg
@@ -6,6 +5,29 @@ import pyqtgraph.opengl as gl
 from utils.rtree.rtree_utils import Rect
 from utils.rtree.rtree_utils import Cube
 from utils.rtree.rtree_utils import IndexRecord
+
+
+# Finds intersection points of line segments p2 - p1 and p4 - p3.
+# Calculates if there is an intersection within some tolerance and
+# returns true or false along with the intersection.
+# the intersection is determined by scaling p4 - p3
+def intersects(p1, p2, p3, p4, tol=0.005):
+    l1 = p2 - p1
+    l2 = p4 - p3
+    b = p3 - p1
+
+    matrix = np.array([[l2[0], -l1[0]], [l2[1], -l1[1]]])
+    det = (l2[0] * l1[1]) - (l1[0] * l2[1])
+
+    if not abs(det) < tol:
+        inv_matrix = np.linalg.inv(matrix)
+        x = np.matmul(inv_matrix, b)
+
+        if -x[0] > 0 and -x[1] > 0 and 1 > -x[0] and 1 > -x[1]:
+            intersection_pt = -x[0] * l2 + p3
+            return intersection_pt
+
+    return None
 
 
 class Facet(IndexRecord):
@@ -29,24 +51,7 @@ class Facet(IndexRecord):
             if len(self.vertices[0]) == 2:
                 n = np.dot(self.rotate, self.vertices[1] - self.vertices[0])
                 self.normal = n / np.linalg.norm(n)
-                min_x, min_y = math.inf, math.inf
-                max_x, max_y = -math.inf, -math.inf
-
-                for v in self.vertices:
-                    c_x = v[0]
-                    c_y = v[1]
-
-                    if c_x < min_x:
-                        min_x = c_x
-                    if c_x > max_x:
-                        max_x = c_x
-
-                    if c_y < min_y:
-                        min_y = c_y
-                    if c_y > max_y:
-                        max_y = c_y
-
-                self.bound = Rect([min_x, max_x, min_y, max_y])
+                self.bound = Rect.combine_points(self.vertices)
                 super().__init__(self.bound, self.vertices[0])
 
             elif len(self.vertices[0]) == 3:
@@ -56,29 +61,7 @@ class Facet(IndexRecord):
                     v2 = self.vertices[2] - self.vertices[0]
                     n = np.cross(v1, v2)
                     self.normal = n / np.linalg.norm(n)
-
-                    min_x, min_y, min_z = math.inf, math.inf, math.inf
-                    max_x, max_y, max_z = -math.inf, -math.inf, -math.inf
-
-                    for v in self.vertices:
-                        c_x = v[0]
-                        c_y = v[1]
-                        c_z = v[2]
-                        if c_x < min_x:
-                            min_x = c_x
-                        if c_x > max_x:
-                            max_x = c_x
-
-                        if c_y < min_y:
-                            min_y = c_y
-                        if c_y > max_y:
-                            max_y = c_y
-
-                        if c_z < min_z:
-                            min_z = c_z
-                        if c_z > max_z:
-                            max_z = c_z
-                    self.bound = Cube([min_x, max_x, min_y, max_y, min_z, max_z])
+                    self.bound = Cube.combine_points(self.vertices)
                     super().__init__(self.bound, self.vertices[0])
 
     def add_neighbor(self, f):
@@ -90,6 +73,68 @@ class Facet(IndexRecord):
 
     def orient(self, p):
         return np.dot(self.normal, self.b - p)
+
+    def intersects_line(self, start, end):
+        if self.dim == 2:
+            def ccw(A, B, C):
+                return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
+
+            # Return true if line segments AB and CD intersect
+            def intersect(A, B, C, D):
+                return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
+
+            return intersect(start, end, self.vertices[0], self.vertices[1])
+
+        elif self.dim == 3:
+            vec = end - start
+            if np.sign(self.orient(start)) != np.sign(self.orient(end)):
+
+                d = np.dot(self.normal, self.vertices[0])
+                na = np.dot(self.normal, start)
+                nv = np.dot(self.normal, vec)
+                t = (d - na) / nv
+                if 0 <= t <= 1:
+
+                    inter = t * vec + start
+                    iter = 0
+                    if self.bound.contains_point(inter):
+                        while iter < 3:
+                            if self.neighbors[iter].orient(inter) < 0:
+                                break
+                            iter += 1
+
+                        if iter == 3:
+                            return True
+
+            return False
+
+    def intersections(self, line):
+        if self.dim == 2:
+            return intersects(self.vertices[0], self.vertices[1], line[0], line[1])
+
+        elif self.dim == 3:
+            start = line[0]
+            end = line[1]
+            vec = end - start
+            if np.sign(self.orient(start)) != np.sign(self.orient(end)):
+
+                d = np.dot(self.normal, self.vertices[0])
+                na = np.dot(self.normal, start)
+                nv = np.dot(self.normal, vec)
+                t = (d - na) / nv
+                if 0 <= t <= 1:
+
+                    inter = t * vec + start
+                    iter = 0
+                    while iter < 3:
+                        if self.neighbors[iter].orient(inter) < 0:
+                            break
+                        iter += 1
+
+                    if iter == 3:
+                        return inter
+
+            return None
 
     def plot(self, color, view):
         if self.dim == 2:
@@ -145,66 +190,6 @@ class ConvexPoly():
             return True
         else:
             return False
-
-    def intersects_line(self, line):
-        start = line[0]
-        end = line[1]
-        vec = end - start
-        l_bound = Cube([min(start[0], end[0]), max(start[0], end[0]), min(start[1], end[1]), max(start[1], end[1]), min(start[2], end[2]), max(start[2], end[2])])
-
-        if l_bound.overlap(self.bound) > 0:
-            for f in self.faces:
-                if l_bound.overlap(f.bound) > 0:
-                    if np.sign(f.orient(start)) != np.sign(f.orient(end)):
-
-                        d = np.dot(f.normal, f.vertices[0])
-                        na = np.dot(f.normal, start)
-                        nv = np.dot(f.normal, vec)
-                        t = (d - na) / nv
-                        if 0 <= t <= 1:
-
-                            inter = t * vec + start
-                            iter = 0
-                            if f.bound.contains_point(inter):
-                                while iter < 3:
-                                    if f.neighbors[iter].orient(inter) < 0:
-                                        break
-                                    iter += 1
-
-                                if iter == 3:
-                                    return True
-
-        return False
-
-    def intersections(self, line):
-        start = line[0]
-        end = line[1]
-        l_bound = Cube([min(start[0], end[0]), max(start[0], end[0]), min(start[1], end[1]), max(start[1], end[1]), min(start[2], end[2]), max(start[2], end[2])])
-        vec = end - start
-        inters = []
-
-        if l_bound.overlap(self.bound) > 0:
-            for f in self.faces:
-                if l_bound.overlap(f.bound) > 0:
-                    if np.sign(f.orient(start)) != np.sign(f.orient(end)):
-
-                        d = np.dot(f.normal, f.vertices[0])
-                        na = np.dot(f.normal, start)
-                        nv = np.dot(f.normal, vec)
-                        t = (d - na) / nv
-                        if 0 <= t <= 1:
-
-                            inter = t * vec + start
-                            iter = 0
-                            while iter < 3:
-                                if f.neighbors[iter].orient(inter) < 0:
-                                    break
-                                iter += 1
-
-                            if iter == 3:
-                                inters.append(inter)
-
-        return inters
 
     def plot(self, view):
         for f in self.faces:

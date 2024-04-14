@@ -1,5 +1,4 @@
 from .rrt_utils import graph_init
-from .rrt_utils import in_free_space
 from .rrt_utils import rrt_extend_connect
 from .rrt_utils import rrt_connect_path
 from utils.rtree.rtree_utils import IndexRecord
@@ -29,7 +28,7 @@ def rrt_run(map, step_size, max_iter, clear=False):
         v_near = t_start.NearestNeighbor(p_test)
         p_near = v_near.value
 
-        if in_free_space(p_rand, map.region, map.obstacles):
+        if map.in_free_space(p_rand):
             connect, c1, c2 = rrt_extend_connect(p_rand,
                                                  p_near,
                                                  v_near,
@@ -45,7 +44,7 @@ def rrt_run(map, step_size, max_iter, clear=False):
         v_near = t_end.NearestNeighbor(p_test)
         p_near = v_near.value
 
-        if in_free_space(p_rand, map.region, map.obstacles):
+        if map.in_free_space(p_rand):
             connect, c1, c2 = rrt_extend_connect(p_rand,
                                                  p_near,
                                                  v_near,

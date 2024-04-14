@@ -1,8 +1,6 @@
 import math
-from .rrt_utils import intersects_objects
 from .rrt_utils import graph_init
 from .rrt_utils import rrt_step
-from .rrt_utils import in_free_space
 from .rrt_utils import rrt_q_rewire
 from utils.rtree.rtree_utils import IndexRecord
 
@@ -26,7 +24,7 @@ def rrt_run(map, step_size, max_iter):
         v_near = graph.NearestNeighbor(p_test)
         p_new = rrt_step(p_rand, v_near, step_size)
 
-        if in_free_space(p_new, map.region, map.obstacles):
+        if map.in_free_space(p_new):
             iter += 1
             v_new = graph.make_vertex(value=p_new,
                                       neighbors=[],
@@ -34,7 +32,7 @@ def rrt_run(map, step_size, max_iter):
                                       dist_to_root=math.inf,
                                       )
             if v_start.equals(v_near):
-                if not intersects_objects(map, v_start.value, v_new.value):
+                if not map.intersects_line([v_start.value, v_new.value]):
                     v_start.add_neighbor(v_new)
                     graph.add_vertex(v_new)
             else:

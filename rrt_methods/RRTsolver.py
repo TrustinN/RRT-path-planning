@@ -56,8 +56,7 @@ class RRTsolver():
             for i in range(len(self.path) - 1):
                 line = pg.PlotDataItem(np.array([self.path[i], self.path[i + 1]]),
                                        connect="all",
-                                       pen=pg.mkPen("#ff00ff"),
-                                       width=10)
+                                       pen=pg.mkPen("#ff00ff"),)
                 self.view.addItem(line)
 
         elif self.map.dim == 3:

@@ -121,7 +121,7 @@ class Graph(RTree):
                     line = pg.PlotDataItem(np.array([self.value, n.value]),
                                            connect="all",
                                            width=0.1,
-                                           color=pg.mkColor(color),)
+                                           pen=pg.mkPen(color))
                     view.addItem(line)
                     n.plot_connections(color, view)
 
@@ -143,37 +143,12 @@ class Graph(RTree):
 # Search Methods                                                              #
 ###############################################################################
 
-
-# searches graph from start and records all paths
-# that satisfy a condition based on the stop variable
-def search(f, graph, *args):
-    vertices = graph.vertices
-    candidates = []
-    for v in vertices:
-        if f(v, *args):
-            candidates.append(v)
-    return candidates
-
-
-def search_neighbors(f, map, graph, v, r, step_size):
+def search_neighbors(graph, v, r, step_size):
 
     scope = NCircle(v.value, r * step_size)
     neighbors = graph.Search(scope)
-    neighbors.sort(key=lambda x: x.dist_to_root)
+    neighbors.sort(key=lambda x: x.dist_to_root, reverse=True)
     return neighbors
-
-
-# Given p, return closest point to p in vertices
-def closest_point(p, vertices):
-    min_dist = math.inf
-    closest_pt = None
-    for v in vertices:
-        curr_dist = v.dist_to(p)
-        if curr_dist < min_dist:
-            min_dist = curr_dist
-            closest_pt = v
-    return closest_pt
-
 
 ###############################################################################
 # Linear Algebra                                                              #
@@ -183,212 +158,6 @@ def closest_point(p, vertices):
 # Takes a vector v and returns a unit vector in the same direction
 def normalize(v):
     return v / np.linalg.norm(v)
-
-
-# Returns whether a point lies inside some polygon
-def ray_cast(polygon, point):
-    num_sides = len(polygon)
-    inside = False
-
-    for i in range(num_sides):
-        p1 = polygon[i]
-        p2 = polygon[(i + 1) % num_sides]
-        change_x = p1[0] - p2[0]
-        change_y = p1[1] - p2[1]
-
-        if (p1[1] > point[1]) != (p2[1] > point[1]) and change_y != 0:
-            inv_slope = change_x / change_y
-            y_scale = point[1] - p1[1]
-            x_on_line = p1[0] + inv_slope * y_scale
-
-            if x_on_line <= point[0]:
-                inside = not inside
-
-    return inside
-
-
-# Finds intersection points of line segments p2 - p1 and p4 - p3.
-# Calculates if there is an intersection within some tolerance and
-# returns true or false along with the intersection.
-# the intersection is determined by scaling p4 - p3
-def intersects(p1, p2, p3, p4, tol):
-    l1 = p2 - p1
-    l2 = p4 - p3
-    b = p3 - p1
-
-    matrix = np.array([[l2[0], -l1[0]], [l2[1], -l1[1]]])
-    det = (l2[0] * l1[1]) - (l1[0] * l2[1])
-    intersection = False
-    intersection_pt = np.array([])
-
-    if not abs(det) < tol:
-        inv_matrix = np.linalg.inv(matrix)
-        x = np.matmul(inv_matrix, b)
-
-        if -x[0] > 0 and -x[1] > 0 and 1 > -x[0] and 1 > -x[1]:
-            intersection_pt = -x[0] * l2 + p3
-            intersection = True
-
-    return intersection, intersection_pt
-
-
-def intersections(region, obstacles, p0, p1):
-    points = []
-    for j in range(len(region)):
-        r_p0 = region[j]
-        r_p1 = region[(j + 1) % len(region)]
-        intersection, intersection_pt = intersects(r_p0, r_p1, p0, p1, 0.005)
-        if intersection:
-            points.append(intersection_pt)
-    for o in obstacles:
-        for j in range(len(o)):
-            r_p0 = o[j]
-            r_p1 = o[(j + 1) % len(o)]
-            intersection, intersection_pt = intersects(r_p0, r_p1, p0, p1, 0.005)
-            if intersection:
-                points.append(intersection_pt)
-    return points
-
-
-def ccw(A, B, C):
-    return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
-
-
-# Return true if line segments AB and CD intersect
-def intersect(A, B, C, D):
-    return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
-
-
-def intersects_object(region, p0, p1):
-    for j in range(len(region)):
-        r_p0 = region[j]
-        r_p1 = region[(j + 1) % len(region)]
-        intersection = intersect(r_p0, r_p1, p0, p1)
-        if intersection:
-            return True
-
-    return False
-
-
-def intersects_objects(map, v1, v2):
-    line = [v1, v2]
-    return map.intersects_line(line)
-
-###############################################################################
-# Conditions                                                                  #
-###############################################################################
-
-
-def within_dist(p0, p1, dist):
-    if type(p0) is np.ndarray:
-        return np.linalg.norm(p0 - p1) <= dist
-    else:
-        return np.linalg.norm(p0.value - p1.value) <= dist
-
-
-def in_free_space(p, region, obstacles):
-    if region.contains_point(p):
-        for o in obstacles:
-            if o.contains_point(p):
-                return False
-    else:
-        return False
-    return True
-
-
-###############################################################################
-# Sampling random point                                                       #
-###############################################################################
-
-
-def sample_circle(r, c):
-    r_rand = r * math.sqrt(np.random.random_sample())
-    theta = np.random.random_sample() * 2 * math.pi
-    return np.array([c[0] + r_rand * math.cos(theta),
-                     c[1] + r_rand * math.sin(theta)])
-
-
-# finds the right, left, north and south bounds
-# of a polygon, given its points
-def find_bounding_box(polygon):
-
-    p0 = polygon[0]
-    min_x, max_x, max_y, min_y = p0[0], p0[0], p0[1], p0[1]
-
-    for i in range(len(polygon)):
-        curr_p = polygon[i]
-
-        if curr_p[0] < min_x:
-            min_x = curr_p[0]
-
-        if curr_p[0] > max_x:
-            max_x = curr_p[0]
-
-        if curr_p[1] > max_y:
-            max_y = curr_p[1]
-
-        if curr_p[1] < min_y:
-            min_y = curr_p[1]
-
-    return [min_x, max_x, min_y, max_y]
-
-
-def sample_free(bounds, region, obstacles):
-    p_rand = np.array([])
-    while True:
-        p_rand = bounds.sample()
-        if in_free_space(p_rand, region, obstacles):
-            break
-    return p_rand
-
-
-def ep_rrt_sample(d, path):
-    x_rand = 2 * np.random.random_sample() - 1
-    y_rand = 2 * np.random.random_sample() - 1
-    scale = 1 / (2 * math.pi)
-    x_rand *= d
-    y_rand *= d
-    v_expand = np.array([x_rand, y_rand])
-
-    num_segments = len(path) - 1
-    s_1 = np.random.randint(num_segments)
-    s_2 = s_1 + 1
-
-    # idea: approximate sample region with splines/parametrization
-    # by intepreting left, right bounds as functions over time
-    segment = path[s_2] - path[s_1]
-    scale = np.random.random_sample()
-    expand_origin = scale * segment + path[s_1]
-    return expand_origin + v_expand
-
-
-###############################################################################
-# Density                                                                     #
-###############################################################################
-
-
-# finds area of a polygon with no holes
-def find_area(polygon):
-    area = 0
-    num_sides = len(polygon)
-    for i in range(num_sides):
-        area += np.cross(polygon[i], polygon[(i + 1) % num_sides])
-    return abs(area * .5)
-
-
-# gets area of a given polygon and a list of holes
-def find_area_holes(polygon, holes):
-    poly_area = find_area(polygon)
-    hole_area = 0
-    for h in holes:
-        hole_area += find_area(h)
-    return poly_area - hole_area
-
-
-# Calculates expected number of subdivisions of a region given a density
-# and the region area
-def expected_num(area, density):
-    return area / density
 
 
 ###############################################################################
@@ -420,32 +189,6 @@ def rrt_step(p_rand, v_near, step_size):
     p_step = step_size * normalize(p_rand - p_near)
     p_new = p_near + p_step
     return p_new
-
-
-def rrt_extend(p_rand, p_near, v_near, region, obstacles, step_size, graph0, graph1):
-    c = intersections(region, obstacles, p_rand, p_near)
-    min_dist = np.linalg.norm(p_rand - p_near)
-
-    if len(c) != 0:
-        for p in c:
-            curr_dist = np.linalg.norm(p - p_near)
-            if curr_dist < min_dist:
-                min_dist = curr_dist
-
-    p_step = normalize(p_rand - p_near)
-
-    expand_iter = math.floor(min_dist / step_size)
-    for i in range(expand_iter):
-        p_new = step_size * p_step + v_near.value
-        v_new = graph0.make_vertex(value=p_new,
-                                   neighbors=[],
-                                   position=0,
-                                   parent=None,
-                                   )
-        v_near.add_neighbor(v_new)
-        graph0.add_vertex(v_new)
-        v_near = v_new
-    return v_near
 
 
 def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
@@ -484,24 +227,18 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
 # r * step_size returns a boolean value for if a connection was
 # made
 def rrt_connect(v, graph0, graph1, map, r, step_size):
-    neighbors = search_neighbors(within_dist,
-                                 map,
-                                 graph1,
+    neighbors = search_neighbors(graph1,
                                  v, r,
                                  step_size)
 
-    i = 0
+    while neighbors:
+        curr_neighbor = neighbors.pop()
 
-    while i < len(neighbors):
-        curr_neighbor = neighbors[i]
-
-        if not intersects_objects(map, curr_neighbor.value, v.value):
+        if not map.intersects_line([curr_neighbor.value, v.value]):
             curr_neighbor.add_neighbor(v)
             graph1.add_vertex(v)
 
             return True
-
-        i += 1
 
     return False
 
@@ -518,34 +255,32 @@ def rrt_connect_path(v_start, v_end, graph0, graph1, c1, c2):
 # If distance candidate -> vertex -> root is less than
 # distance candidate -> root we reroute.
 def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
-    neighbors = search_neighbors(within_dist,
-                                 map,
-                                 graph,
+    neighbors = search_neighbors(graph,
                                  v, r,
                                  step_size
                                  )
 
     new_parent = None
     added_to_graph = False
-    i = 0
-    while i < len(neighbors):
-        curr_neighbor = neighbors[i]
-        if not intersects_objects(map, curr_neighbor.value, v.value):
+    while neighbors:
+        curr_neighbor = neighbors.pop()
+        if not map.intersects_line([curr_neighbor.value, v.value]):
             new_parent = curr_neighbor
             break
-        i += 1
 
     if new_parent:
         new_parent.add_neighbor(v)
         graph.add_vertex(v)
         added_to_graph = True
 
-        for n in neighbors:
+        while neighbors:
+            n = neighbors.pop()
             if n.dist_to_root > v.dist_to(n) + v.dist_to_root:
-                n.remove_parent()
-                v.add_neighbor(n)
+                if not map.intersects_line([n.value, v.value]):
+                    n.remove_parent()
+                    v.add_neighbor(n)
         if not connect:
-            if not intersects_objects(map, end.value, v.value):
+            if not map.intersects_line([end.value, v.value]):
                 if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                     end.remove_parent()
                     v.add_neighbor(end)
@@ -557,22 +292,18 @@ def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
 # If distance candidate -> vertex -> root is less than
 # distance candidate -> root we reroute.
 def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
-    neighbors = search_neighbors(within_dist,
-                                 map,
-                                 graph,
+    neighbors = search_neighbors(graph,
                                  v, r,
                                  step_size
                                  )
 
     new_parent = None
-    i = 0
 
-    while i < len(neighbors):
-        curr_neighbor = neighbors[i]
-        if not intersects_objects(map, curr_neighbor.value, v.value):
+    while neighbors:
+        curr_neighbor = neighbors.pop()
+        if not map.intersects_line([curr_neighbor.value, v.value]):
             new_parent = curr_neighbor
             break
-        i += 1
 
     if new_parent:
         new_parent.add_neighbor(v)
@@ -581,7 +312,7 @@ def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
         for i in range(depth):
             new_parent = new_parent.parent
             if new_parent:
-                if not intersects_objects(map, new_parent.value, v.value):
+                if not map.intersects_line([new_parent.value, v.value]):
                     v.remove_parent()
                     new_parent.add_neighbor(v)
 
@@ -589,10 +320,11 @@ def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
                 break
 
     if v.parent:
-        if not intersects_objects(map, end.value, v.value):
+        if not map.intersects_line([end.value, v.value]):
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                 end.remove_parent()
                 v.add_neighbor(end)
+
 
 
 

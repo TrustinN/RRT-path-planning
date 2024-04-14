@@ -179,6 +179,27 @@ class Rect(Bound):
 
         return Rect([min_x, max_x, min_y, max_y])
 
+    def combine_points(points):
+
+        min_x, max_x, min_y, max_y = math.inf, -math.inf, math.inf, -math.inf
+
+        for p in points:
+            x = p[0]
+            y = p[1]
+            if x < min_x:
+                min_x = x
+
+            if x > max_x:
+                max_x = x
+
+            if y < min_y:
+                min_y = y
+
+            if y > max_y:
+                max_y = y
+
+        return Rect([min_x, max_x, min_y, max_y])
+
     # returns overlap area of two bounds
     def overlap(self, other):
 
@@ -342,6 +363,35 @@ class Cube(Bound):
 
         return Cube([min_x, max_x, min_y, max_y, min_z, max_z])
 
+    def combine_points(points):
+
+        min_x, max_x, min_y, max_y, min_z, max_z = math.inf, -math.inf, math.inf, -math.inf, math.inf, -math.inf
+
+        for p in points:
+            x = p[0]
+            y = p[1]
+            z = p[2]
+
+            if x < min_x:
+                min_x = x
+
+            if x > max_x:
+                max_x = x
+
+            if y < min_y:
+                min_y = y
+
+            if y > max_y:
+                max_y = y
+
+            if z < min_z:
+                min_z = z
+
+            if z > max_z:
+                max_z = z
+
+        return Cube([min_x, max_x, min_y, max_y, min_z, max_z])
+
     # returns overlap area of two bounds
     def overlap(self, other):
 
@@ -488,7 +538,7 @@ class IndexRecord(Entry):
     def plot(self, color, view):
 
         if self.dim == 2:
-            self.p = pg.ScatterPlotItem(pos=np.array([self.tuple_identifier]))
+            self.p = pg.ScatterPlotItem(pos=np.array([self.tuple_identifier]), size=3)
             self.p.setBrush(color)
 
         elif self.dim == 3:
@@ -533,6 +583,7 @@ class IndexPointer(Entry):
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
+
 
 
 

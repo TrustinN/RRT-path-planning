@@ -1,6 +1,5 @@
 from .rrt_utils import graph_init
 from .rrt_utils import rrt_step
-from .rrt_utils import in_free_space
 from .rrt_utils import rrt_rewire
 from .rrt_utils import rrt_connect
 from .rrt_utils import rrt_connect_path
@@ -28,7 +27,7 @@ def rrt_run(map, step_size, max_iter, clear=False):
         p_test = IndexRecord(None, p_rand)
         v_near = t_start.NearestNeighbor(p_test)
         p_new = rrt_step(p_rand, v_near, step_size)
-        if in_free_space(p_new, map.region, map.obstacles):
+        if map.in_free_space(p_new):
             v_new = t_start.make_vertex(value=p_new,
                                         neighbors=[],
                                         position=0,
@@ -43,7 +42,7 @@ def rrt_run(map, step_size, max_iter, clear=False):
 
         v_near = t_end.NearestNeighbor(p_test)
         p_new = rrt_step(p_rand, v_near, step_size)
-        if in_free_space(p_new, map.region, map.obstacles):
+        if map.in_free_space(p_new):
             v_new = t_end.make_vertex(value=p_new,
                                       neighbors=[],
                                       position=0,

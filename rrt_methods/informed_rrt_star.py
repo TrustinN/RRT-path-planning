@@ -1,5 +1,5 @@
 import numpy as np
-from utils.maps.map_utils import Spheroid
+from utils.maps.map_utils import SampleScope
 from . import rrt_star
 from . import rrt_star_connect
 
@@ -26,7 +26,12 @@ def rrt_run(map, step_size, max_iter):
             d_worst = curr_dist
 
     # start informed rrt sampling
-    ellipse_scope = Spheroid(end, start, d_worst)
+    if map.dim == 2:
+        ellipse_scope = SampleScope.Ellipse(end, start, d_worst)
+
+    elif map.dim == 3:
+        ellipse_scope = SampleScope.Spheroid(end, start, d_worst)
+
     map.add_path([start, end])
     map.sample_init(ellipse_scope)
 
