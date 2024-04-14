@@ -1,5 +1,5 @@
 import pyqtgraph as pg
-from rrt_methods.RRTsolver import RRTsolver
+from rrt_methods.RRTSolver import RRTSolver
 from utils.maps.MapBuilder import MapBuilder
 
 
@@ -19,7 +19,7 @@ methods = {
 }
 
 builder = MapBuilder(dim=2, seed=100, map=maps[0])
-rrt = RRTsolver(map=builder.map, step_size=20, max_iter=1000, method=methods[4])
+rrt = RRTSolver(map=builder.map, step_size=20, max_iter=1000, method=methods[4])
 print(rrt.get_time())
 rrt.plot(branches=False, leaves=False)
 
