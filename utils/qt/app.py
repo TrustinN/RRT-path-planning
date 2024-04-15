@@ -18,6 +18,7 @@ class RRTApp():
                                                    "rrt_connect",
                                                    "rrt_star",
                                                    "rrt_star_connect",
+                                                   "multi_rrt_star_connect",
                                                    "informed_rrt_star",
                                                    "quick_rrt_star",
                                                    "informed_quick_rrt_star"],

@@ -22,7 +22,7 @@ class MapBuilder():
 
     def new_map(self):
         if self.name == "rom":
-            self.map = self.maps.RandomObsMap(10, 150)
+            self.map = self.maps.RandomObsMap(20, 150)
 
     def get_map(self):
         return self.map

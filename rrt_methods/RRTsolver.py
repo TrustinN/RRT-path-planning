@@ -6,6 +6,7 @@ from .rrt import rrt_run as rrt
 from .rrt_connect import rrt_run as rrt_connect
 from .rrt_star import rrt_run as rrt_star
 from .rrt_star_connect import rrt_run as rrt_star_connect
+from .multi_rrt_star_connect import rrt_run as multi_rrt_star_connect
 from .informed_rrt_star import rrt_run as informed_rrt_star
 from .quick_rrt_star import rrt_run as quick_rrt_star
 from .informed_quick_rrt_star import rrt_run as informed_quick_rrt_star
@@ -19,6 +20,7 @@ class RRTSolver():
             "rrt_connect": rrt_connect,
             "rrt_star": rrt_star,
             "rrt_star_connect": rrt_star_connect,
+            "multi_rrt_star_connect": multi_rrt_star_connect,
             "informed_rrt_star": informed_rrt_star,
             "quick_rrt_star": quick_rrt_star,
             "informed_quick_rrt_star": informed_quick_rrt_star
