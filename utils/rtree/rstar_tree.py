@@ -141,13 +141,6 @@ class RTree(object):
         elif self.dim == 3:
             RTree.Bound = RTree.Cube
 
-        pg.mkQApp("RTree")
-        if self.dim == 2:
-            self.view = pg.plot().getViewBox()
-
-        elif self.dim == 3:
-            self.view = gl.GLViewWidget()
-
         self.root = RTree.LeafNode(items=[], covering=None, level=0)
 
     def plot(self, view, branches=False, leaves=True):

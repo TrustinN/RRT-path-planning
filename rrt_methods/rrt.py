@@ -39,7 +39,11 @@ def rrt_run(map, step_size, max_iter):
                         v_end.remove_parent()
                         v_new.add_neighbor(v_end)
 
-    path = graph.backtrack(v_start, v_end)
+    if iter == max_iter:
+        path = []
+
+    else:
+        path = graph.backtrack(v_start, v_end)
 
     return path, graph, None
 
