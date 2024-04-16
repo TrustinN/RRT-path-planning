@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from utils.maps.map_utils import SampleScope
 from . import rrt_star_connect
@@ -24,12 +25,15 @@ def rrt_run(map, step_size, max_iter, multi=3):
         path, t_start, t_end = rrt_star_connect.rrt_run(map, step_size, max_iter, clear=clear)
         d_worst = 0
 
-        for i in range(len(path) - 2):
-            p = path[i + 1]
-            curr_dist = np.linalg.norm(p - start) + np.linalg.norm(p - end)
+        if path:
+            for i in range(len(path) - 2):
+                p = path[i + 1]
+                curr_dist = np.linalg.norm(p - start) + np.linalg.norm(p - end)
 
-            if curr_dist > d_worst:
-                d_worst = curr_dist
+                if curr_dist > d_worst:
+                    d_worst = curr_dist
+        else:
+            break
 
         # start informed rrt sampling
         if map.dim == 2:

@@ -2,9 +2,10 @@ import numpy as np
 
 
 class MapBuilder():
-    def __init__(self, dim, seed=None, map="rom"):
+    def __init__(self, dim, seed=None, map="rom", *args):
         self.name = map
         self.seed = seed
+        self.args = args
         if seed:
             np.random.seed(seed)
 
@@ -22,7 +23,7 @@ class MapBuilder():
 
     def new_map(self):
         if self.name == "rom":
-            self.map = self.maps.RandomObsMap(20, 150)
+            self.map = self.maps.RandomObsMap(self.args[0], self.args[1])
 
     def get_map(self):
         return self.map

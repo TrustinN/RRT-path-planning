@@ -22,7 +22,7 @@ class Graph(RTree):
                     neighbors=[],
                     position=0,
                     parent=None,
-                    dist_to_root=0):
+                    dist_to_root=math.inf):
         return self.vertex(value=value,
                            neighbors=neighbors,
                            position=position,
@@ -172,7 +172,7 @@ def graph_init(map, connect=False):
     graph0 = Graph(vertices=[], num_vertices=0, dim=map.dim)
     graph1 = Graph(vertices=[], num_vertices=0, dim=map.dim)
 
-    v_start = graph0.make_vertex(value=start, neighbors=[])
+    v_start = graph0.make_vertex(value=start, neighbors=[], dist_to_root=0)
     v_end = graph1.make_vertex(value=end, neighbors=[], dist_to_root=0)
 
     if not connect:
@@ -292,18 +292,16 @@ def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
 # If distance candidate -> vertex -> root is less than
 # distance candidate -> root we reroute.
 def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
-    neighbors = search_neighbors(graph,
-                                 v, r,
-                                 step_size
-                                 )
+    neighbors = graph.NearestNeighbor(v, 5)[::-1]
 
     new_parent = None
 
     while neighbors:
         curr_neighbor = neighbors.pop()
-        if not map.intersects_line([curr_neighbor.value, v.value]):
-            new_parent = curr_neighbor
-            break
+        if curr_neighbor.dist_to_root != math.inf:
+            if not map.intersects_line([curr_neighbor.value, v.value]):
+                new_parent = curr_neighbor
+                break
 
     if new_parent:
         new_parent.add_neighbor(v)

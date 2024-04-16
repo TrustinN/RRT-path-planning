@@ -1,3 +1,4 @@
+import math
 from .rrt_utils import graph_init
 from utils.rtree.rtree_utils import IndexRecord
 
@@ -21,7 +22,7 @@ def rrt_run(map, step_size, max_iter):
         p_rand = map.sample()
 
         p_test = IndexRecord(None, p_rand)
-        v_near = graph.NearestNeighbor(p_test)
+        v_near = graph.NearestNeighbor(p_test)[0]
         p_near = v_near.value
 
         if map.in_free_space(p_rand):
@@ -39,7 +40,7 @@ def rrt_run(map, step_size, max_iter):
                         v_end.remove_parent()
                         v_new.add_neighbor(v_end)
 
-    if iter == max_iter:
+    if v_end.dist_to_root == math.inf:
         path = []
 
     else:

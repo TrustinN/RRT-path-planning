@@ -25,7 +25,7 @@ def rrt_run(map, step_size, max_iter, clear=False):
 
         p_rand = map.sample()
         p_test = IndexRecord(None, p_rand)
-        v_near = t_start.NearestNeighbor(p_test)
+        v_near = t_start.NearestNeighbor(p_test)[0]
         p_near = v_near.value
 
         if map.in_free_space(p_rand):
@@ -41,7 +41,7 @@ def rrt_run(map, step_size, max_iter, clear=False):
             break
 
         p_test = IndexRecord(None, p_rand)
-        v_near = t_end.NearestNeighbor(p_test)
+        v_near = t_end.NearestNeighbor(p_test)[0]
         p_near = v_near.value
 
         if map.in_free_space(p_rand):
@@ -60,7 +60,7 @@ def rrt_run(map, step_size, max_iter, clear=False):
         t_start.clear()
         t_end.clear()
 
-    if iter == max_iter:
+    if not connect:
         path = []
     else:
         path = rrt_connect_path(v_start, v_end, t_start, t_end, c1, c2)

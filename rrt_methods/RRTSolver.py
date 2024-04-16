@@ -10,6 +10,8 @@ from .multi_rrt_star_connect import rrt_run as multi_rrt_star_connect
 from .informed_rrt_star import rrt_run as informed_rrt_star
 from .quick_rrt_star import rrt_run as quick_rrt_star
 from .informed_quick_rrt_star import rrt_run as informed_quick_rrt_star
+from .ep_rrt_star import rrt_run as ep_rrt_star
+from .quick_ep_rrt_star import rrt_run as quick_ep_rrt_star
 
 
 class RRTSolver():
@@ -23,10 +25,14 @@ class RRTSolver():
             "multi_rrt_star_connect": multi_rrt_star_connect,
             "informed_rrt_star": informed_rrt_star,
             "quick_rrt_star": quick_rrt_star,
-            "informed_quick_rrt_star": informed_quick_rrt_star
+            "informed_quick_rrt_star": informed_quick_rrt_star,
+            "ep_rrt_star": ep_rrt_star,
+            "quick_ep_rrt_star": quick_ep_rrt_star,
         }
         self.show_leaves = False
         self.show_branches = False
+        self.time = 0
+        self.path_length = 0
 
     def set_map(self, map):
         self.map = map
@@ -50,6 +56,11 @@ class RRTSolver():
         self.time = time_stop - time_start
 
         self.path = path
+        length = 0
+        for i in range(len(self.path) - 1):
+            length += np.linalg.norm(self.path[i + 1] - self.path[i])
+        self.path_length = length
+
         self.t_start = t_start
         self.t_end = t_end
 
@@ -61,11 +72,9 @@ class RRTSolver():
 
     def plot(self, view):
 
-        self.view = view
         if self.map.dim == 2:
-
-            self.map.plot(view)
             self.t_start.plot(view, self.show_branches, self.show_leaves)
+
             if self.t_end:
                 self.t_end.plot(view, self.show_branches, self.show_leaves)
 
@@ -77,12 +86,6 @@ class RRTSolver():
 
         elif self.map.dim == 3:
 
-            g = gl.GLGridItem()
-            g.translate(400, 400, -200)
-            g.scale(100, 100, 100)
-            self.view.addItem(g)
-
-            self.map.plot(view)
             self.t_start.plot(view, self.show_branches, self.show_leaves)
             if self.t_end:
                 self.t_end.plot(view, self.show_branches, self.show_leaves)
@@ -95,7 +98,11 @@ class RRTSolver():
                 view.addItem(line)
 
     def get_time(self):
-        return "Time (" + self.method + f"): {self.time}"
+        s = f"Time: {int(self.time * 10000) / 10000} seconds"
+        return s
+
+    def get_length(self):
+        return f"Path Length: {int(self.path_length)}"
 
 
 

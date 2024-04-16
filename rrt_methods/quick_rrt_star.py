@@ -21,7 +21,7 @@ def rrt_run(map, step_size, max_iter):
 
         p_rand = map.sample()
         p_test = IndexRecord(None, p_rand)
-        v_near = graph.NearestNeighbor(p_test)
+        v_near = graph.NearestNeighbor(p_test)[0]
         p_new = rrt_step(p_rand, v_near, step_size)
 
         if map.in_free_space(p_new):

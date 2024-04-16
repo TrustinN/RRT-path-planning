@@ -2,8 +2,6 @@ import math
 import random
 import numpy as np
 import textwrap
-import pyqtgraph as pg
-import pyqtgraph.opengl as gl
 from queue import PriorityQueue
 from .rtree_utils import IndexRecord
 from .rtree_utils import IndexPointer
@@ -581,16 +579,20 @@ class RTree(object):
         helper_func(self.root, found)
         return found
 
-    def NearestNeighbor(self, entry):
+    def NearestNeighbor(self, entry, k=1):
 
         pq = PriorityQueue()
         pq.put(PrioritizedItem(0, self.root))
+        neighbors = []
 
         while not pq.empty():
             elem = pq.get().item
 
             if isinstance(elem, IndexRecord):
-                return elem
+                neighbors.append(elem)
+
+                if len(neighbors) == k:
+                    return neighbors
 
             elif type(elem) is RTree.LeafNode:
                 for r in elem.items:
@@ -607,13 +609,7 @@ class RTree(object):
                     e = PrioritizedItem(dist, child_node)
                     pq.put(e)
 
-
-
-
-
-
-
-
+        return neighbors
 
 
 
