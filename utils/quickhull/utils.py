@@ -68,7 +68,7 @@ class Facet(IndexRecord):
         self.neighbors.append(f)
 
     def get_projection(self, p):
-        approx = np.linalg.lstsq(self.subspace, p - self.b)[0]
+        approx = np.linalg.lstsq(self.subspace, p - self.b, rcond=None)[0]
         return p - (np.dot(self.subspace, approx) + self.b)
 
     def orient(self, p):
