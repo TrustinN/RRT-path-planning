@@ -21,6 +21,7 @@ class RRTApp():
         self.main_window.window.setFixedSize(1200, 900)
         self.main_window.window.show()
 
+    def run(self):
         pg.exec()
 
 

@@ -6,7 +6,6 @@ class RRTDisplay():
         self.window = QtWidgets.QWidget()
         self.layout = QtWidgets.QHBoxLayout()
         self.window.setLayout(self.layout)
-        # self.window.setFixedSize(900, 900)
         self.widget = None
 
     def connect(self, widget):
