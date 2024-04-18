@@ -33,6 +33,7 @@ class RRTSolver():
         self.show_branches = False
         self.time = 0
         self.path_length = 0
+        self.path_lengths = []
 
     def set_map(self, map):
         self.map = map
@@ -56,9 +57,12 @@ class RRTSolver():
         self.time = time_stop - time_start
 
         self.path = path
+        self.path_lengths = []
         length = 0
         for i in range(len(self.path) - 1):
-            length += np.linalg.norm(self.path[i + 1] - self.path[i])
+            s_l = np.linalg.norm(self.path[i + 1] - self.path[i])
+            length += s_l
+            self.path_lengths.append(s_l)
         self.path_length = length
 
         self.t_start = t_start
@@ -96,6 +100,14 @@ class RRTSolver():
                                          width=3,)
                 line.setGLOptions("opaque")
                 view.addItem(line)
+
+        # for i in range(len(self.path) - 1):
+        #     # vec = self.path[i + 1] - self.path[i]
+        #     # vec = np.array([vec[0], vec[1], 0])
+        #     # line = gl.GLLinePlotItem(pos=np.array([self.path[i], 100 * vec + self.path[i]]))
+        #     line = gl.GLLinePlotItem(pos=np.array([self.path[i], self.path[i] + np.array([300, 0, 0])]))
+        #
+        #     view.addItem(line)
 
     def get_time(self):
         s = f"Time: {int(self.time * 10000) / 10000} seconds"

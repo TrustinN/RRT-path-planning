@@ -1,5 +1,6 @@
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
+from PyQt6.QtGui import QVector3D
 
 
 class PlotObject():
@@ -7,14 +8,12 @@ class PlotObject():
         pg.mkQApp("Map")
 
         self.d2 = pg.plot()
-        self.d2.setFixedSize(900, 900)
-
         self.d3 = gl.GLViewWidget()
-        self.d3.setFixedSize(900, 900)
-        self.d3.setCameraPosition(distance=1500)
-        self.d3.pan(400, 400, 400)
-
         self.view = self.d2
+
+    def reset_camera(self):
+        if self.dim == 3:
+            self.view.setCameraPosition(pos=QVector3D(10, 10, 10), distance=1500, azimuth=225, elevation=30)
 
     def set_dim(self, dim):
         self.dim = dim
@@ -30,6 +29,8 @@ class PlotObject():
             self.view.hide()
             self.view = self.d3
             self.view.show()
+
+        self.reset_camera()
 
     def get_widget(self):
         return self.view

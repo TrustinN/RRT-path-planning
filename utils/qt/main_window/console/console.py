@@ -2,6 +2,7 @@ from pyqtgraph.Qt import QtWidgets
 
 from .data import RRTData
 from .parameter_tree import RRTOptions
+from .path_traverser import PathTraverser
 
 
 class RRTConsole():
@@ -14,8 +15,10 @@ class RRTConsole():
 
         self.data = RRTData()
         self.options = RRTOptions()
+        self.traverser = PathTraverser()
 
         self.layout.addWidget(self.options.pt)
+        self.layout.addWidget(self.traverser)
         self.layout.addWidget(self.data.window)
 
 
