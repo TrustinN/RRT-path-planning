@@ -16,6 +16,7 @@ class Graph(RTree):
     def __init__(self, vertices=[], num_vertices=0, dim=2):
         super().__init__(10, dim=dim)
         self.vertices = vertices
+        self.time = 0
 
     def make_vertex(self, value=np.array([]),
                     parent=None,
@@ -50,8 +51,7 @@ class Graph(RTree):
         return path
 
     def clear(self):
-        for v in self.vertices:
-            self.vertices = []
+        self.vertices = []
 
     def plot(self, view, branches, leaves):
         super().plot(view, branches, leaves)
@@ -81,13 +81,8 @@ class Graph(RTree):
                 return np.linalg.norm(self.value - other)
 
         def add_neighbor(self, other):
-            if type(other) is Graph.vertex:
-                other.parent = self
-                other.dist_to_root = self.dist_to_root + self.dist_to(other)
-
-        def remove_parent(self):
-            if self.parent:
-                self.parent = None
+            other.parent = self
+            other.dist_to_root = self.dist_to_root + self.dist_to(other)
 
         def plot_connections(self, color, view):
             if self.parent:
@@ -246,12 +241,10 @@ def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
             n = neighbors.pop()
             if n.dist_to_root > v.dist_to(n) + v.dist_to_root:
                 if not map.intersects_line([n.value, v.value]):
-                    n.remove_parent()
                     v.add_neighbor(n)
         if not connect:
             if not map.intersects_line([end.value, v.value]):
                 if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
-                    end.remove_parent()
                     v.add_neighbor(end)
 
     return added_to_graph
@@ -280,7 +273,6 @@ def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
             new_parent = new_parent.parent
             if new_parent:
                 if not map.intersects_line([new_parent.value, v.value]):
-                    v.remove_parent()
                     new_parent.add_neighbor(v)
 
             else:
@@ -289,8 +281,8 @@ def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
     if v.parent:
         if not map.intersects_line([end.value, v.value]):
             if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
-                end.remove_parent()
                 v.add_neighbor(end)
+
 
 
 

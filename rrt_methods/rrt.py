@@ -35,7 +35,6 @@ def rrt_run(map, step_size, max_iter):
                 iter += 1
                 if not map.intersects_line([v_end.value, v_new.value]):
                     if v_new.dist_to_root + v_new.dist_to(v_end) < v_end.dist_to_root:
-                        v_end.remove_parent()
                         v_new.add_neighbor(v_end)
 
     if v_end.dist_to_root == math.inf:
