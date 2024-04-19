@@ -12,7 +12,8 @@ class Camera():
         self.slider = slider
 
     def reset_slider(self):
-        self.slider.setValue(0)
+        self.slider.setValue(50)
+        self.view.setCameraPosition(pos=QVector3D(400, 400, 400), elevation=0, azimuth=-35, distance=1200)
 
     def hide_slider(self):
         self.slider.hide()

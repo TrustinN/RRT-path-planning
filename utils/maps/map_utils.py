@@ -1,5 +1,6 @@
-import numpy as np
 import math
+import numpy as np
+from utils.rtree.rstar_tree import RTree
 
 ###############################################################################
 # Helper Functions                                                            #
@@ -28,6 +29,11 @@ class Map():
     def __init__(self, obstacles, dim=2):
         self.obstacles = obstacles
         self.dim = dim
+        self.obs_tree = RTree(10, dim=self.dim)
+
+        for o in self.obstacles:
+            for f in o.faces:
+                self.obs_tree.Insert(f)
 
     def sample_init(self, scope):
         self.overlay = scope

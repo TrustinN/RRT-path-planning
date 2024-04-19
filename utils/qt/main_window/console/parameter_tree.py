@@ -28,6 +28,7 @@ class RRTOptions():
                 dict(name='leaves', type='bool', value=False),
                 dict(name='branches', type='bool', value=False),
             ]),
+            dict(name='seed', type='int', value=None),
             dict(name='run', type='action'),
         ]
 

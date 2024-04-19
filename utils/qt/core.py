@@ -14,10 +14,10 @@ class RRTCore():
 
         self.connect_pt()
 
-        self.update_map()
-        self.camera.set_view(self.plot_handler.get_view())
         self.camera.connect(self.console.slider)
+        self.update_map()
         self.camera.slider.sliderMoved.connect(self.focus_path)
+        self.camera.slider.valueChanged.connect(self.focus_path)
         self.update_display()
 
         self.set_step_size()
@@ -53,7 +53,8 @@ class RRTCore():
             self.camera.show_slider()
 
     def update_map(self):
-        self.plot_handler.reconfig_builder(self.params.child('dim').value(),
+        dim = self.params.child('dim').value()
+        self.plot_handler.reconfig_builder(dim,
                                            None,
                                            self.params.child('map').value(),
                                            self.params.child('map').child('num_obstacles').value(),
@@ -63,6 +64,10 @@ class RRTCore():
         self.plot_handler.change_map()
         self.plot_handler.draw()
         self.solver.set_map(self.plot_handler.get_map())
+
+        if dim == 3:
+            self.camera.set_view(self.plot_handler.get_view())
+            self.camera.reset_slider()
 
     def set_step_size(self):
         self.solver.set_step_size(self.params.child('step_size').value())
@@ -76,8 +81,8 @@ class RRTCore():
 
         prev_time = self.solver.get_time()
         prev_length = self.solver.get_length()
-        self.solver.set_method(self.params.child("plan").value())
-        self.solver.run()
+        self.solver.set_method(self.params.child('plan').value())
+        self.solver.run(self.params.child('seed').value())
 
         self.plot_handler.draw()
         self.plot_handler.plot_solution(self.solver,

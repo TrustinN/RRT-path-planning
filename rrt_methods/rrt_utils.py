@@ -89,8 +89,9 @@ class Graph(RTree):
                 if len(self.value) == 2:
                     line = pg.PlotDataItem(np.array([self.value, self.parent.value]),
                                            connect="all",
-                                           width=0.1,
-                                           pen=pg.mkPen(color))
+                                           pen=pg.mkPen(color),
+                                           skipFiniteCheck=True,
+                                           downsample=10)
                     view.addItem(line)
 
                 elif len(self.value) == 3:

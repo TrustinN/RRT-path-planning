@@ -30,7 +30,6 @@ class PlotHandler():
     def reset(self):
         self.plotter.clear()
         self.builder.map.reset()
-        self.plotter.reset_camera()
 
     def get_view(self):
         return self.plotter.view

@@ -42,7 +42,9 @@ class RRTSolver():
     def set_method(self, method):
         self.method = method
 
-    def run(self):
+    def run(self, seed):
+        if seed:
+            np.random.seed(seed)
         self.rrt_run = self.methods[self.method]
 
         time_start = timeit.default_timer()
