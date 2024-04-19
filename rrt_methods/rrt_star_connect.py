@@ -30,8 +30,6 @@ def rrt_run(map, step_size, max_iter, clear=False):
         p_new = rrt_step(p_rand, v_near, step_size)
         if map.in_free_space(p_new):
             v_new = t_start.make_vertex(value=p_new,
-                                        neighbors=[],
-                                        position=0,
                                         parent=None,
                                         )
             if rrt_rewire(v_new, t_start, map, 3, step_size, v_end, connect=True):
@@ -45,8 +43,6 @@ def rrt_run(map, step_size, max_iter, clear=False):
         p_new = rrt_step(p_rand, v_near, step_size)
         if map.in_free_space(p_new):
             v_new = t_end.make_vertex(value=p_new,
-                                      neighbors=[],
-                                      position=0,
                                       parent=None,
                                       )
             if rrt_rewire(v_new, t_end, map, 3, step_size, v_end, connect=True):

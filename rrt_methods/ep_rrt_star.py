@@ -58,8 +58,6 @@ def rrt_run(map, step_size, max_iter):
         if map.in_free_space(p_new):
             iter += 1
             v_new = graph.make_vertex(value=p_new,
-                                      neighbors=[],
-                                      position=0,
                                       parent=None,
                                       )
             rrt_rewire(v_new, graph, map, 3, step_size, v_end)

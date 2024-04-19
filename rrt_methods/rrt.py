@@ -16,7 +16,7 @@ def rrt_run(map, step_size, max_iter):
     v_start, v_end, graph, _ = graph_init(map=map)
 
     iter = 0
-    while v_end.num_neighbors < 1 and iter < max_iter:
+    while not v_end.parent and iter < max_iter:
         iter += 1
 
         p_rand = map.sample()
@@ -28,8 +28,6 @@ def rrt_run(map, step_size, max_iter):
         if map.in_free_space(p_rand):
             if not map.intersects_line([p_rand, p_near]):
                 v_new = graph.make_vertex(value=p_rand,
-                                          neighbors=[],
-                                          position=0,
                                           parent=None,
                                           )
                 v_near.add_neighbor(v_new)

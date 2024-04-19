@@ -27,8 +27,6 @@ def rrt_run(map, step_size, max_iter):
         if map.in_free_space(p_new):
             iter += 1
             v_new = graph.make_vertex(value=p_new,
-                                      neighbors=[],
-                                      parent=None,
                                       dist_to_root=math.inf,
                                       )
             if v_start.equals(v_near):

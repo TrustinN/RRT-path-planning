@@ -16,16 +16,11 @@ class Graph(RTree):
     def __init__(self, vertices=[], num_vertices=0, dim=2):
         super().__init__(10, dim=dim)
         self.vertices = vertices
-        self.num_vertices = num_vertices
 
     def make_vertex(self, value=np.array([]),
-                    neighbors=[],
-                    position=0,
                     parent=None,
                     dist_to_root=math.inf):
         return self.vertex(value=value,
-                           neighbors=neighbors,
-                           position=position,
                            parent=parent,
                            dist_to_root=dist_to_root,
                            )
@@ -33,7 +28,6 @@ class Graph(RTree):
     def add_vertex(self, vertex):
         self.Insert(vertex)
         self.vertices.append(vertex)
-        self.num_vertices += 1
 
     def backtrack(self, start, stop):
         path = [stop.value]
@@ -57,26 +51,20 @@ class Graph(RTree):
 
     def clear(self):
         for v in self.vertices:
-            self.num_vertices = 0
             self.vertices = []
 
     def plot(self, view, branches, leaves):
         super().plot(view, branches, leaves)
-        start = self.vertices[0]
-        start.plot_connections("#00a5ff", view)
+        for v in self.vertices:
+            v.plot_connections("#00a5ff", view)
 
     class vertex(IndexRecord):
         def __init__(self, value=np.array([]),
-                     neighbors=[],
-                     position=0,
                      parent=None,
                      dist_to_root=0,
                      ):
             super().__init__(None, value)
             self.value = value
-            self.neighbors = neighbors
-            self.position = position
-            self.num_neighbors = len(self.neighbors)
             self.parent = parent
             self.dist_to_root = dist_to_root
 
@@ -94,46 +82,29 @@ class Graph(RTree):
 
         def add_neighbor(self, other):
             if type(other) is Graph.vertex:
-                other.position = self.num_neighbors
                 other.parent = self
-                self.neighbors.append(other)
-                self.num_neighbors += 1
-
                 other.dist_to_root = self.dist_to_root + self.dist_to(other)
-
-        def remove_neighbor(self, other_pos):
-            self.neighbors.pop(other_pos)
-            self.num_neighbors -= 1
-
-            for i in range(self.num_neighbors):
-                self.neighbors[i].position = i
 
         def remove_parent(self):
             if self.parent:
-                pos = self.position
-                self.parent.remove_neighbor(pos)
-                self.position = 0
                 self.parent = None
 
         def plot_connections(self, color, view):
-            if len(self.value) == 2:
-                for n in self.neighbors:
-                    line = pg.PlotDataItem(np.array([self.value, n.value]),
+            if self.parent:
+                if len(self.value) == 2:
+                    line = pg.PlotDataItem(np.array([self.value, self.parent.value]),
                                            connect="all",
                                            width=0.1,
                                            pen=pg.mkPen(color))
                     view.addItem(line)
-                    n.plot_connections(color, view)
 
-            elif len(self.value) == 3:
-                for n in self.neighbors:
-                    line = gl.GLLinePlotItem(pos=np.array([self.value, n.value]),
+                elif len(self.value) == 3:
+                    line = gl.GLLinePlotItem(pos=np.array([self.value, self.parent.value]),
                                              color=pg.mkColor(color),
                                              width=0.1,)
 
                     line.setGLOptions("opaque")
                     view.addItem(line)
-                    n.plot_connections(color, view)
 
         def __repr__(self):
             return f"(value:{self.value})"
@@ -169,14 +140,14 @@ def graph_init(map, connect=False):
 
     start, end = map.path[0], map.path[1]
 
-    graph0 = Graph(vertices=[], num_vertices=0, dim=map.dim)
-    graph1 = Graph(vertices=[], num_vertices=0, dim=map.dim)
+    graph0 = Graph(vertices=[], dim=map.dim)
+    graph1 = Graph(vertices=[], dim=map.dim)
 
-    v_start = graph0.make_vertex(value=start, neighbors=[], dist_to_root=0)
-    v_end = graph1.make_vertex(value=end, neighbors=[], dist_to_root=0)
+    v_start = graph0.make_vertex(value=start, dist_to_root=0)
+    v_end = graph1.make_vertex(value=end, dist_to_root=0)
 
     if not connect:
-        v_end = graph1.make_vertex(value=end, neighbors=[], dist_to_root=math.inf)
+        v_end = graph1.make_vertex(value=end, dist_to_root=math.inf)
 
     graph0.add_vertex(v_start)
     graph1.add_vertex(v_end)
@@ -208,8 +179,6 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
     for i in range(expand_iter):
         p_new = step_size * p_step + v_near.value
         v_new = graph0.make_vertex(value=p_new,
-                                   neighbors=[],
-                                   position=0,
                                    parent=None,
                                    )
         v_near.add_neighbor(v_new)
