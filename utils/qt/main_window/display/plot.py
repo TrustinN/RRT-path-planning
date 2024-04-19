@@ -7,9 +7,10 @@ class PlotObject():
     def __init__(self):
         pg.mkQApp("Map")
 
-        self.d2 = pg.plot()
-        self.d3 = gl.GLViewWidget()
-        self.view = self.d2
+        self.widget2D = pg.plot()
+        self.widget3D = gl.GLViewWidget()
+        self.view = self.widget2D
+        self.dim = 2
 
     def reset_camera(self):
         if self.dim == 3:
@@ -22,12 +23,12 @@ class PlotObject():
     def show_plot(self):
         if self.dim == 2:
             self.view.hide()
-            self.view = self.d2
+            self.view = self.widget2D
             self.view.show()
 
         elif self.dim == 3:
             self.view.hide()
-            self.view = self.d3
+            self.view = self.widget3D
             self.view.show()
 
         self.reset_camera()
