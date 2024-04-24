@@ -26,6 +26,9 @@ class MapBuilder():
         if self.name == "rom":
             self.map = self.maps.RandomObsMap(self.args[0], self.args[1])
 
+        if self.name == "maze":
+            self.map = self.maps.Maze(self.args[0])
+
     def get_map(self):
         return self.map
 

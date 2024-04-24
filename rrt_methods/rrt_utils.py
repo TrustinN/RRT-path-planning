@@ -162,6 +162,8 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
     c = map.intersections([p_rand, p_near])
     min_dist = np.linalg.norm(p_rand - p_near)
     connect = False
+    p_step = normalize(p_rand - p_near)
+    expand_iter = 0
 
     if len(c) != 0:
         for p in c:
@@ -169,9 +171,12 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
             if curr_dist < min_dist:
                 min_dist = curr_dist
 
-    p_step = normalize(p_rand - p_near)
+        if min_dist != np.linalg.norm(p_rand - p_near):
+            expand_iter = math.floor(min_dist / step_size)
 
-    expand_iter = math.floor(min_dist / step_size)
+    else:
+        expand_iter = math.floor(min_dist / step_size)
+
     for i in range(expand_iter):
         p_new = step_size * p_step + v_near.value
         v_new = graph0.make_vertex(value=p_new,

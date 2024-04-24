@@ -61,11 +61,7 @@ class Map():
         return True
 
     def reset(self):
-        if self.dim == 2:
-            self.sample_init(SampleScope.Rectangle([400, 400], 600, 600))
-
-        elif self.dim == 3:
-            self.sample_init(SampleScope.Cube([400, 400, 400], 600, 600, 600))
+        return
 
 
 class SampleScope():

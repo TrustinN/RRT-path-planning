@@ -18,9 +18,9 @@ class RRTOptions():
                                                    "quick_ep_rrt_star"],
                  value="rrt"),
             dict(name='step_size', type='float', value=50),
-            dict(name='max_iter', type='float', value=1000),
-            dict(name='map', type='list', limits=["rom"], value="rom", children=[
-                dict(name='num_obstacles', type='float', value=10),
+            dict(name='max_iter', type='int', value=1000),
+            dict(name='map', type='list', limits=["rom", "maze"], value="rom", children=[
+                dict(name='num_obstacles', type='int', value=10),
                 dict(name='obstacle_size', type='float', value=150),
                 dict(name='update', type='action'),
             ]),

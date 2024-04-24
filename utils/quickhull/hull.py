@@ -150,6 +150,7 @@ def QuickHull(vertices):
     facets = CreateSimplex(vertices)
     for f in facets:
         AddToOutside(f, vertices)
+        f.triangles.append(f.vertices[:])
 
     num_points = len(facets)
 
@@ -235,18 +236,62 @@ def QuickHull(vertices):
                     ne = horizon_edges[i]
                     ne.append(farthest_pt)
                     f = Facet(ne)
+                    f.triangles.append(f.vertices[:])
                     AddToOutside(f, unclaimed)
+                    prev_triangle = f.vertices
+
+                    # Connect the current facet and the facet connected by and edge
+                    # to the current facet, but not visible from the eyepoint
+                    curr_hface = horizon_faces[i]
+
+                    # Removing old neighbors from horizon facets
+                    n, cont = 0, True
+                    while cont:
+                        g = curr_hface.neighbors[n]
+                        vert = g.vertices
+
+                        for j in range(len(vert)):
+                            l1 = [vert[j], vert[(j + 1) % len(g.vertices)]]
+                            l2 = ne
+
+                            if np.array_equal(l1[0], l2[0]) and np.array_equal(l1[1], l2[1]):
+                                curr_hface.neighbors.pop(n)
+                                cont = False
+                        n += 1
+
+                    if np.array_equal(f.normal, curr_hface.normal):
+                        # merge the faces
+                        prev_outside = f.outside_vertices
+                        # make sure to append point at right place
+                        iter = 0
+                        while True:
+                            if np.array_equal(curr_hface.vertices[iter], ne[1]):
+                                curr_hface.vertices.insert(iter + 1, farthest_pt)
+                                break
+                            iter += 1
+
+                        curr_hface.vertices.append(farthest_pt)
+                        f = Facet(curr_hface.vertices)
+                        f.outside_vertices = curr_hface.outside_vertices + prev_outside
+                        f.triangles = curr_hface.triangles
+                        f.triangles.append(prev_triangle)
+
+                        for n in curr_hface.neighbors:
+                            n.neighbors.remove(curr_hface)
+                            n.add_neighbor(f)
+                            f.add_neighbor(n)
+
+                        curr_hface.in_conv_poly = False
+
+                    else:
+
+                        curr_hface.add_neighbor(f)
+                        f.add_neighbor(curr_hface)
 
                     # Add to queue if this facet is not part of final convex poly
                     if len(f.outside_vertices) > 0:
                         queue.append(f)
                     facets.append(f)
-
-                    # Connect the current facet and the facet connected by and edge
-                    # to the current facet, but not visible from the eyepoint
-                    curr_hface = horizon_faces[i]
-                    curr_hface.add_neighbor(f)
-                    f.add_neighbor(curr_hface)
 
                     # Connect current facet to the one built before, since we build
                     # in a ccw manner
@@ -263,26 +308,14 @@ def QuickHull(vertices):
                         f.add_neighbor(first_f)
                         first_f.add_neighbor(f)
 
-                    # Removing old neighbors from horizon facets
-                    n, cont = 0, True
-
-                    while cont:
-                        f = curr_hface.neighbors[n]
-                        vert = f.vertices
-
-                        for j in range(len(vert)):
-                            l1 = [vert[j], vert[(j + 1) % len(f.vertices)]]
-                            l2 = ne
-
-                            if np.array_equal(l1[0], l2[0]) and np.array_equal(l1[1], l2[1]):
-                                curr_hface.neighbors.pop(n)
-                                cont = False
-                        n += 1
-
     # returns conv poly object found in utils.py
     # relevant facets are ones that were not excluded in the
     # CalculateHorizon process
     return ConvexPoly([f for f in facets if f.in_conv_poly])
+
+
+
+
 
 
 

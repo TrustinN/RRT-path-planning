@@ -395,23 +395,89 @@ class Cube(Bound):
     # returns overlap area of two bounds
     def overlap(self, other):
 
-        l_sum = .5 * (self.length + other.length)
-        w_sum = .5 * (self.width + other.width)
-        h_sum = .5 * (self.height + other.height)
+        overlap_x = 0
+        if self.length == 0 or other.length == 0:
+            if abs(self.center_x - other.center_x) < max(other.length, self.length):
+                overlap_x = 1
 
-        x_dist = abs(self.center_x - other.center_x)
-        y_dist = abs(self.center_y - other.center_y)
-        z_dist = abs(self.center_z - other.center_z)
-
-        overlap_x = l_sum - x_dist
-        overlap_y = w_sum - y_dist
-        overlap_z = h_sum - z_dist
-
-        if overlap_x <= 0 or overlap_y <= 0 or overlap_z <= 0:
-            return 0
+            else:
+                return 0
 
         else:
-            return overlap_x * overlap_y * overlap_z
+            if self.center_x == other.center_x:
+                overlap_x = min(self.length, other.length)
+
+            else:
+                dir = np.sign(self.center_x - other.center_x)
+                end_self = self.center_x - dir * self.length / 2
+                end_other = other.center_x + dir * other.length / 2
+
+                overlap_x = end_self - end_other
+                if np.sign(overlap_x) == dir:
+                    return 0
+
+        overlap_y = 0
+
+        if self.width == 0 or other.width == 0:
+            if abs(self.center_y - other.center_y) < max(other.width, self.width):
+                overlap_y = 1
+
+            else:
+                return 0
+
+        else:
+            if self.center_y == other.center_y:
+                overlap_y = min(self.width, other.width)
+
+            else:
+                dir = np.sign(self.center_y - other.center_y)
+                end_self = self.center_y - dir * self.width / 2
+                end_other = other.center_y + dir * other.width / 2
+
+                overlap_y = end_self - end_other
+                if np.sign(overlap_y) == dir:
+                    return 0
+
+        overlap_z = 0
+        if self.height == 0 or other.height == 0:
+            if abs(self.center_z - other.center_z) < max(other.height, self.height):
+                overlap_z = 1
+
+            else:
+                return 0
+
+        else:
+            if self.center_z == other.center_z:
+                overlap_z = min(self.height, other.height)
+
+            else:
+                dir = np.sign(self.center_z - other.center_z)
+                end_self = self.center_z - dir * self.height / 2
+                end_other = other.center_z + dir * other.height / 2
+
+                overlap_z = end_self - end_other
+                if np.sign(overlap_z) == dir:
+                    return 0
+
+        return abs(overlap_x * overlap_y * overlap_z)
+
+        # l_sum = .5 * (self.length + other.length)
+        # w_sum = .5 * (self.width + other.width)
+        # h_sum = .5 * (self.height + other.height)
+        #
+        # x_dist = abs(self.center_x - other.center_x)
+        # y_dist = abs(self.center_y - other.center_y)
+        # z_dist = abs(self.center_z - other.center_z)
+        #
+        # overlap_x = l_sum - x_dist
+        # overlap_y = w_sum - y_dist
+        # overlap_z = h_sum - z_dist
+        #
+        # if overlap_x <= 0 or overlap_y <= 0 or overlap_z <= 0:
+        #     return 0
+        #
+        # else:
+        #     return overlap_x * overlap_y * overlap_z
 
     def get_dist(b, point):
 

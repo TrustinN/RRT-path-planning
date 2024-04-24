@@ -46,6 +46,7 @@ class Facet(IndexRecord):
         self.in_conv_poly = True
         self.rotate = np.array([[0, -1],
                                 [1, 0]])
+        self.triangles = []
 
         if self.num_vertices >= 0:
             if len(self.vertices[0]) == 2:
@@ -98,12 +99,13 @@ class Facet(IndexRecord):
                     inter = t * vec + start
                     iter = 0
                     if self.bound.contains_point(inter):
-                        while iter < 3:
+                        while iter < self.num_vertices:
+
                             if self.neighbors[iter].orient(inter) < 0:
                                 break
                             iter += 1
 
-                        if iter == 3:
+                        if iter == self.num_vertices:
                             return True
 
             return False
@@ -126,13 +128,14 @@ class Facet(IndexRecord):
 
                     inter = t * vec + start
                     iter = 0
-                    while iter < 3:
+                    while iter < self.num_vertices:
+
                         if self.neighbors[iter].orient(inter) < 0:
                             break
                         iter += 1
 
-                    if iter == 3:
-                        return inter
+                    if iter == self.num_vertices:
+                        return True
 
             return None
 
@@ -171,12 +174,20 @@ class ConvexPoly():
 
         self.faces = faces
         self.num_calc = 0
+
+        copy = faces[:]
+        for f in copy:
+            if not f.in_conv_poly:
+                self.faces.remove(f)
+
         if self.faces:
             if self.faces[0].dim == 2:
                 self.bound = Rect.combine([f.bound for f in self.faces])
 
             elif self.faces[0].dim == 3:
                 self.bound = Cube.combine([f.bound for f in self.faces])
+
+        self.is_visible_obstacle = True
 
     def contains_point(self, p):
         if self.bound.contains_point(p):

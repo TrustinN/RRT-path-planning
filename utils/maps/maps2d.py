@@ -62,6 +62,8 @@ class RandomObsMap(Map):
         super().__init__(obstacles=obstacles, dim=2)
         self.add_path([start_pos, end_pos])
 
+    def reset(self):
+        self.sample_init(SampleScope.Rectangle([400, 400], 600, 600))
 
 
 
