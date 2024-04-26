@@ -1,5 +1,7 @@
+import math
 from utils.maps.map_utils import SampleScope
 from . import rrt_star_connect
+from .rrt_utils import vertex
 from .rrt_utils import graph_init
 from .rrt_utils import rrt_step
 from .rrt_utils import rrt_rewire
@@ -57,9 +59,10 @@ def rrt_run(map, step_size, max_iter):
 
         if map.in_free_space(p_new):
             iter += 1
-            v_new = graph.make_vertex(value=p_new,
-                                      parent=None,
-                                      )
+            v_new = vertex(value=p_new,
+                           parent=None,
+                           dist_to_root=math.inf
+                           )
             rrt_rewire(v_new, graph, map, 3, step_size, v_end)
 
     return path, graph, _

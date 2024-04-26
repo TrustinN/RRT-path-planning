@@ -36,20 +36,11 @@ class Facet(IndexRecord):
 
         self.vertices = vertices
         self.num_vertices = len(self.vertices)
-        self.b = init_point = self.vertices[0]
-        self.subspace = np.array([self.vertices[i + 1] - init_point for i in range(len(self.vertices) - 1)]).T
-        self.dim = np.linalg.matrix_rank(self.subspace) + 1
-        self.o = np.array(self.vertices[:self.dim])
-        self.outside_vertices = []
-        self.neighbors = []
-        self.visited = False
-        self.in_conv_poly = True
-        self.rotate = np.array([[0, -1],
-                                [1, 0]])
-        self.triangles = []
 
         if self.num_vertices >= 0:
             if len(self.vertices[0]) == 2:
+                self.rotate = np.array([[0, -1],
+                                        [1, 0]])
                 n = np.dot(self.rotate, self.vertices[1] - self.vertices[0])
                 self.normal = n / np.linalg.norm(n)
                 self.bound = Rect.combine_points(self.vertices)
@@ -63,7 +54,20 @@ class Facet(IndexRecord):
                     n = np.cross(v1, v2)
                     self.normal = n / np.linalg.norm(n)
                     self.bound = Cube.combine_points(self.vertices)
+                    self.bound = Cube([self.bound.bound[0] - 1, self.bound.bound[1] + 1,
+                                       self.bound.bound[2] - 1, self.bound.bound[3] + 1,
+                                       self.bound.bound[4] - 1, self.bound.bound[5] + 1])
                     super().__init__(self.bound, self.vertices[0])
+
+        self.b = init_point = self.vertices[0]
+        self.subspace = np.array([self.vertices[i + 1] - init_point for i in range(len(self.vertices) - 1)]).T
+        self.dim = np.linalg.matrix_rank(self.subspace) + 1
+        self.o = np.array(self.vertices[:self.dim])
+        self.outside_vertices = []
+        self.neighbors = []
+        self.visited = False
+        self.in_conv_poly = True
+        self.triangles = []
 
     def add_neighbor(self, f):
         self.neighbors.append(f)
@@ -98,14 +102,15 @@ class Facet(IndexRecord):
 
                     inter = t * vec + start
                     iter = 0
+                    num_neighbors = len(self.neighbors)
                     if self.bound.contains_point(inter):
-                        while iter < self.num_vertices:
+                        while iter < num_neighbors:
 
                             if self.neighbors[iter].orient(inter) < 0:
                                 break
                             iter += 1
 
-                        if iter == self.num_vertices:
+                        if iter == num_neighbors:
                             return True
 
             return False
@@ -128,14 +133,15 @@ class Facet(IndexRecord):
 
                     inter = t * vec + start
                     iter = 0
-                    while iter < self.num_vertices:
+                    num_neighbors = len(self.neighbors)
+                    while iter < num_neighbors:
 
                         if self.neighbors[iter].orient(inter) < 0:
                             break
                         iter += 1
 
-                    if iter == self.num_vertices:
-                        return True
+                    if iter == num_neighbors:
+                        return inter
 
             return None
 
@@ -245,3 +251,6 @@ class ConvexPoly():
 
 
 
+
+
+#

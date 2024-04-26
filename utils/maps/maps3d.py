@@ -5,6 +5,7 @@ from utils.maps.map_utils import SampleScope
 from utils.rtree.rtree_utils import Cube
 import pyqtgraph.opengl as gl
 from colorutils import Color
+import pyqtgraph as pg
 
 
 class Map3d(Map):
@@ -35,6 +36,14 @@ class Map3d(Map):
                 ints.append(inter)
 
         return ints
+
+    def plot_path(self, path, view):
+        for i in range(len(path) - 1):
+            line = gl.GLLinePlotItem(pos=np.array([path[i], path[i + 1]]),
+                                     color=pg.mkColor("#ff00ff"),
+                                     width=3,)
+            line.setGLOptions("opaque")
+            view.addItem(line)
 
     def plot(self, view):
         vertices = [v for o in self.obstacles if o.is_visible_obstacle for f in o.faces for t in f.triangles for v in t]

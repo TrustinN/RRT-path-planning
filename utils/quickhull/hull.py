@@ -270,7 +270,6 @@ def QuickHull(vertices):
                                 break
                             iter += 1
 
-                        curr_hface.vertices.append(farthest_pt)
                         f = Facet(curr_hface.vertices)
                         f.outside_vertices = curr_hface.outside_vertices + prev_outside
                         f.triangles = curr_hface.triangles
@@ -312,6 +311,8 @@ def QuickHull(vertices):
     # relevant facets are ones that were not excluded in the
     # CalculateHorizon process
     return ConvexPoly([f for f in facets if f.in_conv_poly])
+
+
 
 
 

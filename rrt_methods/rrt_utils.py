@@ -18,14 +18,6 @@ class Graph(RTree):
         self.vertices = vertices
         self.time = 0
 
-    def make_vertex(self, value=np.array([]),
-                    parent=None,
-                    dist_to_root=math.inf):
-        return self.vertex(value=value,
-                           parent=parent,
-                           dist_to_root=dist_to_root,
-                           )
-
     def add_vertex(self, vertex):
         self.Insert(vertex)
         self.vertices.append(vertex)
@@ -34,7 +26,7 @@ class Graph(RTree):
         path = [stop.value]
         curr_pos = stop
         while True:
-            if curr_pos.equals(start):
+            if curr_pos == start:
                 break
             path.insert(0, curr_pos.parent.value)
             curr_pos = curr_pos.parent
@@ -58,52 +50,59 @@ class Graph(RTree):
         for v in self.vertices:
             v.plot_connections("#00a5ff", view)
 
-    class vertex(IndexRecord):
-        def __init__(self, value=np.array([]),
-                     parent=None,
-                     dist_to_root=0,
-                     ):
-            super().__init__(None, value)
-            self.value = value
-            self.parent = parent
-            self.dist_to_root = dist_to_root
 
-        def __hash__(self):
-            return hash(self.value.tostring())
+class vertex(IndexRecord):
+    def __init__(self, value=np.array([]),
+                 parent=None,
+                 dist_to_root=0,
+                 ):
+        super().__init__(None, value)
+        self.value = value
+        self.parent = parent
+        self.dist_to_root = dist_to_root
 
-        def equals(self, other):
-            return np.array_equal(self.value, other.value)
+    def __hash__(self):
+        return hash(self.value.tostring())
 
-        def dist_to(self, other):
-            if type(other) is Graph.vertex:
-                return np.linalg.norm(self.value - other.value)
-            elif type(other) is np.ndarray:
-                return np.linalg.norm(self.value - other)
+    def __eq__(self, other):
+        if isinstance(other, self.__class__) and np.array_equal(self.tuple_identifier, other.tuple_identifier):
+            return True
+        else:
+            return False
 
-        def add_neighbor(self, other):
-            other.parent = self
-            other.dist_to_root = self.dist_to_root + self.dist_to(other)
+    def __neq__(self, other):
+        return not self.__eq__(other)
 
-        def plot_connections(self, color, view):
-            if self.parent:
-                if len(self.value) == 2:
-                    line = pg.PlotDataItem(np.array([self.value, self.parent.value]),
-                                           connect="all",
-                                           pen=pg.mkPen(color),
-                                           skipFiniteCheck=True,
-                                           downsample=10)
-                    view.addItem(line)
+    def dist_to(self, other):
+        if type(other) is vertex:
+            return np.linalg.norm(self.value - other.value)
+        elif type(other) is np.ndarray:
+            return np.linalg.norm(self.value - other)
 
-                elif len(self.value) == 3:
-                    line = gl.GLLinePlotItem(pos=np.array([self.value, self.parent.value]),
-                                             color=pg.mkColor(color),
-                                             width=0.1,)
+    def add_neighbor(self, other):
+        other.parent = self
+        other.dist_to_root = self.dist_to_root + self.dist_to(other)
 
-                    line.setGLOptions("opaque")
-                    view.addItem(line)
+    def plot_connections(self, color, view):
+        if self.parent:
+            if len(self.value) == 2:
+                line = pg.PlotDataItem(np.array([self.value, self.parent.value]),
+                                       connect="all",
+                                       pen=pg.mkPen(color),
+                                       skipFiniteCheck=True,
+                                       downsample=10)
+                view.addItem(line)
 
-        def __repr__(self):
-            return f"(value:{self.value})"
+            elif len(self.value) == 3:
+                line = gl.GLLinePlotItem(pos=np.array([self.value, self.parent.value]),
+                                         color=pg.mkColor(color),
+                                         width=0.1,)
+
+                line.setGLOptions("opaque")
+                view.addItem(line)
+
+    def __repr__(self):
+        return f"(value:{self.value})"
 
 
 ###############################################################################
@@ -139,11 +138,11 @@ def graph_init(map, connect=False):
     graph0 = Graph(vertices=[], dim=map.dim)
     graph1 = Graph(vertices=[], dim=map.dim)
 
-    v_start = graph0.make_vertex(value=start, dist_to_root=0)
-    v_end = graph1.make_vertex(value=end, dist_to_root=0)
+    v_start = vertex(value=start, parent=None, dist_to_root=0)
+    v_end = vertex(value=end, parent=None, dist_to_root=0)
 
     if not connect:
-        v_end = graph1.make_vertex(value=end, dist_to_root=math.inf)
+        v_end.dist_to_root = math.inf
 
     graph0.add_vertex(v_start)
     graph1.add_vertex(v_end)
@@ -179,9 +178,10 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
 
     for i in range(expand_iter):
         p_new = step_size * p_step + v_near.value
-        v_new = graph0.make_vertex(value=p_new,
-                                   parent=None,
-                                   )
+        v_new = vertex(value=p_new,
+                       parent=None,
+                       dist_to_root=math.inf
+                       )
         v_near.add_neighbor(v_new)
         graph0.add_vertex(v_new)
         prev_parent = v_near
@@ -230,28 +230,25 @@ def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
                                  step_size
                                  )
 
-    new_parent = None
     added_to_graph = False
     while neighbors:
         curr_neighbor = neighbors.pop()
         if not map.intersects_line([curr_neighbor.value, v.value]):
             new_parent = curr_neighbor
-            break
 
-    if new_parent:
-        new_parent.add_neighbor(v)
-        graph.add_vertex(v)
-        added_to_graph = True
+            new_parent.add_neighbor(v)
+            graph.add_vertex(v)
+            added_to_graph = True
 
-        while neighbors:
-            n = neighbors.pop()
-            if n.dist_to_root > v.dist_to(n) + v.dist_to_root:
-                if not map.intersects_line([n.value, v.value]):
-                    v.add_neighbor(n)
-        if not connect:
-            if not map.intersects_line([end.value, v.value]):
-                if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
-                    v.add_neighbor(end)
+            while neighbors:
+                n = neighbors.pop()
+                if n.dist_to_root > v.dist_to(n) + v.dist_to_root:
+                    if not map.intersects_line([n.value, v.value]):
+                        v.add_neighbor(n)
+            if not connect:
+                if not map.intersects_line([end.value, v.value]):
+                    if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
+                        v.add_neighbor(end)
 
     return added_to_graph
 
@@ -262,27 +259,23 @@ def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
 def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
     neighbors = graph.NearestNeighbor(v, 5)[::-1]
 
-    new_parent = None
-
     while neighbors:
         curr_neighbor = neighbors.pop()
         if curr_neighbor.dist_to_root != math.inf:
             if not map.intersects_line([curr_neighbor.value, v.value]):
                 new_parent = curr_neighbor
-                break
 
-    if new_parent:
-        new_parent.add_neighbor(v)
-        graph.add_vertex(v)
+                new_parent.add_neighbor(v)
+                graph.add_vertex(v)
 
-        for i in range(depth):
-            new_parent = new_parent.parent
-            if new_parent:
-                if not map.intersects_line([new_parent.value, v.value]):
-                    new_parent.add_neighbor(v)
+                for i in range(depth):
+                    new_parent = new_parent.parent
+                    if new_parent:
+                        if not map.intersects_line([new_parent.value, v.value]):
+                            new_parent.add_neighbor(v)
 
-            else:
-                break
+                    else:
+                        break
 
     if v.parent:
         if not map.intersects_line([end.value, v.value]):

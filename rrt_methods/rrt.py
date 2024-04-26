@@ -1,4 +1,5 @@
 import math
+from .rrt_utils import vertex
 from .rrt_utils import graph_init
 from utils.rtree.rtree_utils import IndexRecord
 
@@ -27,9 +28,10 @@ def rrt_run(map, step_size, max_iter):
 
         if map.in_free_space(p_rand):
             if not map.intersects_line([p_rand, p_near]):
-                v_new = graph.make_vertex(value=p_rand,
-                                          parent=None,
-                                          )
+                v_new = vertex(value=p_rand,
+                               parent=None,
+                               dist_to_root=math.inf,
+                               )
                 v_near.add_neighbor(v_new)
                 graph.add_vertex(v_new)
                 iter += 1

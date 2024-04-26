@@ -1,8 +1,6 @@
 import numpy as np
 from .plot import PlotObject
 from utils.maps.MapBuilder import MapBuilder
-import pyqtgraph as pg
-import pyqtgraph.opengl as gl
 
 
 class PlotHandler():
@@ -43,31 +41,13 @@ class PlotHandler():
     def plot_solution(self, solver, branches, leaves):
         view = self.get_view()
         map = self.get_map()
+        map.plot_path(solver.path, view)
+        solver.t_start.plot(view, branches, leaves)
 
-        if map.dim == 2:
-            solver.t_start.plot(view, branches, leaves)
+        if solver.t_end:
+            solver.t_end.plot(view, branches, leaves)
 
-            if solver.t_end:
-                solver.t_end.plot(view, branches, leaves)
 
-            for i in range(len(solver.path) - 1):
-                line = pg.PlotDataItem(np.array([solver.path[i], solver.path[i + 1]]),
-                                       connect="all",
-                                       pen=pg.mkPen("#ff00ff"),)
-                view.addItem(line)
-
-        elif map.dim == 3:
-
-            solver.t_start.plot(view, branches, leaves)
-            if solver.t_end:
-                solver.t_end.plot(view, branches, leaves)
-
-            for i in range(len(solver.path) - 1):
-                line = gl.GLLinePlotItem(pos=np.array([solver.path[i], solver.path[i + 1]]),
-                                         color=pg.mkColor("#ff00ff"),
-                                         width=3,)
-                line.setGLOptions("opaque")
-                view.addItem(line)
 
 
 

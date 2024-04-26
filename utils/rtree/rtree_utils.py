@@ -624,14 +624,7 @@ class IndexRecord(Entry):
     def __repr__(self):
         return f"val: {self.tuple_identifier}"
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__) and np.array_equal(self.tuple_identifier, other.tuple_identifier):
-            return True
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
+    # User must provide an equals method for comparison
 
 
 class IndexPointer(Entry):

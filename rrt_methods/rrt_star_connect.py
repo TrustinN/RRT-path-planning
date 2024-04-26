@@ -1,3 +1,5 @@
+import math
+from .rrt_utils import vertex
 from .rrt_utils import graph_init
 from .rrt_utils import rrt_step
 from .rrt_utils import rrt_rewire
@@ -29,9 +31,10 @@ def rrt_run(map, step_size, max_iter, clear=False):
         v_near = t_start.NearestNeighbor(p_test)[0]
         p_new = rrt_step(p_rand, v_near, step_size)
         if map.in_free_space(p_new):
-            v_new = t_start.make_vertex(value=p_new,
-                                        parent=None,
-                                        )
+            v_new = vertex(value=p_new,
+                           parent=None,
+                           dist_to_root=math.inf
+                           )
             if rrt_rewire(v_new, t_start, map, 3, step_size, v_end, connect=True):
                 c1 = v_new.parent
                 connect = rrt_connect(v_new, t_start, t_end, map, 3, step_size)
@@ -42,9 +45,10 @@ def rrt_run(map, step_size, max_iter, clear=False):
         v_near = t_end.NearestNeighbor(p_test)[0]
         p_new = rrt_step(p_rand, v_near, step_size)
         if map.in_free_space(p_new):
-            v_new = t_end.make_vertex(value=p_new,
-                                      parent=None,
-                                      )
+            v_new = vertex(value=p_new,
+                           parent=None,
+                           dist_to_root=math.inf
+                           )
             if rrt_rewire(v_new, t_end, map, 3, step_size, v_end, connect=True):
                 c2 = v_new.parent
                 connect = rrt_connect(v_new, t_end, t_start, map, 3, step_size)

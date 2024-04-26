@@ -50,7 +50,7 @@ class Map():
     def intersections(self, line):
         return
 
-    def plot_path(self, path):
+    def plot_path(self, path, view):
         return
 
     def in_free_space(self, point):
@@ -60,6 +60,7 @@ class Map():
 
         return True
 
+    # Each map must have a default sample space to reset to
     def reset(self):
         return
 
