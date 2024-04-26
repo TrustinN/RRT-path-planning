@@ -395,89 +395,23 @@ class Cube(Bound):
     # returns overlap area of two bounds
     def overlap(self, other):
 
-        overlap_x = 0
-        if self.length == 0 or other.length == 0:
-            if abs(self.center_x - other.center_x) < max(other.length, self.length):
-                overlap_x = 1
+        l_sum = .5 * (self.length + other.length)
+        w_sum = .5 * (self.width + other.width)
+        h_sum = .5 * (self.height + other.height)
 
-            else:
-                return 0
+        x_dist = abs(self.center_x - other.center_x)
+        y_dist = abs(self.center_y - other.center_y)
+        z_dist = abs(self.center_z - other.center_z)
 
-        else:
-            if self.center_x == other.center_x:
-                overlap_x = min(self.length, other.length)
+        overlap_x = l_sum - x_dist
+        overlap_y = w_sum - y_dist
+        overlap_z = h_sum - z_dist
 
-            else:
-                dir = np.sign(self.center_x - other.center_x)
-                end_self = self.center_x - dir * self.length / 2
-                end_other = other.center_x + dir * other.length / 2
-
-                overlap_x = end_self - end_other
-                if np.sign(overlap_x) == dir:
-                    return 0
-
-        overlap_y = 0
-
-        if self.width == 0 or other.width == 0:
-            if abs(self.center_y - other.center_y) < max(other.width, self.width):
-                overlap_y = 1
-
-            else:
-                return 0
+        if overlap_x <= 0 or overlap_y <= 0 or overlap_z <= 0:
+            return 0
 
         else:
-            if self.center_y == other.center_y:
-                overlap_y = min(self.width, other.width)
-
-            else:
-                dir = np.sign(self.center_y - other.center_y)
-                end_self = self.center_y - dir * self.width / 2
-                end_other = other.center_y + dir * other.width / 2
-
-                overlap_y = end_self - end_other
-                if np.sign(overlap_y) == dir:
-                    return 0
-
-        overlap_z = 0
-        if self.height == 0 or other.height == 0:
-            if abs(self.center_z - other.center_z) < max(other.height, self.height):
-                overlap_z = 1
-
-            else:
-                return 0
-
-        else:
-            if self.center_z == other.center_z:
-                overlap_z = min(self.height, other.height)
-
-            else:
-                dir = np.sign(self.center_z - other.center_z)
-                end_self = self.center_z - dir * self.height / 2
-                end_other = other.center_z + dir * other.height / 2
-
-                overlap_z = end_self - end_other
-                if np.sign(overlap_z) == dir:
-                    return 0
-
-        return abs(overlap_x * overlap_y * overlap_z)
-
-        # l_sum = .5 * (self.length + other.length)
-        # w_sum = .5 * (self.width + other.width)
-        # h_sum = .5 * (self.height + other.height)
-        #
-        # x_dist = abs(self.center_x - other.center_x)
-        # y_dist = abs(self.center_y - other.center_y)
-        # z_dist = abs(self.center_z - other.center_z)
-        #
-        # overlap_x = l_sum - x_dist
-        # overlap_y = w_sum - y_dist
-        # overlap_z = h_sum - z_dist
-        #
-        # if overlap_x <= 0 or overlap_y <= 0 or overlap_z <= 0:
-        #     return 0
-        #
-        # else:
-        #     return overlap_x * overlap_y * overlap_z
+            return overlap_x * overlap_y * overlap_z
 
     def get_dist(b, point):
 
@@ -513,63 +447,42 @@ class Cube(Bound):
 
         return math.sqrt(x_dist ** 2 + y_dist ** 2 + z_dist ** 2)
 
-    def plot(self, color, view):
-        vertices = [np.array([self.min_x, self.min_y, self.min_z]),  # 0
-                    np.array([self.max_x, self.min_y, self.min_z]),  # 1
-                    np.array([self.min_x, self.max_y, self.min_z]),  # 2
-                    np.array([self.min_x, self.min_y, self.max_z]),  # 3
-                    np.array([self.max_x, self.max_y, self.min_z]),  # 4
-                    np.array([self.min_x, self.max_y, self.max_z]),  # 5
-                    np.array([self.max_x, self.min_y, self.max_z]),  # 6
-                    np.array([self.max_x, self.max_y, self.max_z]),  # 7
-                    ]
+    def get_facets(self):
+        vertices = np.array([
+                np.array([self.min_x, self.min_y, self.min_z]),  # 0
+                np.array([self.max_x, self.min_y, self.min_z]),  # 1
+                np.array([self.min_x, self.max_y, self.min_z]),  # 2
+                np.array([self.min_x, self.min_y, self.max_z]),  # 3
+                np.array([self.max_x, self.max_y, self.min_z]),  # 4
+                np.array([self.min_x, self.max_y, self.max_z]),  # 5
+                np.array([self.max_x, self.min_y, self.max_z]),  # 6
+                np.array([self.max_x, self.max_y, self.max_z]),  # 7
+                ])
+        return [
+                # bottom plane
+                vertices[np.array([0, 1, 4])],
+                vertices[np.array([0, 4, 2])],
 
-        md = gl.MeshData(vertexes=vertices,
-                         faces=np.array([
-                             # bottom plane
-                             [0, 1, 4],
-                             [0, 4, 2],
+                # left plane
+                vertices[np.array([0, 1, 6])],
+                vertices[np.array([0, 6, 3])],
 
-                             # left plane
-                             [0, 1, 6],
-                             [0, 6, 3],
+                # back plane
+                vertices[np.array([0, 2, 5])],
+                vertices[np.array([0, 5, 3])],
 
-                             # back plane
-                             [0, 2, 5],
-                             [0, 5, 3],
+                # right plane
+                vertices[np.array([2, 7, 5])],
+                vertices[np.array([2, 4, 7])],
 
-                             # right plane
-                             [2, 7, 5],
-                             [2, 4, 7],
+                # top plane
+                vertices[np.array([3, 7, 5])],
+                vertices[np.array([3, 6, 7])],
 
-                             # top plane
-                             [3, 7, 5],
-                             [3, 6, 7],
-
-                             # front plane
-                             [4, 6, 1],
-                             [4, 7, 6]
-                             ]),
-                         )
-
-        c = Color(web=color)
-        rgb = c.rgb
-        p0, p1, p2 = rgb[0], rgb[1], rgb[2]
-        colors = np.ones((md.faceCount(), 4), dtype=float)
-        colors[:, 3] = 0.2
-        colors[:, 2] = np.linspace(p2/255, 1, colors.shape[0])
-        colors[:, 1] = np.linspace(p1/255, 1, colors.shape[0])
-        colors[:, 0] = np.linspace(p0/255, 1, colors.shape[0])
-
-        md.setFaceColors(colors=colors)
-        m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader='shaded')
-        m1.setGLOptions('additive')
-        self.p_obj = m1
-        view.addItem(m1)
-
-    def rm_plot(self, view):
-        if self.p_obj:
-            view.removeItem(self.p_obj)
+                # front plane
+                vertices[np.array([4, 6, 1])],
+                vertices[np.array([4, 7, 6])],
+            ]
 
     def __str__(self):
         return f"{[self.min_x, self.max_x, self.min_y, self.max_y, self.min_z, self.max_z]}"

@@ -43,7 +43,7 @@ class Map2d(Map):
     def plot_path(self, path, view):
         for i in range(len(path) - 1):
             line = pg.PlotDataItem(np.array([path[i], path[i + 1]]),
-                                   connect="all",
+                                   connect="pairs",
                                    pen=pg.mkPen("#ff00ff"),)
             view.addItem(line)
 

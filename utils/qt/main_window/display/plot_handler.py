@@ -1,4 +1,3 @@
-import numpy as np
 from .plot import PlotObject
 from utils.maps.MapBuilder import MapBuilder
 
@@ -41,11 +40,12 @@ class PlotHandler():
     def plot_solution(self, solver, branches, leaves):
         view = self.get_view()
         map = self.get_map()
-        map.plot_path(solver.path, view)
         solver.t_start.plot(view, branches, leaves)
 
         if solver.t_end:
             solver.t_end.plot(view, branches, leaves)
+
+        map.plot_path(solver.path, view)
 
 
 

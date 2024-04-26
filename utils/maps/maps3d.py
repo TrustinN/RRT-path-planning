@@ -3,8 +3,8 @@ from .map_utils import Map
 from utils.quickhull.hull import QuickHull
 from utils.maps.map_utils import SampleScope
 from utils.rtree.rtree_utils import Cube
+from utils.qt.utils import plot_mesh
 import pyqtgraph.opengl as gl
-from colorutils import Color
 import pyqtgraph as pg
 
 
@@ -47,23 +47,7 @@ class Map3d(Map):
 
     def plot(self, view):
         vertices = [v for o in self.obstacles if o.is_visible_obstacle for f in o.faces for t in f.triangles for v in t]
-        faces = np.arange(len(vertices)).reshape((len(vertices) // 3, 3))
-
-        md = gl.MeshData(vertexes=np.array(vertices), faces=faces)
-        c = Color(web="#ffffff")
-        rgb = c.rgb
-        p0, p1, p2 = rgb[0], rgb[1], rgb[2]
-        colors = np.ones((md.faceCount(), 4), dtype=float)
-        colors[:, 3] = 0.3
-        colors[:, 2] = np.linspace(p2/255, 1, colors.shape[0])
-        colors[:, 1] = np.linspace(p1/255, 1, colors.shape[0])
-        colors[:, 0] = np.linspace(p0/255, 1, colors.shape[0])
-
-        md.setFaceColors(colors=colors)
-        m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader='shaded')
-        m1.setGLOptions('opaque')
-
-        view.addItem(m1)
+        plot_mesh(vertices=vertices, view=view, color="#ffffff")
 
 
 class RandomObsMap(Map3d):

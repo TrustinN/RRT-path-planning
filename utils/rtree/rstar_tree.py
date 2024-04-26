@@ -7,6 +7,7 @@ from .rtree_utils import IndexRecord
 from .rtree_utils import IndexPointer
 from dataclasses import dataclass, field
 from typing import Any
+from utils.qt.utils import plot_mesh
 
 
 @dataclass(order=True)
@@ -50,12 +51,14 @@ class RTree(object):
         def update_bound(self, bound):
             self.covering = bound
 
-        def plot(self, view, branches, leaves):
+        def plot(self, view, branches, leaves, lp, bp, pp):
             for i in self.items:
-                i.pointer.plot(view, branches, leaves)
+                i.pointer.plot(view, branches, leaves, lp, bp, pp)
 
             if branches:
-                self.covering.plot("#ff0000", view)
+                for f in self.covering.get_facets():
+                    for p in f:
+                        bp.append(p)
 
         def __str__(self):
             string = ""
@@ -76,10 +79,12 @@ class RTree(object):
             super().__init__(items, covering, level)
             self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
 
-        def plot(self, view, branches, leaves):
+        def plot(self, view, branches, leaves, lp, bp, pp):
 
             if leaves:
-                self.covering.plot("#009b00", view)
+                for f in self.covering.get_facets():
+                    for p in f:
+                        lp.append(p)
 
             for i in self.items:
                 i.plot(self.color, view)
@@ -142,7 +147,18 @@ class RTree(object):
         self.root = RTree.LeafNode(items=[], covering=None, level=0)
 
     def plot(self, view, branches=False, leaves=True):
-        self.root.plot(view, branches, leaves)
+        # should modify a list of plot objects lp, bp, pp which
+        # stands for lineplot, branchplot, pointplot
+        lp, bp, pp = [], [], []
+        self.root.plot(view, branches, leaves, lp, bp, pp)
+
+        # We then plot them at the same time at the end
+        if self.dim == 2:
+            return
+
+        elif self.dim == 3:
+            plot_mesh(vertices=bp, view=view, color="#ff0000", option='additive')
+            plot_mesh(vertices=lp, view=view, color="#009b00", option='additive')
 
     def __str__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")

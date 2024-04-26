@@ -47,8 +47,28 @@ class Graph(RTree):
 
     def plot(self, view, branches, leaves):
         super().plot(view, branches, leaves)
+        lines = []
         for v in self.vertices:
-            v.plot_connections("#00a5ff", view)
+            if v.parent:
+                lines.append(v.value)
+                lines.append(v.parent.value)
+
+        if self.dim == 2:
+            lp = pg.PlotDataItem(np.array(lines),
+                                 connect='pairs',
+                                 pen=pg.mkPen("#00a5ff"),
+                                 skipFiniteCheck=True,
+                                 downsample=10,
+                                 width=0.1,
+                                 )
+            view.addItem(lp)
+        if self.dim == 3:
+            lp = gl.GLLinePlotItem(pos=np.array(lines),
+                                   color=pg.mkColor("#00a5ff"),
+                                   width=0.1,
+                                   mode='lines')
+            lp.setGLOptions("opaque")
+            view.addItem(lp)
 
 
 class vertex(IndexRecord):
@@ -82,24 +102,6 @@ class vertex(IndexRecord):
     def add_neighbor(self, other):
         other.parent = self
         other.dist_to_root = self.dist_to_root + self.dist_to(other)
-
-    def plot_connections(self, color, view):
-        if self.parent:
-            if len(self.value) == 2:
-                line = pg.PlotDataItem(np.array([self.value, self.parent.value]),
-                                       connect="all",
-                                       pen=pg.mkPen(color),
-                                       skipFiniteCheck=True,
-                                       downsample=10)
-                view.addItem(line)
-
-            elif len(self.value) == 3:
-                line = gl.GLLinePlotItem(pos=np.array([self.value, self.parent.value]),
-                                         color=pg.mkColor(color),
-                                         width=0.1,)
-
-                line.setGLOptions("opaque")
-                view.addItem(line)
 
     def __repr__(self):
         return f"(value:{self.value})"
@@ -250,6 +252,8 @@ def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
                     if v.dist_to_root + v.dist_to(end) < end.dist_to_root:
                         v.add_neighbor(end)
 
+            break
+
     return added_to_graph
 
 
@@ -276,6 +280,8 @@ def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
 
                     else:
                         break
+
+                break
 
     if v.parent:
         if not map.intersects_line([end.value, v.value]):
