@@ -1,5 +1,6 @@
 import numpy as np
 from colorutils import Color
+import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 
 
@@ -20,5 +21,14 @@ def plot_mesh(vertices, view, color, option='opaque'):
     m1.setGLOptions(option)
 
     view.addItem(m1)
+
+
+def plot_polygons(vertices, view, color):
+    lines = pg.PlotDataItem(np.array(vertices),
+                            connect='pairs',
+                            pen=pg.mkPen(color))
+    view.addItem(lines)
+
+
 
 

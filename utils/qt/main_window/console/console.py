@@ -3,6 +3,7 @@ from pyqtgraph.Qt import QtWidgets
 from .data import RRTData
 from .parameter_tree import RRTOptions
 from .path_traverser import PathTraverser
+from .play_button import PlayButton
 
 
 class RRTConsole():
@@ -16,8 +17,10 @@ class RRTConsole():
         self.data = RRTData()
         self.options = RRTOptions()
         self.slider = PathTraverser()
+        self.button = PlayButton()
 
         self.layout.addWidget(self.options.pt)
+        self.layout.addWidget(self.button)
         self.layout.addWidget(self.slider)
         self.layout.addWidget(self.data.window)
 

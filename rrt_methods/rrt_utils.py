@@ -289,9 +289,186 @@ def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
                 v.add_neighbor(end)
 
 
+###############################################################################
+# Path Smoothing                                                              #
+###############################################################################
 
 
+def down_sample(map, path):
+    path_new = []
+    if path:
+        curr_node = path[0]
+        prev_point = curr_node
+        path_new.append(curr_node)
 
+        for i in range(len(path) - 1):
+            curr_point = path[i + 1]
+
+            if map.intersects_line([curr_node, curr_point]):
+                curr_node = prev_point
+                path_new.append(prev_point)
+
+            prev_point = curr_point
+
+        path_new.append(path[-1])
+
+    return path_new
+
+
+def up_sample(map, path, max_iter):
+    if path:
+
+        iter = 0
+        path_lengths = [np.linalg.norm(path[i + 1] - path[i]) for i in range(len(path) - 1)]
+        cumulative_lengths = np.cumsum(path_lengths)
+        total_length = sum(path_lengths)
+
+        while iter < max_iter:
+
+            d1 = total_length * np.random.random_sample()
+            d2 = total_length * np.random.random_sample()
+
+            # require d1 < d2
+            if d2 < d1:
+                tmp = d2
+                d2 = d1
+                d1 = tmp
+
+            # locate the index where d1 occurs given from cumulative sum
+            idx = 0
+            i, j = 0, 0
+            while True:
+                if d1 < cumulative_lengths[idx]:
+                    i = idx
+
+                    while True:
+                        if d2 < cumulative_lengths[idx]:
+                            j = idx
+                            break
+
+                        idx += 1
+
+                    break
+                idx += 1
+
+            a1 = (cumulative_lengths[i] - d1) / path_lengths[i]
+            a2 = (cumulative_lengths[j] - d2) / path_lengths[j]
+
+            # interpolation points
+            g1 = (1 - a1) * (path[i + 1] - path[i]) + path[i]
+            g2 = (1 - a2) * (path[j + 1] - path[j]) + path[j]
+
+            if not map.intersects_line([g1, g2]):
+                path = path[:i + 1] + [g1, g2] + path[j + 1:]
+                path_lengths = [np.linalg.norm(path[i + 1] - path[i]) for i in range(len(path) - 1)]
+                cumulative_lengths = np.cumsum(path_lengths)
+                total_length = sum(path_lengths)
+
+            iter += 1
+
+    return path
+
+
+def tridiag(a, b, c, k1=-1, k2=0, k3=1):
+    return np.diag(a, k1) + np.diag(b, k2) + np.diag(c, k3)
+
+
+def cubic_spline(x, y):
+    n = len(x) - 1
+    a = y
+    h = np.array([x[i + 1] - x[i] for i in range(n)])
+
+    b = np.concatenate((h[:n - 1], np.array([0])))
+    m = np.array([1] + [2 * (h[i] + h[i + 1]) for i in range(n - 1)] + [1])
+    t = np.concatenate((np.array([0]), h[1:n]))
+
+    A = tridiag(b, m, t)
+
+    f = np.array([0] + [3 * (a[i + 1] - a[i]) / h[i] - 3 * (a[i] - a[i - 1]) / h[i - 1] for i in range(1, n)] + [0])
+    c = np.linalg.solve(A, f)
+    b = np.array([(a[j + 1] - a[j]) / h[j] - h[j] * (2 * c[j] + c[j + 1]) / 3 for j in range(n)])
+    d = np.array([(c[j + 1] - c[j]) / (3 * h[j]) for j in range(n)])
+
+    a = a[:len(a) - 1]
+    c = c[:len(c) - 1]
+    x = x[:len(x) - 1]
+    splines = np.array([a, b, c, d, x]).T
+
+    return splines
+
+
+def spline_eval(x, y, num=10):
+    n = len(x)
+    new_path = None
+    splines = cubic_spline(x, y)
+
+    for i in range(n - 1):
+        cubic = splines[i]
+        interval = np.linspace(x[i], x[i + 1], num)
+        xj = np.repeat(cubic[4], num)
+        diff = interval - xj
+        y = cubic[0] + cubic[1] * diff + cubic[2] * diff ** 2 + cubic[3] * diff ** 3
+        xy = np.array([interval, y]).T
+        if i == 0:
+            new_path = xy
+        else:
+            new_path = np.concatenate((new_path, xy))
+
+    return new_path
+
+
+def parametric_spline(points):
+    t = np.arange(len(points.T[0]))
+    at = []
+    for axis in points.T:
+        at.append(spline_eval(t, axis))
+
+    path = np.array([paths.T[1] for paths in at]).T
+
+    return [path[i] for i in range(len(path))]
+
+
+def KPSOptimization(keypoints, map):
+    kp = keypoints
+    path = parametric_spline(np.array(kp))
+    iter = 0
+    while True and iter < 5:
+        # Check collision
+        kpNew = SmoothOptimizer(kp, path, map)
+
+        if len(kpNew) != len(kp):
+            kp = kpNew
+
+        else:
+            break
+
+        path = parametric_spline(np.array(kp))
+        iter += 1
+
+    return path
+
+
+def SmoothOptimizer(keypoints, spoints, map, num=10):
+    kp = keypoints
+    kpNew = []
+
+    idx = 0
+    insert = True
+    for i in range(len(spoints) - 1):
+        if i // num == idx:
+            kpNew.append(kp[idx])
+            idx += 1
+            insert = True
+
+        p1 = spoints[i]
+        p2 = spoints[i + 1]
+
+        if insert and map.intersects_line([p1, p2]):
+            kpNew.append((kpNew[-1] + kp[idx]) / 2)
+            insert = False
+
+    kpNew.append(kp[-1])
+    return kpNew
 
 
 

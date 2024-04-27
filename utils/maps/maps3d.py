@@ -44,6 +44,8 @@ class Map3d(Map):
                                      width=3,)
             line.setGLOptions("opaque")
             view.addItem(line)
+        point = gl.GLScatterPlotItem(pos=np.array(path), size=10, color=pg.mkColor("#ff0000"))
+        view.addItem(point)
 
     def plot(self, view):
         vertices = [v for o in self.obstacles if o.is_visible_obstacle for f in o.faces for t in f.triangles for v in t]

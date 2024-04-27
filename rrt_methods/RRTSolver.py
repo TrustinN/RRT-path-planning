@@ -10,6 +10,7 @@ from .quick_rrt_star import rrt_run as quick_rrt_star
 from .informed_quick_rrt_star import rrt_run as informed_quick_rrt_star
 from .ep_rrt_star import rrt_run as ep_rrt_star
 from .quick_ep_rrt_star import rrt_run as quick_ep_rrt_star
+from .bto_rrt import rrt_run as bto_rrt
 
 
 class RRTSolver():
@@ -26,6 +27,7 @@ class RRTSolver():
             "informed_quick_rrt_star": informed_quick_rrt_star,
             "ep_rrt_star": ep_rrt_star,
             "quick_ep_rrt_star": quick_ep_rrt_star,
+            "bto_rrt": bto_rrt,
         }
         self.time = 0
         self.path_length = 0

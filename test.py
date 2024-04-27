@@ -1,89 +1,42 @@
 import numpy as np
-from utils.quickhull.hull import QuickHull
-from utils.rtree.rtree_utils import Cube
-import pyqtgraph as pg
+from rrt_methods.bto_rrt import parametric_spline
 import pyqtgraph.opengl as gl
+import pyqtgraph as pg
+ 
 
-pg.mkQApp("Test")
-
+pg.mkQApp("test")
 view = gl.GLViewWidget()
-view.setCameraPosition(distance=1000)
-view.pan(500, 0, 200)
+view.setCameraParams(distance=2)
+view.pan(2, 0, 0)
 view.show()
 
-
 g = gl.GLGridItem()
-g.translate(400, 400, -200)
-g.scale(100, 100, 100)
 view.addItem(g)
 
+x = np.array([10, 0, 0])
+y = np.array([0, 10, 0])
+origin = np.array([0, 0, 0])
 
-unit = 1000
-grid_length = 1000 / 3
-length = grid_length / 6
-
-start_pos = np.array([grid_length / 2 for i in range(3)])
-end_pos = np.array([grid_length, grid_length / 2, grid_length / 2])
-# end_pos = np.array([703.96131703, 209.0817078, 166.66666667])
-
-min_x = grid_length - length / 2
-max_x = grid_length + length / 2
-
-min_y = 0
-max_y = grid_length
-
-min_z = 0
-max_z = grid_length
-
-wall = QuickHull([np.array([min_x, min_y, min_z]),
-                  np.array([max_x, min_y, min_z]),
-                  np.array([min_x, max_y, min_z]),
-                  np.array([min_x, min_y, max_z]),
-                  np.array([max_x, max_y, min_z]),
-                  np.array([max_x, min_y, max_z]),
-                  np.array([min_x, max_y, max_z]),
-                  np.array([max_x, max_y, max_z]),
-                  ])
-
-
-wall.plot(view)
-
-line = gl.GLLinePlotItem(pos=np.array([start_pos, end_pos]))
-line.setGLOptions("opaque")
+line = gl.GLLinePlotItem(pos=np.array([x, origin]), color=pg.mkColor("#ff0000"))
 view.addItem(line)
 
-bound = Cube.combine_points([start_pos, end_pos])
+line = gl.GLLinePlotItem(pos=np.array([y, origin]), color=pg.mkColor("#0000ff"))
+view.addItem(line)
 
-iter = 0
-for f in wall.faces:
-    if bound.overlap(f.bound):
-        print(bound.overlap(f.bound))
-        print(f.intersects_line(start_pos, end_pos))
-        iter += 1
+# x = np.linspace(0, 10, num=50)
+# y = np.exp(-x / 2) * np.sin(2 * x)
+x = np.array([0, 1, 1, 2, 2, 1])
+y = np.array([0, 0, 1, 1, 0, -1])
 
-print(iter)
+path = np.array([x, y]).T
+plot_data = [path[0]] + [path[i // 2] for i in range(len(path * 2))] + [path[-1]]
+line = gl.GLLinePlotItem(pos=np.array(plot_data), mode='lines')
+view.addItem(line)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+path = parametric_spline(x, y, np.ones(len(x)))
+plot_data = [path[0]] + [path[i // 2] for i in range(len(path * 2))] + [path[-1]]
+line = gl.GLLinePlotItem(pos=np.array(plot_data), mode='lines')
+view.addItem(line)
 
 
 
@@ -92,3 +45,11 @@ print(iter)
 
 
 pg.exec()
+
+
+
+
+
+
+
+

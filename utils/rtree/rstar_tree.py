@@ -7,7 +7,7 @@ from .rtree_utils import IndexRecord
 from .rtree_utils import IndexPointer
 from dataclasses import dataclass, field
 from typing import Any
-from utils.qt.utils import plot_mesh
+from utils.qt.utils import plot_mesh, plot_polygons
 
 
 @dataclass(order=True)
@@ -154,11 +154,18 @@ class RTree(object):
 
         # We then plot them at the same time at the end
         if self.dim == 2:
-            return
+            if branches:
+                plot_polygons(vertices=bp, view=view, color="#ff0000")
+
+            if leaves:
+                plot_polygons(vertices=lp, view=view, color="#009b00")
 
         elif self.dim == 3:
-            plot_mesh(vertices=bp, view=view, color="#ff0000", option='additive')
-            plot_mesh(vertices=lp, view=view, color="#009b00", option='additive')
+            if branches:
+                plot_mesh(vertices=bp, view=view, color="#ff0000", option='additive')
+
+            if leaves:
+                plot_mesh(vertices=lp, view=view, color="#009b00", option='additive')
 
     def __str__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")

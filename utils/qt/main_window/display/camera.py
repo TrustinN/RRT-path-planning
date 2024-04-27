@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from utils.maps.map_utils import get_angle
 from PyQt6.QtGui import QVector3D
@@ -8,18 +9,26 @@ class Camera():
     def set_view(self, view):
         self.view = view
 
-    def connect(self, slider):
+    def connect(self, slider, button):
         self.slider = slider
+        self.play_button = button
 
-    def reset_slider(self):
+    def reset(self):
         self.slider.setValue(50)
         self.view.setCameraPosition(pos=QVector3D(400, 400, 400), elevation=0, azimuth=-35, distance=1200)
+        self.play_button.setChecked(False)
 
     def hide_slider(self):
         self.slider.hide()
 
     def show_slider(self):
         self.slider.show()
+
+    def animate_path(self, path):
+        if self.play_button.isChecked:
+            while self.slider.sliderPosition() < 100:
+                self.slider.setValue(self.slider.sliderPosition() + 1)
+                time.sleep(.1)
 
     def follow_path(self, path):
         percent = self.slider.sliderPosition() / 100
