@@ -1,32 +1,26 @@
 from pyqtgraph.Qt import QtWidgets
-from PyQt6.QtWidgets import QPushButton
-from PyQt6.QtGui import QPixmap, QPainter
 
 from .data import RRTData
 from .parameter_tree import RRTOptions
 from .path_tracker import PathTracker
+from .buttons.buttons import Buttons
 
 
-class RRTConsole():
+class RRTConsole(QtWidgets.QWidget):
 
     def __init__(self):
-        self.window = QtWidgets.QWidget()
+        super().__init__()
         self.layout = QtWidgets.QVBoxLayout()
-        self.window.setLayout(self.layout)
-        self.window.setFixedSize(300, 900)
+        self.setLayout(self.layout)
+        self.setFixedSize(300, 900)
 
         self.data = RRTData()
         self.options = RRTOptions()
         self.slider = PathTracker()
-        self.buttons = [QPushButton() for i in range(2)]
-        pm = QPixmap()
-        pm.load("play.png")
-        painter = QPainter()
-        painter.drawPixmap(0, 0, pm)
+        self.buttons = Buttons()
 
         self.layout.addWidget(self.options.pt)
-        for b in self.buttons:
-            self.layout.addWidget(b)
+        self.layout.addWidget(self.buttons)
         self.layout.addWidget(self.slider)
         self.layout.addWidget(self.data.window)
 

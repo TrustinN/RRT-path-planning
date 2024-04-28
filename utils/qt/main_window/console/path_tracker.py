@@ -19,21 +19,27 @@ class PathTracker(QSlider):
         self.start = self.min
         self.end = self.max
         self.reversed = False
+        self.setSliderPosition(self.min)
 
     def reverse(self):
         self.start = self.max - self.start
         self.end = self.max - self.end
         self.reversed = not self.reversed
+        self.setSliderPosition(self.sliderPosition())
 
-    def slider_position(self, p):
-        return p
+    def can_animate(self):
+        return self.sliderPosition() != self.end
 
     def animate(self):
-        self.anim.setDuration(4000)
-        self.anim.setStartValue(self.start)
-        self.anim.setEndValue(self.end)
-        self.anim.start()
-
+        if self.can_animate():
+            percentage = self.sliderPosition() / (self.max - self.min)
+            time = int(4000 * (1 - percentage))
+            if self.reversed:
+                time = int(4000 * percentage)
+            self.anim.setDuration(time)
+            self.anim.setStartValue(self.sliderPosition())
+            self.anim.setEndValue(self.end)
+            self.anim.start()
 
 
 

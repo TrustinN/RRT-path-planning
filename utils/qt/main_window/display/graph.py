@@ -1,11 +1,11 @@
 from pyqtgraph.Qt import QtWidgets
 
 
-class RRTDisplay():
+class RRTDisplay(QtWidgets.QWidget):
     def __init__(self):
-        self.window = QtWidgets.QWidget()
+        super().__init__()
         self.layout = QtWidgets.QHBoxLayout()
-        self.window.setLayout(self.layout)
+        self.setLayout(self.layout)
         self.widget = None
 
     def connect(self, widget):

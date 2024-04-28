@@ -13,12 +13,16 @@ class Camera():
         self.play_button = buttons[0]
         self.reverse_button = buttons[1]
 
-        self.play_button.clicked.connect(self.animate_path)
-        self.reverse_button.clicked.connect(self.reverse_path)
+        self.play_button.track(self.slider)
+
         self.reverse_button.clicked.connect(self.slider.reverse)
+        self.reverse_button.clicked.connect(self.reverse_path)
+        self.reverse_button.clicked.connect(self.follow_path)
+
+        self.slider.sliderMoved.connect(self.follow_path)
+        self.slider.valueChanged.connect(self.follow_path)
 
     def reset(self):
-        self.slider.setValue((self.slider.min + self.slider.max) // 2)
         self.slider.reset()
         self.view.setCameraPosition(pos=QVector3D(400, 400, 400), elevation=0, azimuth=-35, distance=1200)
         self.play_button.setChecked(False)
@@ -28,10 +32,6 @@ class Camera():
 
     def show_slider(self):
         self.slider.show()
-
-    def animate_path(self):
-        if self.play_button.isChecked:
-            self.slider.animate()
 
     def track_path(self, path):
         self.track = path
@@ -115,6 +115,7 @@ class Camera():
             elev += 10
 
             self.view.setCameraPosition(pos=QVector3D(c_pos[0], c_pos[1], c_pos[2]), distance=50, azimuth=azi, elevation=elev)
+
 
 
 

@@ -14,10 +14,8 @@ class RRTCore():
 
         self.connect_pt()
 
-        self.camera.connect(self.console.slider, self.console.buttons)
+        self.camera.connect(self.console.slider, self.console.buttons.buttons)
         self.update_map()
-        self.camera.slider.sliderMoved.connect(self.focus_path)
-        self.camera.slider.valueChanged.connect(self.focus_path)
         self.update_display()
 
         self.set_step_size()
@@ -36,9 +34,6 @@ class RRTCore():
 
     def update_display(self):
         self.display.connect(self.plot_handler.get_widget())
-
-    def focus_path(self):
-        self.camera.follow_path()
 
     def change_dim(self):
         dim = self.params.child('dim').value()
