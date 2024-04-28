@@ -14,11 +14,10 @@ class RRTCore():
 
         self.connect_pt()
 
-        self.camera.connect(self.console.slider, self.console.button)
+        self.camera.connect(self.console.slider, self.console.buttons)
         self.update_map()
         self.camera.slider.sliderMoved.connect(self.focus_path)
         self.camera.slider.valueChanged.connect(self.focus_path)
-        self.camera.play_button.clicked.connect(self.animate_path)
         self.update_display()
 
         self.set_step_size()
@@ -39,10 +38,7 @@ class RRTCore():
         self.display.connect(self.plot_handler.get_widget())
 
     def focus_path(self):
-        self.camera.follow_path(self.solver.path)
-
-    def animate_path(self):
-        self.camera.animate_path(self.solver.path)
+        self.camera.follow_path()
 
     def change_dim(self):
         dim = self.params.child('dim').value()
@@ -72,6 +68,7 @@ class RRTCore():
         if dim == 3:
             self.camera.set_view(self.plot_handler.get_view())
             self.camera.reset()
+            self.camera.disconnect()
 
     def set_step_size(self):
         self.solver.set_step_size(self.params.child('step_size').value())
@@ -98,6 +95,7 @@ class RRTCore():
                                  prev_length)
 
         self.camera.reset()
+        self.camera.track_path(self.solver.path)
 
 
 

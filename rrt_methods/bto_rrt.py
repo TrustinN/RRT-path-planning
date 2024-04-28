@@ -72,9 +72,10 @@ def rrt_run(map, step_size, max_iter):
     path = down_sample(map, path)
     path = up_sample(map, path, 2 * iter)
     path = down_sample(map, path)
-    path = KPSOptimization(path, map)
+    path = KPSOptimization(path, map, num=20)
 
     return path, t_a, t_b
+
 
 
 

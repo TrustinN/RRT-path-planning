@@ -417,24 +417,24 @@ def spline_eval(x, y, num=10):
     return new_path
 
 
-def parametric_spline(points):
+def parametric_spline(points, num=10):
     t = np.arange(len(points.T[0]))
     at = []
     for axis in points.T:
-        at.append(spline_eval(t, axis))
+        at.append(spline_eval(t, axis, num=num))
 
     path = np.array([paths.T[1] for paths in at]).T
 
     return [path[i] for i in range(len(path))]
 
 
-def KPSOptimization(keypoints, map):
+def KPSOptimization(keypoints, map, num=10):
     kp = keypoints
-    path = parametric_spline(np.array(kp))
+    path = parametric_spline(np.array(kp), num=num)
     iter = 0
     while True and iter < 5:
         # Check collision
-        kpNew = SmoothOptimizer(kp, path, map)
+        kpNew = SmoothOptimizer(kp, path, map, num=num)
 
         if len(kpNew) != len(kp):
             kp = kpNew
@@ -442,7 +442,7 @@ def KPSOptimization(keypoints, map):
         else:
             break
 
-        path = parametric_spline(np.array(kp))
+        path = parametric_spline(np.array(kp), num=num)
         iter += 1
 
     return path
@@ -469,6 +469,7 @@ def SmoothOptimizer(keypoints, spoints, map, num=10):
 
     kpNew.append(kp[-1])
     return kpNew
+
 
 
 

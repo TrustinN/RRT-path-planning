@@ -1,9 +1,10 @@
 from pyqtgraph.Qt import QtWidgets
+from PyQt6.QtWidgets import QPushButton
+from PyQt6.QtGui import QPixmap, QPainter
 
 from .data import RRTData
 from .parameter_tree import RRTOptions
-from .path_traverser import PathTraverser
-from .play_button import PlayButton
+from .path_tracker import PathTracker
 
 
 class RRTConsole():
@@ -16,11 +17,16 @@ class RRTConsole():
 
         self.data = RRTData()
         self.options = RRTOptions()
-        self.slider = PathTraverser()
-        self.button = PlayButton()
+        self.slider = PathTracker()
+        self.buttons = [QPushButton() for i in range(2)]
+        pm = QPixmap()
+        pm.load("play.png")
+        painter = QPainter()
+        painter.drawPixmap(0, 0, pm)
 
         self.layout.addWidget(self.options.pt)
-        self.layout.addWidget(self.button)
+        for b in self.buttons:
+            self.layout.addWidget(b)
         self.layout.addWidget(self.slider)
         self.layout.addWidget(self.data.window)
 
