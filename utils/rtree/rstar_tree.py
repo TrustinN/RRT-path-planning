@@ -7,7 +7,8 @@ from .rtree_utils import IndexRecord
 from .rtree_utils import IndexPointer
 from dataclasses import dataclass, field
 from typing import Any
-from utils.qt.utils import plot_mesh, plot_polygons
+from utils.qt.utils import plot_mesh, plot_polygons, plot_points
+from colorutils import Color
 
 
 @dataclass(order=True)
@@ -51,9 +52,9 @@ class RTree(object):
         def update_bound(self, bound):
             self.covering = bound
 
-        def plot(self, view, branches, leaves, lp, bp, pp):
+        def plot(self, view, branches, leaves, lp, bp, pp, colors):
             for i in self.items:
-                i.pointer.plot(view, branches, leaves, lp, bp, pp)
+                i.pointer.plot(view, branches, leaves, lp, bp, pp, colors)
 
             if branches:
                 for f in self.covering.get_facets():
@@ -79,15 +80,19 @@ class RTree(object):
             super().__init__(items, covering, level)
             self.color = "#" + "".join([random.choice('ABCDEF0123456789') for i in range(6)])
 
-        def plot(self, view, branches, leaves, lp, bp, pp):
+        def plot(self, view, branches, leaves, lp, bp, pp, colors):
 
             if leaves:
                 for f in self.covering.get_facets():
                     for p in f:
                         lp.append(p)
 
-            for i in self.items:
-                i.plot(self.color, view)
+            for v in self.items:
+                pp.append(v.value)
+            c = np.array([Color(web=self.color).rgb])
+            cm = np.repeat(c, len(self.items), axis=0)
+            for c in cm:
+                colors.append(c)
 
         def add_entry(self, entry):
 
@@ -149,23 +154,28 @@ class RTree(object):
     def plot(self, view, branches=False, leaves=True):
         # should modify a list of plot objects lp, bp, pp which
         # stands for lineplot, branchplot, pointplot
-        lp, bp, pp = [], [], []
-        self.root.plot(view, branches, leaves, lp, bp, pp)
+        lp, bp, pp, colors = [], [], [], []
+        self.root.plot(view, branches, leaves, lp, bp, pp, colors)
+        colors = np.array(colors)
 
         # We then plot them at the same time at the end
         if self.dim == 2:
-            if branches:
-                plot_polygons(vertices=bp, view=view, color="#ff0000")
+            plot_points(points=pp, view=view, color=colors, dim=2)
 
             if leaves:
                 plot_polygons(vertices=lp, view=view, color="#009b00")
 
-        elif self.dim == 3:
             if branches:
-                plot_mesh(vertices=bp, view=view, color="#ff0000", option='additive')
+                plot_polygons(vertices=bp, view=view, color="#ff0000")
+
+        elif self.dim == 3:
+            plot_points(points=pp, view=view, color=colors / 255, dim=3)
 
             if leaves:
                 plot_mesh(vertices=lp, view=view, color="#009b00", option='additive')
+
+            if branches:
+                plot_mesh(vertices=bp, view=view, color="#ff0000", option='additive')
 
     def __str__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
@@ -633,6 +643,7 @@ class RTree(object):
                     pq.put(e)
 
         return neighbors
+
 
 
 

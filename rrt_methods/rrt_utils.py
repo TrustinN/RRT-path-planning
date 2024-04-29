@@ -16,7 +16,6 @@ class Graph(RTree):
     def __init__(self, vertices=[], num_vertices=0, dim=2):
         super().__init__(10, dim=dim)
         self.vertices = vertices
-        self.time = 0
 
     def add_vertex(self, vertex):
         self.Insert(vertex)
@@ -186,41 +185,6 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
     return connect, v_near, None
 
 
-# def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
-#     c = map.intersections([p_rand, p_near])
-#     min_dist = np.linalg.norm(p_rand - p_near)
-#     connect = False
-#     p_step = normalize(p_rand - p_near)
-#     expand_iter = 0
-#
-#     if len(c) != 0:
-#         for p in c:
-#             curr_dist = np.linalg.norm(p - p_near)
-#             if curr_dist < min_dist:
-#                 min_dist = curr_dist
-#
-#         if min_dist != np.linalg.norm(p_rand - p_near):
-#             expand_iter = math.floor(min_dist / step_size)
-#
-#     else:
-#         expand_iter = math.floor(min_dist / step_size)
-#
-#     for i in range(expand_iter):
-#         p_new = step_size * p_step + v_near.value
-#         v_new = vertex(value=p_new,
-#                        parent=None,
-#                        dist_to_root=math.inf
-#                        )
-#         v_near.add_neighbor(v_new)
-#         graph0.add_vertex(v_new)
-#         prev_parent = v_near
-#         connect = rrt_connect(v_new, graph0, graph1, map, 5, step_size)
-#         v_near = v_new
-#         if connect:
-#             return connect, v_near, prev_parent
-#     return connect, v_near, None
-
-
 # for a vertex v in some graph0, searches in graph1
 # for vertices that can be connected to within a radius of
 # r * step_size returns a boolean value for if a connection was
@@ -262,6 +226,7 @@ def rrt_rewire(v, graph, map, r, step_size, end, connect=False):
     added_to_graph = False
     while neighbors:
         curr_neighbor = neighbors.pop()
+
         if not map.intersects_line([curr_neighbor.value, v.value]):
             new_parent = curr_neighbor
 
@@ -292,6 +257,7 @@ def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
 
     while neighbors:
         curr_neighbor = neighbors.pop()
+
         if curr_neighbor.dist_to_root != math.inf:
             if not map.intersects_line([curr_neighbor.value, v.value]):
                 new_parent = curr_neighbor
@@ -321,8 +287,48 @@ def rrt_q_rewire(v, graph, map, r, depth, step_size, end, connect=False):
 ###############################################################################
 
 
+def upscale(path, step_size):
+
+    new_path = []
+
+    if path:
+
+        length = np.cumsum([np.linalg.norm(path[i + 1] - path[i]) for i in range(len(path) - 1)])
+        curr_segment = 0
+        traversed = step_size
+        new_path.append(path[0])
+        i = 0
+
+        while True:
+
+            target = length[curr_segment]
+            if traversed >= target:
+
+                curr_segment += 1
+                i += 1
+                new_path.append(path[i])
+
+                if curr_segment == len(length):
+                    new_path.append(path[-1])
+                    break
+
+            else:
+
+                vec = path[curr_segment + 1] - path[curr_segment]
+                v_len = np.linalg.norm(vec)
+
+                pos = target - traversed
+                p = 1 - (pos / v_len)
+                new_path.append(vec * p + path[curr_segment])
+
+                traversed += step_size
+
+    return new_path
+
+
 def down_sample(map, path):
     path_new = []
+
     if path:
         curr_node = path[0]
         prev_point = curr_node
@@ -430,14 +436,17 @@ def spline_eval(x, y, step=10):
     splines = cubic_spline(x, y)
 
     for i in range(n - 1):
+
         cubic = splines[i]
         interval = np.linspace(x[i], x[i + 1], step)
         xj = np.repeat(cubic[4], step)
         diff = interval - xj
         y = cubic[0] + cubic[1] * diff + cubic[2] * diff ** 2 + cubic[3] * diff ** 3
         xy = np.array([interval, y]).T
+
         if i == 0:
             new_path = xy
+
         else:
             new_path = np.concatenate((new_path, xy))
 
@@ -448,6 +457,7 @@ def parametric_spline(points, step=10):
     lengths = [0] + [np.linalg.norm(points[i + 1] - points[i]) for i in range(len(points) - 1)]
     t = np.array(np.cumsum(lengths))
     at = []
+
     for axis in points.T:
         at.append(spline_eval(t, axis, step=step))
 
@@ -481,6 +491,7 @@ def SmoothOptimizer(keypoints, spoints, map):
 
     idx = 0
     insert = True
+
     for i in range(len(spoints) - 1):
         if np.array_equal(spoints[i], kp[idx]):
             kpNew.append(kp[idx])
@@ -496,6 +507,7 @@ def SmoothOptimizer(keypoints, spoints, map):
 
     kpNew.append(kp[-1])
     return kpNew
+
 
 
 

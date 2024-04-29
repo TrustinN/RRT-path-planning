@@ -30,5 +30,15 @@ def plot_polygons(vertices, view, color):
     view.addItem(lines)
 
 
+def plot_points(points, view, color, dim=2):
+    if dim == 2:
+        points = pg.ScatterPlotItem(pos=np.array(points), size=3)
+        points.setBrush(color)
+        view.addItem(points)
+
+    elif dim == 3:
+        points = gl.GLScatterPlotItem(pos=np.array(points), color=color, size=5)
+        view.addItem(points)
+
 
 

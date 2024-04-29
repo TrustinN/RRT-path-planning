@@ -258,29 +258,6 @@ class Rect(Bound):
              ],
         ])
 
-    def plot(self, color, view):
-        self.p_obj = pg.PlotDataItem(np.array([np.array([self.min_x, self.min_y]),
-                                               np.array([self.min_x, self.max_y]),
-
-                                               np.array([self.min_x, self.max_y]),
-                                               np.array([self.max_x, self.max_y]),
-
-                                               np.array([self.max_x, self.max_y]),
-                                               np.array([self.max_x, self.min_y]),
-
-                                               np.array([self.max_x, self.min_y]),
-                                               np.array([self.min_x, self.min_y]),
-                                               ]),
-                                     connect="pairs", pen=pg.mkPen(color))
-
-        self.view = view
-        view.addItem(self.p_obj)
-
-    def rm_plot(self):
-        if self.p_obj:
-            self.view.removeItem(self.p_obj)
-        self.p_obj = None
-
     def __str__(self):
         return f"{[self.min_x, self.max_x, self.min_y, self.max_y]}"
 
