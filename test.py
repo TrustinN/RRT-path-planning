@@ -32,20 +32,20 @@ path = np.array([np.array([10, 10, 10]),
                  np.array([790, 790, 790])])
 
 plot_path(path, view)
-# pn = parametric_spline(np.array(path))
-# plot_path(pn, view)
+pn = parametric_spline(np.array(path))
+plot_path(pn, view)
 
 x = path.T[0]
 y = path.T[1]
 z = path.T[2]
 
-# pn = spline_eval(np.linspace(10, 790, len(x)), x)
-# plot_path(pn, view)
-#
-# pn = spline_eval(np.linspace(10, 790, len(y)), y)
-# plot_path(pn, view)
-pn = parametric_spline(np.array([np.array([p[0], p[1]]) for p in path]))
+pn = spline_eval(np.linspace(10, 790, len(x)), x)
 plot_path(pn, view)
+#
+pn = spline_eval(np.linspace(10, 790, len(y)), y)
+plot_path(pn, view)
+# pn = parametric_spline(np.array([np.array([p[0], p[1]]) for p in path]))
+# plot_path(pn, view)
 
 pn = spline_eval(np.linspace(10, 790, len(z)), z)
 pn = [np.array([0, v[0], v[1]]) for v in pn]

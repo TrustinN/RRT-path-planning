@@ -27,8 +27,6 @@ class RRTCore():
         self.params.child('step_size').sigTreeStateChanged.connect(self.set_step_size)
         self.params.child('max_iter').sigTreeStateChanged.connect(self.set_max_iter)
         self.params.child('map').child('update').sigTreeStateChanged.connect(self.update_map)
-        self.params.child('map').child('num_obstacles').sigTreeStateChanged.connect(self.update_map)
-        self.params.child('map').child('obstacle_size').sigTreeStateChanged.connect(self.update_map)
         self.params.child('run').sigTreeStateChanged.connect(self.update)
         self.params.child('step_size').setValue(40)
 
@@ -42,10 +40,10 @@ class RRTCore():
 
         # hide the slider used to move along the 3d path
         if dim == 2:
-            self.camera.hide_slider()
+            self.camera.hide()
 
         else:
-            self.camera.show_slider()
+            self.camera.show()
 
     def update_map(self):
         dim = self.params.child('dim').value()

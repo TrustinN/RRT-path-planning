@@ -160,26 +160,18 @@ def rrt_step(p_rand, v_near, step_size):
 
 
 def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
-    c = map.intersections([p_rand, p_near])
-    min_dist = np.linalg.norm(p_rand - p_near)
     connect = False
+    max_iter = max(1, np.linalg.norm(p_rand - p_near) // step_size)
     p_step = normalize(p_rand - p_near)
-    expand_iter = 0
 
-    if len(c) != 0:
-        for p in c:
-            curr_dist = np.linalg.norm(p - p_near)
-            if curr_dist < min_dist:
-                min_dist = curr_dist
+    while max_iter > 0:
 
-        if min_dist != np.linalg.norm(p_rand - p_near):
-            expand_iter = math.floor(min_dist / step_size)
-
-    else:
-        expand_iter = math.floor(min_dist / step_size)
-
-    for i in range(expand_iter):
+        max_iter -= 1
         p_new = step_size * p_step + v_near.value
+
+        if map.intersects_line([p_new, v_near.value]):
+            break
+
         v_new = vertex(value=p_new,
                        parent=None,
                        dist_to_root=math.inf
@@ -192,6 +184,41 @@ def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
         if connect:
             return connect, v_near, prev_parent
     return connect, v_near, None
+
+
+# def rrt_extend_connect(p_rand, p_near, v_near, map, step_size, graph0, graph1):
+#     c = map.intersections([p_rand, p_near])
+#     min_dist = np.linalg.norm(p_rand - p_near)
+#     connect = False
+#     p_step = normalize(p_rand - p_near)
+#     expand_iter = 0
+#
+#     if len(c) != 0:
+#         for p in c:
+#             curr_dist = np.linalg.norm(p - p_near)
+#             if curr_dist < min_dist:
+#                 min_dist = curr_dist
+#
+#         if min_dist != np.linalg.norm(p_rand - p_near):
+#             expand_iter = math.floor(min_dist / step_size)
+#
+#     else:
+#         expand_iter = math.floor(min_dist / step_size)
+#
+#     for i in range(expand_iter):
+#         p_new = step_size * p_step + v_near.value
+#         v_new = vertex(value=p_new,
+#                        parent=None,
+#                        dist_to_root=math.inf
+#                        )
+#         v_near.add_neighbor(v_new)
+#         graph0.add_vertex(v_new)
+#         prev_parent = v_near
+#         connect = rrt_connect(v_new, graph0, graph1, map, 5, step_size)
+#         v_near = v_new
+#         if connect:
+#             return connect, v_near, prev_parent
+#     return connect, v_near, None
 
 
 # for a vertex v in some graph0, searches in graph1
@@ -397,15 +424,15 @@ def cubic_spline(x, y):
     return splines
 
 
-def spline_eval(x, y, num=10):
+def spline_eval(x, y, step=10):
     n = len(x)
     new_path = None
     splines = cubic_spline(x, y)
 
     for i in range(n - 1):
         cubic = splines[i]
-        interval = np.linspace(x[i], x[i + 1], num)
-        xj = np.repeat(cubic[4], num)
+        interval = np.linspace(x[i], x[i + 1], step)
+        xj = np.repeat(cubic[4], step)
         diff = interval - xj
         y = cubic[0] + cubic[1] * diff + cubic[2] * diff ** 2 + cubic[3] * diff ** 3
         xy = np.array([interval, y]).T
@@ -417,24 +444,25 @@ def spline_eval(x, y, num=10):
     return new_path
 
 
-def parametric_spline(points, num=10):
-    t = np.arange(len(points.T[0]))
+def parametric_spline(points, step=10):
+    lengths = [0] + [np.linalg.norm(points[i + 1] - points[i]) for i in range(len(points) - 1)]
+    t = np.array(np.cumsum(lengths))
     at = []
     for axis in points.T:
-        at.append(spline_eval(t, axis, num=num))
+        at.append(spline_eval(t, axis, step=step))
 
     path = np.array([paths.T[1] for paths in at]).T
 
     return [path[i] for i in range(len(path))]
 
 
-def KPSOptimization(keypoints, map, num=10):
+def KPSOptimization(keypoints, map, step=10):
     kp = keypoints
-    path = parametric_spline(np.array(kp), num=num)
-    iter = 0
-    while True and iter < 5:
+    path = parametric_spline(np.array(kp), step=step)
+
+    while True:
         # Check collision
-        kpNew = SmoothOptimizer(kp, path, map, num=num)
+        kpNew = SmoothOptimizer(kp, path, map)
 
         if len(kpNew) != len(kp):
             kp = kpNew
@@ -442,20 +470,19 @@ def KPSOptimization(keypoints, map, num=10):
         else:
             break
 
-        path = parametric_spline(np.array(kp), num=num)
-        iter += 1
+        path = parametric_spline(np.array(kp), step=step)
 
     return path
 
 
-def SmoothOptimizer(keypoints, spoints, map, num=10):
+def SmoothOptimizer(keypoints, spoints, map):
     kp = keypoints
     kpNew = []
 
     idx = 0
     insert = True
     for i in range(len(spoints) - 1):
-        if i // num == idx:
+        if np.array_equal(spoints[i], kp[idx]):
             kpNew.append(kp[idx])
             idx += 1
             insert = True
@@ -469,6 +496,9 @@ def SmoothOptimizer(keypoints, spoints, map, num=10):
 
     kpNew.append(kp[-1])
     return kpNew
+
+
+
 
 
 

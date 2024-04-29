@@ -27,15 +27,19 @@ class Camera():
         self.view.setCameraPosition(pos=QVector3D(400, 400, 400), elevation=0, azimuth=-35, distance=1200)
         self.play_button.setChecked(False)
 
-    def hide_slider(self):
+    def hide(self):
         self.slider.hide()
+        self.play_button.hide()
+        self.reverse_button.hide()
 
-    def show_slider(self):
+    def show(self):
         self.slider.show()
+        self.play_button.show()
+        self.reverse_button.show()
 
     def track_path(self, path):
         self.track = path
-        self.elev = 1
+        self.slider.track_path(path)
 
     def reverse_path(self):
         if self.track:
@@ -43,78 +47,80 @@ class Camera():
 
     def disconnect(self):
         self.track = None
+        self.slider.disconnect()
 
     def follow_path(self):
 
-        percent = self.slider.sliderPosition() / self.slider.max
-        if self.slider.reversed:
-            percent = 1 - percent
-
-        path_lengths = [np.linalg.norm(self.track[i] - self.track[i + 1]) for i in range(len(self.track) - 1)]
-        path_length = sum(path_lengths)
-
         if self.track:
-            dist = percent * path_length
-            curr_dist = 0
-            iter = 0
+            percent = self.slider.sliderPosition() / self.slider.max
+            if self.slider.reversed:
+                percent = 1 - percent
 
-            while True:
-                curr_dist += path_lengths[iter]
-                if curr_dist >= dist:
-                    curr_dist -= path_lengths[iter]
-                    break
-                iter += 1
+            path_lengths = [np.linalg.norm(self.track[i] - self.track[i + 1]) for i in range(len(self.track) - 1)]
+            path_length = sum(path_lengths)
 
-            start = self.track[iter]
-            end = self.track[iter + 1]
-            vec = end - start
+            if self.track:
+                dist = percent * path_length
+                curr_dist = 0
+                iter = 0
 
-            vec_dist = np.linalg.norm(vec)
-            p = (dist - curr_dist) / vec_dist
+                while True:
+                    curr_dist += path_lengths[iter]
+                    if curr_dist >= dist:
+                        curr_dist -= path_lengths[iter]
+                        break
+                    iter += 1
 
-            c_pos = p * vec + start
+                start = self.track[iter]
+                end = self.track[iter + 1]
+                vec = end - start
 
-            # calculate the rotation needed for camera from x-axis
-            # to be positioned behind the current vector, vec
-            angle = get_angle(vec[:2], np.array([1, 0]))
+                vec_dist = np.linalg.norm(vec)
+                p = (dist - curr_dist) / vec_dist
 
-            # We need to keep track of if the angle given is a counter clockwise
-            # or clockwise rotation from x-axis
-            sign = np.sign(np.dot(vec[:2], np.array([0, 1])))
-            angle = sign * angle
+                c_pos = p * vec + start
 
-            # Move to oppositie side of the unit circle
-            azi = 180 * angle / np.pi
-            azi = azi + 180
+                # calculate the rotation needed for camera from x-axis
+                # to be positioned behind the current vector, vec
+                angle = get_angle(vec[:2], np.array([1, 0]))
 
-            # calculate the elevation angle. This is the displacement angle
-            # from the negative vector on the x-axis on the xz-plane
+                # We need to keep track of if the angle given is a counter clockwise
+                # or clockwise rotation from x-axis
+                sign = np.sign(np.dot(vec[:2], np.array([0, 1])))
+                angle = sign * angle
 
-            # Spin the vector onto the xz-plane
-            rot = np.array([[np.cos(-angle), -np.sin(-angle), 0],
-                           [np.sin(-angle), np.cos(-angle), 0],
-                           [0, 0, 1]])
-            n_p = np.dot(rot, vec)
+                # Move to oppositie side of the unit circle
+                azi = 180 * angle / np.pi
+                azi = azi + 180
 
-            elev = get_angle(np.array([n_p[0], n_p[2]]), np.array([1, 0]))
-            sign = np.sign(np.dot(np.array([n_p[0], n_p[2]]), np.array([0, 1])))
+                # calculate the elevation angle. This is the displacement angle
+                # from the negative vector on the x-axis on the xz-plane
 
-            # Again, calculate the clockwise/counterclockwise position of the angle
-            elev = -sign * elev * 180 / np.pi
+                # Spin the vector onto the xz-plane
+                rot = np.array([[np.cos(-angle), -np.sin(-angle), 0],
+                               [np.sin(-angle), np.cos(-angle), 0],
+                               [0, 0, 1]])
+                n_p = np.dot(rot, vec)
 
-            # We want to view the path from slightly above
-            # If the vector points in the negative x-direction, we want to go clockwise, 
-            # subtract from current angle, If vector points in positive x-direction, we
-            # want to go counter-clockwise/add from current angle
-            sign = np.sign(np.dot(np.array([n_p[0], n_p[2]]), np.array([1, 0])))
+                elev = get_angle(np.array([n_p[0], n_p[2]]), np.array([1, 0]))
+                sign = np.sign(np.dot(np.array([n_p[0], n_p[2]]), np.array([0, 1])))
 
-            # Reflect angle across z-axis
-            if sign < 0:
-                elev = 180 - elev
+                # Again, calculate the clockwise/counterclockwise position of the angle
+                elev = -sign * elev * 180 / np.pi
 
-            elev += 10
+                # We want to view the path from slightly above
+                # If the vector points in the negative x-direction, we want to go clockwise, 
+                # subtract from current angle, If vector points in positive x-direction, we
+                # want to go counter-clockwise/add from current angle
+                sign = np.sign(np.dot(np.array([n_p[0], n_p[2]]), np.array([1, 0])))
 
-            self.view.setCameraPosition(pos=QVector3D(c_pos[0], c_pos[1], c_pos[2]), distance=50, azimuth=azi, elevation=elev)
+                # Reflect angle across z-axis
+                if sign < 0:
+                    elev = 180 - elev
+
+                elev += 10
+
+                self.view.setCameraPosition(pos=QVector3D(c_pos[0], c_pos[1], c_pos[2]), distance=50, azimuth=azi, elevation=elev)
 
 
 
