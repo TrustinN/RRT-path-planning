@@ -31,7 +31,7 @@ from .rrt_utils import upscale, down_sample, up_sample, KPSOptimization
 
 def claimExtend(start, vertex, pool, graph, target_graph, map, step_size):
 
-    search_radius = NCircle(center=vertex.value, radius=3 * step_size)
+    search_radius = NCircle(center=vertex.value, radius=2 * step_size)
     p = pool.Search(search_radius)
     p.sort(key=lambda x: np.linalg.norm(x.value - vertex.parent.value))
 
@@ -39,9 +39,11 @@ def claimExtend(start, vertex, pool, graph, target_graph, map, step_size):
         c = p.pop()
 
         if not map.intersects_line([vertex.value, c.value]):
+
             pool.Delete(c)
             vertex.add_neighbor(c)
-            graph.add_vertex(vertex)
+            graph.add_vertex(c)
+
             search_radius = NCircle(center=c.value, radius=step_size)
             target = target_graph.Search(search_radius)
 
@@ -118,8 +120,8 @@ def rrt_run(map, step_size, max_iter):
                 pool.Insert(v_new)
 
             iter += 1
-    print("out")
 
+    print("Connect!")
     if not connect:
         path = []
 

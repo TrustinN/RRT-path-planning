@@ -109,7 +109,7 @@ class RTree(object):
             for i in range(len(self.items)):
                 if entry == self.items[i]:
 
-                    self.items.pop(i)
+                    self.items.remove(entry)
                     self.update_bound(RTree.Bound.combine([j.bound for j in self.items]))
                     return True
 
@@ -496,7 +496,7 @@ class RTree(object):
     # removes entry from the tree
     def Delete(self, entry):
 
-        def FindLeaf(node, index_entry, curr_lvl):
+        def FindLeaf(node, index_entry, curr_lvl, ins_lvls, to_insert):
 
             if curr_lvl == 0:
 
@@ -508,7 +508,7 @@ class RTree(object):
 
                 # Set of index records to be readded in case of
                 # underfull node after deletion
-                q, rm_item, ins_lvl = [], False, 0
+                rm_item, ins_lvl = False, 0
 
                 # Findleaf on all branches that might have index_entry
                 for i in range(len(node.items) - 1, -1, -1):
@@ -518,15 +518,20 @@ class RTree(object):
                         child_node = curr_item.pointer
 
                         # If we found an entry and deleted it, do whats after
-                        if FindLeaf(child_node, index_entry, curr_lvl=curr_lvl - 1):
+                        if FindLeaf(child_node, index_entry, curr_lvl=curr_lvl - 1, ins_lvls=ins_lvls, to_insert=to_insert):
                             rm_item = True
 
                             # delete underfull nodes
                             if len(child_node.items) < self.min_num:
 
-                                q += child_node.items
+                                q = child_node.items
                                 ins_lvl = child_node.level
                                 del node.items[i]
+
+                                # Remember to reinsert later
+                                for elem in q:
+                                    ins_lvls.append(ins_lvl)
+                                    to_insert.append(elem)
 
                             else:
 
@@ -537,17 +542,20 @@ class RTree(object):
                 if rm_item:
                     node.update_bound(RTree.Bound.combine([n.bound for n in node.items]))
 
-                # reinsert here
-                for elem in q:
-                    self.Insert(entry=elem, ins_lvl=ins_lvl)
-
                 return rm_item
 
+        # Store insert levels and node to insert in different lists:
+        insert_lvls, to_insert = [], []
+
         # call recursive function
-        FindLeaf(self.root, index_entry=entry, curr_lvl=self.height)
+        FindLeaf(self.root, index_entry=entry, curr_lvl=self.height, ins_lvls=insert_lvls, to_insert=to_insert)
+
+        # reinsert here
+        for lvl, node in zip(insert_lvls, to_insert):
+            self.Insert(entry=node, ins_lvl=lvl)
 
         # Fix the root node if there are too few entries in root.items
-        if len(self.root.items) < self.min_num and self.height != 0:
+        if len(self.root.items) < 2 and self.height != 0:
 
             q = []
             items = self.root.items
@@ -643,6 +651,7 @@ class RTree(object):
                     pq.put(e)
 
         return neighbors
+
 
 
 
