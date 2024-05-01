@@ -121,7 +121,6 @@ def rrt_run(map, step_size, max_iter):
 
             iter += 1
 
-    print("Connect!")
     if not connect:
         path = []
 
@@ -134,6 +133,7 @@ def rrt_run(map, step_size, max_iter):
         path = KPSOptimization(path, map, step=20)
 
     return path, t_start, t_end
+
 
 
 

@@ -104,6 +104,49 @@ class NCircle(Bound):
             return True
 
 
+def axis_overlap(min0, max0, min1, max1):
+
+    if min0 == max0:
+        if min1 == max1:
+            if min0 == min1:
+                return 1
+
+            else:
+                return 0
+
+        elif min1 <= min0 <= max1:
+            return 1
+
+        else:
+            return 0
+
+    if min1 == max1:
+        if min0 <= min1 <= max0:
+            return 1
+
+        else:
+            return 0
+
+    # Summing d1, d2, subtracting out d3 gives overlap
+    # Inspired by inclusion exclusion principle
+    d1 = max0 - min1
+    if d1 <= 0:
+        return 0
+
+    d2 = max1 - min0
+    if d2 <= 0:
+        return 0
+
+    d3 = max(max0, max1) - min(min0, min1)
+    return d1 + d2 - d3
+
+
+def get_min_length(x):
+    if x == 0:
+        x = 1
+    return x
+
+
 class Rect(Bound):
 
     def __init__(self, bound=[]):
@@ -120,7 +163,15 @@ class Rect(Bound):
 
             self.length = self.max_x - self.min_x
             self.width = self.max_y - self.min_y
-            self.vol = self.width * self.length
+
+            wh = get_min_length(self.width)
+            lh = get_min_length(self.length)
+
+            if self.width == self.length == 0:
+                self.vol = 0
+
+            else:
+                self.vol = wh * lh
 
             self.center_x = self.min_x + self.length / 2
             self.center_y = self.min_y + self.width / 2
@@ -158,7 +209,15 @@ class Rect(Bound):
     def expand_vol(b1, b2):
 
         bound = Rect.expand(b1, b2)
-        return (bound[1] - bound[0]) * (bound[3] - bound[2])
+        b1 = bound[1] - bound[0]
+        b2 = bound[3] - bound[2]
+
+        x = get_min_length(b1)
+        y = get_min_length(b2)
+
+        if b1 == b2 == 0:
+            return 0
+        return x * y
 
     def combine(bounds):
 
@@ -286,7 +345,16 @@ class Cube(Bound):
             self.width = self.max_y - self.min_y
             self.height = self.max_z - self.min_z
 
-            self.vol = self.width * self.length * self.height
+            wh = get_min_length(self.width)
+            lh = get_min_length(self.length)
+            ht = get_min_length(self.height)
+
+            if self.width == self.length == self.height == 0:
+                self.vol = 0
+
+            else:
+                self.vol = lh * wh * ht
+
             self.center_x = self.min_x + self.length / 2
             self.center_y = self.min_y + self.width / 2
             self.center_z = self.min_z + self.height / 2
@@ -336,7 +404,19 @@ class Cube(Bound):
     def expand_vol(b1, b2):
 
         bound = Cube.expand(b1, b2)
-        return (bound[1] - bound[0]) * (bound[3] - bound[2]) * (bound[5] - bound[4])
+
+        b1 = bound[1] - bound[0]
+        b2 = bound[3] - bound[2]
+        b3 = bound[5] - bound[4]
+
+        x = get_min_length(b1)
+        y = get_min_length(b2)
+        z = get_min_length(b3)
+
+        if b1 == b2 == b3 == 0:
+            return 0
+
+        return x * y * z
 
     def combine(bounds):
 
@@ -392,23 +472,29 @@ class Cube(Bound):
     # returns overlap area of two bounds
     def overlap(self, other):
 
-        l_sum = .5 * (self.length + other.length)
-        w_sum = .5 * (self.width + other.width)
-        h_sum = .5 * (self.height + other.height)
+        overlap_x = axis_overlap(self.min_x, self.max_x, other.min_x, other.max_x)
+        overlap_y = axis_overlap(self.min_y, self.max_y, other.min_y, other.max_y)
+        overlap_z = axis_overlap(self.min_z, self.max_z, other.min_z, other.max_z)
 
-        x_dist = abs(self.center_x - other.center_x)
-        y_dist = abs(self.center_y - other.center_y)
-        z_dist = abs(self.center_z - other.center_z)
+        return overlap_x * overlap_y * overlap_z
 
-        overlap_x = l_sum - x_dist
-        overlap_y = w_sum - y_dist
-        overlap_z = h_sum - z_dist
-
-        if overlap_x <= 0 or overlap_y <= 0 or overlap_z <= 0:
-            return 0
-
-        else:
-            return overlap_x * overlap_y * overlap_z
+        # l_sum = .5 * (self.length + other.length)
+        # w_sum = .5 * (self.width + other.width)
+        # h_sum = .5 * (self.height + other.height)
+        #
+        # x_dist = abs(self.center_x - other.center_x)
+        # y_dist = abs(self.center_y - other.center_y)
+        # z_dist = abs(self.center_z - other.center_z)
+        #
+        # overlap_x = l_sum - x_dist
+        # overlap_y = w_sum - y_dist
+        # overlap_z = h_sum - z_dist
+        #
+        # if overlap_x <= 0 or overlap_y <= 0 or overlap_z <= 0:
+        #     return 0
+        #
+        # else:
+        #     return overlap_x * overlap_y * overlap_z
 
     def get_dist(b, point):
 
@@ -552,6 +638,7 @@ class IndexPointer(Entry):
 
     def __repr__(self):
         return "pt " + f"{self.bound} -> {self.pointer}"
+
 
 
 
