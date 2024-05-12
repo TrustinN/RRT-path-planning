@@ -34,21 +34,17 @@ class RRTSolver():
         self.time = 0
         self.path_length = 0
 
-    def set_map(self, map):
-        self.map = map
+    def set_data(self, data):
+        self.map = data['map']
+        self.max_iter = data['max_iter']
+        self.step_size = data['step_size']
+        self.method = data['method']
+        self.seed = data['planner_seed']
 
-    def set_max_iter(self, iter):
-        self.max_iter = iter
+    def run(self):
+        if self.seed:
+            np.random.seed(self.seed)
 
-    def set_step_size(self, size):
-        self.step_size = size
-
-    def set_method(self, method):
-        self.method = method
-
-    def run(self, seed):
-        if seed:
-            np.random.seed(seed)
         self.rrt_run = self.methods[self.method]
 
         time_start = timeit.default_timer()

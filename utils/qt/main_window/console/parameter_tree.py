@@ -5,7 +5,6 @@ class RRTOptions():
     def __init__(self):
 
         self.opts = [
-            dict(name='dim', type='list', limits=[2, 3], value=3),
             dict(name='plan', type='list', limits=["rrt",
                                                    "rrt_connect",
                                                    "rrt_star",
@@ -18,20 +17,22 @@ class RRTOptions():
                                                    "quick_ep_rrt_star",
                                                    "bto_rrt",
                                                    "m_rrt",
-                                                   ],
-                 value="rrt"),
-            dict(name='step_size', type='float', value=50),
-            dict(name='max_iter', type='int', value=1000),
+                                                   ], value="rrt", children=[
+                dict(name='step_size', type='float', value=40),
+                dict(name='max_iter', type='int', value=1000),
+                dict(name='seed', type='int', value=0),
+            ]),
             dict(name='map', type='list', limits=["rom", "maze"], value="rom", children=[
                 dict(name='num_obstacles', type='int', value=10),
                 dict(name='obstacle_size', type='float', value=150),
+                dict(name='dim', type='list', limits=[2, 3], value=3),
+                dict(name='seed', type='int', value=0),
                 dict(name='update', type='action'),
             ]),
             dict(name='show', type='list', children=[
                 dict(name='leaves', type='bool', value=False),
                 dict(name='branches', type='bool', value=False),
             ]),
-            dict(name='seed', type='int', value=None),
             dict(name='run', type='action'),
         ]
 
