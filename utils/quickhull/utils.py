@@ -145,34 +145,6 @@ class Facet(IndexRecord):
 
             return None
 
-    def plot(self, color, view):
-        if self.dim == 2:
-            line = pg.PlotDataItem(np.array([self.vertices[0],
-                                             self.vertices[1]
-                                             ]),
-                                   connect="pairs", pen=pg.mkPen(color))
-            self.p = line
-            view.addItem(line)
-
-        elif self.dim == 3:
-
-            md = gl.MeshData(vertexes=self.vertices, faces=np.array([[0, 1, 2]]))
-            c = Color(web=color)
-            rgb = c.rgb
-            p0, p1, p2 = rgb[0], rgb[1], rgb[2]
-            colors = np.ones((md.faceCount(), 4), dtype=float)
-            colors[:, 3] = 0.3
-            colors[:, 2] = np.linspace(p2/255, 1, colors.shape[0])
-            colors[:, 1] = np.linspace(p1/255, 1, colors.shape[0])
-            colors[:, 0] = np.linspace(p0/255, 1, colors.shape[0])
-
-            md.setFaceColors(colors=colors)
-            m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader='shaded')
-            m1.setGLOptions('opaque')
-
-            self.p = m1
-            view.addItem(m1)
-
 
 class ConvexPoly():
 

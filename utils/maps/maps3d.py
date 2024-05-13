@@ -38,16 +38,18 @@ class Map3d(Map):
 
     def plot_path(self, path):
         if path:
-            pd = [path[0]] + [path[i // 2 + 1] for i in range(2 * (len(path) - 2))] + [path[-1]]
+            pd = np.array([path[0]] + [path[i // 2 + 1] for i in range(2 * (len(path) - 2))] + [path[-1]])
 
-        pd = {'pos': np.array(pd),
-              'color': pg.mkColor("#ff00ff"),
-              'width': 3,
-              'mode': 'lines'}
-        points = {'pos': np.array(path),
-                  'size': 10,
-                  'color': pg.mkColor("#ff0000")}
-        return pd, points
+            pd = {'pos': pd,
+                  'color': pg.mkColor("#ff00ff"),
+                  'width': 3,
+                  'mode': 'lines'}
+            points = {'pos': np.array(path),
+                      'size': 10,
+                      'color': pg.mkColor("#ff0000")}
+            return pd, points
+
+        return {}, {}
 
     def plot(self):
         vertices = [v for o in self.obstacles if o.is_visible_obstacle for f in o.faces for t in f.triangles for v in t]

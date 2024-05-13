@@ -193,9 +193,21 @@ class PlotHandler():
         self.plot[name].show()
 
     def set_tree_visibility(self, **kwargs):
-        for k in kwargs.keys():
-            if kwargs[k]:
-                self.plot[k].show()
+        if kwargs['t1_leaves']:
+            if self.t1_active and self.t1_leaf_exists():
+                self.plot['t1_leaves'].show()
+
+        if kwargs['t1_branches']:
+            if self.t1_active and self.t1_branch_exists():
+                self.plot['t1_branches'].show()
+
+        if kwargs['t2_leaves']:
+            if self.t2_active and self.t2_leaf_exists():
+                self.plot['t2_leaves'].show()
+
+        if kwargs['t2_branches']:
+            if self.t2_active and self.t2_branch_exists():
+                self.plot['t2_branches'].show()
 
     def plot_solution(self, solver):
         self.hide_all()

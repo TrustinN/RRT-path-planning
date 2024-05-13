@@ -43,20 +43,20 @@ class Map2d(Map):
 
     def plot_path(self, path):
         if path:
-            pd = [path[0]] + [path[i // 2 + 1] for i in range(2 * (len(path) - 2))] + [path[-1]]
+            pd = np.array([path[0]] + [path[i // 2 + 1] for i in range(2 * (len(path) - 2))] + [path[-1]])
 
-        pd = np.array(pd)
+            pd = {
+                'x': pd[:, 0],
+                'y': pd[:, 1],
+                'pen': pg.mkPen("#ff00ff"),
+                'connect': 'pairs',
+            }
+            points = {'pos': np.array(path),
+                      'size': 5,
+                      'brush': pg.mkBrush("#ff0000")}
+            return pd, points
 
-        pd = {
-            'x': pd[:, 0],
-            'y': pd[:, 1],
-            'pen': pg.mkPen("#ff00ff"),
-            'connect': 'pairs',
-        }
-        points = {'pos': np.array(path),
-                  'size': 5,
-                  'brush': pg.mkBrush("#ff0000")}
-        return pd, points
+        return {}, {}
 
 
 class RandomObsMap(Map2d):
