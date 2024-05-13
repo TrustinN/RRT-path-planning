@@ -44,8 +44,9 @@ class Graph(RTree):
     def clear(self):
         self.vertices = []
 
-    def plot(self, view, branches, leaves):
-        super().plot(view, branches, leaves)
+    def plot(self):
+        points, leaves, branches = super().plot()
+
         lines = []
         for v in self.vertices:
             if v.parent:
@@ -55,19 +56,24 @@ class Graph(RTree):
         if self.dim == 2:
             lp = pg.PlotDataItem(np.array(lines),
                                  connect='pairs',
-                                 pen=pg.mkPen("#00a5ff"),
+                                 pen=pg.mkPen("#00afcd"),
                                  skipFiniteCheck=True,
                                  downsample=10,
                                  width=0.1,
                                  )
-            view.addItem(lp)
+            # view.addItem(lp)
         if self.dim == 3:
-            lp = gl.GLLinePlotItem(pos=np.array(lines),
-                                   color=pg.mkColor("#00a5ff"),
-                                   width=0.1,
-                                   mode='lines')
-            lp.setGLOptions("opaque")
-            view.addItem(lp)
+            lines = {
+                'pos': np.array(lines),
+                'color': pg.mkColor("#00afcd"),
+                'width': 0.1,
+                'mode': 'lines',
+            }
+        return {'points': points,
+                'lines': lines,
+                'leaves': leaves,
+                'branches': branches,
+                }
 
 
 class vertex(IndexRecord):

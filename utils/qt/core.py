@@ -32,6 +32,15 @@ class RRTCore():
         self.params.child('map').child('dim').sigTreeStateChanged.connect(self.swap_display)
         self.params.child('map').child('seed').sigTreeStateChanged.connect(self.update_seed)
 
+        self.params.child('trees').child('t_start').child('leaves').sigTreeStateChanged.connect(self.toggle_leaves_t1)
+        self.params.child('trees').child('t_start').child('branches').sigTreeStateChanged.connect(self.toggle_branches_t1)
+
+        self.params.child('trees').child('t_end').child('leaves').sigTreeStateChanged.connect(self.toggle_leaves_t2)
+        self.params.child('trees').child('t_end').child('branches').sigTreeStateChanged.connect(self.toggle_branches_t2)
+
+        self.params.child('trees').child('leaves').sigTreeStateChanged.connect(self.toggle_all_leaves)
+        self.params.child('trees').child('branches').sigTreeStateChanged.connect(self.toggle_all_branches)
+
         self.params.child('run').sigTreeStateChanged.connect(self.update)
 
         self.update_plan()
@@ -63,6 +72,78 @@ class RRTCore():
         self.variables['map_seed'] = self.params.child('map').child('seed').value()
         self.variables['planner_seed'] = self.params.child('plan').child('seed').value()
 
+    def toggle_all_leaves(self):
+        state = self.params.child('trees').child('leaves').value()
+
+        self.params.child('trees').child('t_start').child('leaves').setValue(state)
+        self.params.child('trees').child('t_end').child('leaves').setValue(state)
+
+    def toggle_all_branches(self):
+        state = self.params.child('trees').child('branches').value()
+
+        self.params.child('trees').child('t_start').child('branches').setValue(state)
+        self.params.child('trees').child('t_end').child('branches').setValue(state)
+
+    def toggle_leaves_t1(self):
+        if self.plot_handler.t1_exists():
+            if self.params.child('trees').child('t_start').child('leaves').value():
+                if self.plot_handler.t1_leaf_exists():
+                    self.plot_handler.show('t1_leaves')
+                    if self.params.child('trees').child('t_end').child('leaves').value():
+                        self.params.child('trees').child('leaves').setValue(True)
+
+            else:
+                if self.plot_handler.t1_leaf_exists():
+                    self.plot_handler.hide('t1_leaves')
+                    restore = self.params.child('trees').child('t_end').child('leaves').value()
+                    self.params.child('trees').child('leaves').setValue(False)
+                    self.params.child('trees').child('t_end').child('leaves').setValue(restore)
+
+    def toggle_branches_t1(self):
+        if self.plot_handler.t1_exists():
+            if self.params.child('trees').child('t_start').child('branches').value():
+                if self.plot_handler.t1_branch_exists():
+                    self.plot_handler.show('t1_branches')
+                    if self.params.child('trees').child('t_end').child('branches').value():
+                        self.params.child('trees').child('branches').setValue(True)
+
+            else:
+                if self.plot_handler.t1_branch_exists():
+                    self.plot_handler.hide('t1_branches')
+                    restore = self.params.child('trees').child('t_end').child('branches').value()
+                    self.params.child('trees').child('branches').setValue(False)
+                    self.params.child('trees').child('t_end').child('branches').setValue(restore)
+
+    def toggle_leaves_t2(self):
+        if self.plot_handler.t2_exists():
+            if self.params.child('trees').child('t_end').child('leaves').value():
+                if self.plot_handler.t2_leaf_exists():
+                    self.plot_handler.show('t2_leaves')
+                    if self.params.child('trees').child('t_start').child('leaves').value():
+                        self.params.child('trees').child('leaves').setValue(True)
+
+            else:
+                if self.plot_handler.t2_leaf_exists():
+                    self.plot_handler.hide('t2_leaves')
+                    restore = self.params.child('trees').child('t_start').child('leaves').value()
+                    self.params.child('trees').child('leaves').setValue(False)
+                    self.params.child('trees').child('t_start').child('leaves').setValue(restore)
+
+    def toggle_branches_t2(self):
+        if self.plot_handler.t2_exists():
+            if self.params.child('trees').child('t_end').child('branches').value():
+                if self.plot_handler.t2_branch_exists():
+                    self.plot_handler.show('t2_branches')
+                    if self.params.child('trees').child('t_start').child('branches').value():
+                        self.params.child('trees').child('branches').setValue(True)
+
+            else:
+                if self.plot_handler.t2_branch_exists():
+                    self.plot_handler.hide('t2_branches')
+                    restore = self.params.child('trees').child('t_start').child('branches').value()
+                    self.params.child('trees').child('branches').setValue(False)
+                    self.params.child('trees').child('t_start').child('branches').setValue(restore)
+
     def swap_display(self):
         self.update_dim()
         self.new_map()
@@ -85,7 +166,7 @@ class RRTCore():
                                            )
         self.plot_handler.switch_dim(self.variables['dim'])
         self.plot_handler.change_map()
-        self.plot_handler.draw()
+        self.plot_handler.render_map()
         self.update_map()
 
         if self.variables['dim'] == 3:
@@ -103,10 +184,14 @@ class RRTCore():
         self.solver.set_data(self.variables)
         self.solver.run()
 
-        self.plot_handler.draw()
-        self.plot_handler.plot_solution(self.solver,
-                                        self.params.child('show').child('branches').value(),
-                                        self.params.child('show').child('leaves').value())
+        self.plot_handler.plot_solution(self.solver)
+        self.plot_handler.set_tree_visibility(**{
+            't1_leaves': self.params.child('trees').child('t_start').child('leaves').value(),
+            't1_branches': self.params.child('trees').child('t_start').child('branches').value(),
+            't2_leaves': self.params.child('trees').child('t_end').child('leaves').value(),
+            't2_branches': self.params.child('trees').child('t_end').child('branches').value(),
+        })
+
         self.console.update_data(self.solver.get_time(),
                                  self.solver.get_length(),
                                  prev_time,

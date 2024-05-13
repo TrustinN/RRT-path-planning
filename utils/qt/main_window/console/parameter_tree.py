@@ -29,9 +29,19 @@ class RRTOptions():
                 dict(name='seed', type='int', value=0),
                 dict(name='update', type='action'),
             ]),
-            dict(name='show', type='list', children=[
+            dict(name='trees', type='list', children=[
                 dict(name='leaves', type='bool', value=False),
                 dict(name='branches', type='bool', value=False),
+
+                dict(name='t_start', type='list', children=[
+                    dict(name='leaves', type='bool', value=False),
+                    dict(name='branches', type='bool', value=False),
+                ]),
+
+                dict(name='t_end', type='list', children=[
+                    dict(name='leaves', type='bool', value=False),
+                    dict(name='branches', type='bool', value=False),
+                ]),
             ]),
             dict(name='run', type='action'),
         ]

@@ -39,18 +39,20 @@ class Map3d(Map):
 
     def plot_path(self, path, view):
         if path:
-            for i in range(len(path) - 1):
-                line = gl.GLLinePlotItem(pos=np.array([path[i], path[i + 1]]),
-                                         color=pg.mkColor("#ff00ff"),
-                                         width=3,)
-                line.setGLOptions("opaque")
-                view.addItem(line)
-            point = gl.GLScatterPlotItem(pos=np.array(path), size=10, color=pg.mkColor("#ff0000"))
-            view.addItem(point)
+            pd = [path[0]] + [path[i // 2 + 1] for i in range(2 * (len(path) - 2))] + [path[-1]]
 
-    def plot(self, view):
+        pd = {'pos': np.array(pd),
+              'color': pg.mkColor("#ff00ff"),
+              'width': 3,
+              'mode': 'lines'}
+        points = {'pos': np.array(path),
+                  'size': 10,
+                  'color': pg.mkColor("#ff0000")}
+        return pd, points
+
+    def plot(self):
         vertices = [v for o in self.obstacles if o.is_visible_obstacle for f in o.faces for t in f.triangles for v in t]
-        plot_mesh(vertices=vertices, view=view, color="#ffffff")
+        return plot_mesh(vertices=vertices, color="#ffffff")
 
 
 class RandomObsMap(Map3d):

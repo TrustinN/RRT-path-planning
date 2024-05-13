@@ -4,7 +4,7 @@ import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 
 
-def plot_mesh(vertices, view, color, option='opaque'):
+def plot_mesh(vertices, color):
     faces = np.arange(len(vertices)).reshape((len(vertices) // 3, 3))
     md = gl.MeshData(vertexes=np.array(vertices), faces=faces)
     c = Color(web=color)
@@ -17,10 +17,10 @@ def plot_mesh(vertices, view, color, option='opaque'):
     colors[:, 0] = np.linspace(p0/255, 1, colors.shape[0])
 
     md.setFaceColors(colors=colors)
-    m1 = gl.GLMeshItem(meshdata=md, smooth=False, shader='shaded')
-    m1.setGLOptions(option)
-
-    view.addItem(m1)
+    return {'meshdata': md,
+            'smooth': False,
+            'shader': 'shaded',
+            }
 
 
 def plot_polygons(vertices, view, color):
@@ -30,15 +30,19 @@ def plot_polygons(vertices, view, color):
     view.addItem(lines)
 
 
-def plot_points(points, view, color, dim=2):
+def plot_points(points, color, dim=2):
     if dim == 2:
         points = pg.ScatterPlotItem(pos=np.array(points), size=3)
         points.setBrush(color)
-        view.addItem(points)
+        # view.addItem(points)
 
     elif dim == 3:
-        points = gl.GLScatterPlotItem(pos=np.array(points), color=color, size=5)
-        view.addItem(points)
+        return {'pos': np.array(points),
+                'color': color,
+                'size': 5
+                }
+
+
 
 
 
