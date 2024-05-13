@@ -35,7 +35,7 @@ class PlotHandler():
         if self.plotter.dim == 2:
             if not self.plot.__contains__(dname):
 
-                self.plot[dname] = pg.PlotDataItem()
+                self.plot[dname] = pg.PlotCurveItem()
                 contain = False
 
             self.plot[dname].setData(**data)
@@ -62,14 +62,8 @@ class PlotHandler():
         if self.plotter.dim == 2:
             if not self.plot.__contains__(dname):
 
-                self.plot[dname] = pg.PlotDataItem()
+                self.plot[dname] = pg.ScatterPlotItem()
                 contain = False
-
-            self.plot[dname].setData(**data)
-            self.plot[dname].show()
-
-            if not contain:
-                self.get_view().addItem(self.plot[dname])
 
         elif self.plotter.dim == 3:
             if not self.plot.__contains__(dname):
@@ -78,25 +72,19 @@ class PlotHandler():
                 self.plot[dname].setGLOptions(option)
                 contain = False
 
-            self.plot[dname].setData(**data)
-            self.plot[dname].show()
+        self.plot[dname].setData(**data)
+        self.plot[dname].show()
 
-            if not contain:
-                self.get_view().addItem(self.plot[dname])
+        if not contain:
+            self.get_view().addItem(self.plot[dname])
 
     def updateLine(self, dname, data, option='opaque'):
         contain = True
         if self.plotter.dim == 2:
             if not self.plot.__contains__(dname):
 
-                self.plot[dname] = pg.PlotDataItem()
+                self.plot[dname] = pg.PlotCurveItem()
                 contain = False
-
-            self.plot[dname].setData(**data)
-            self.plot[dname].show()
-
-            if not contain:
-                self.get_view().addItem(self.plot[dname])
 
         elif self.plotter.dim == 3:
             if not self.plot.__contains__(dname):
@@ -105,11 +93,11 @@ class PlotHandler():
                 self.plot[dname].setGLOptions(option)
                 contain = False
 
-            self.plot[dname].setData(**data)
-            self.plot[dname].show()
+        self.plot[dname].setData(**data)
+        self.plot[dname].show()
 
-            if not contain:
-                self.get_view().addItem(self.plot[dname])
+        if not contain:
+            self.get_view().addItem(self.plot[dname])
 
     def hide_all(self):
         for p in self.plot.values():
@@ -210,9 +198,6 @@ class PlotHandler():
                 self.plot[k].show()
 
     def plot_solution(self, solver):
-        view = self.get_view()
-        map = self.get_map()
-
         self.hide_all()
         self.show_map()
 
@@ -228,7 +213,9 @@ class PlotHandler():
         else:
             self.t2_active = False
 
-        path, points = map.plot_path(solver.path, view)
+        map = self.get_map()
+        path, points = map.plot_path(solver.path)
+
         self.updateLine('path', path, option='additive')
         self.updateScatter('path_points', points, option='additive')
         self.plot['path'].show()

@@ -17,30 +17,38 @@ def plot_mesh(vertices, color):
     colors[:, 0] = np.linspace(p0/255, 1, colors.shape[0])
 
     md.setFaceColors(colors=colors)
-    return {'meshdata': md,
-            'smooth': False,
-            'shader': 'shaded',
-            }
+    return {
+        'meshdata': md,
+        'smooth': False,
+        'shader': 'shaded',
+    }
 
 
-def plot_polygons(vertices, view, color):
-    lines = pg.PlotDataItem(np.array(vertices),
-                            connect='pairs',
-                            pen=pg.mkPen(color))
-    view.addItem(lines)
+def plot_polygons(vertices, color):
+
+    v = np.array(vertices)
+    return {
+        'x': v[:, 0],
+        'y': v[:, 1],
+        'connect': 'pairs',
+        'pen': pg.mkPen(color),
+    }
 
 
 def plot_points(points, color, dim=2):
     if dim == 2:
-        points = pg.ScatterPlotItem(pos=np.array(points), size=3)
-        points.setBrush(color)
-        # view.addItem(points)
+        return {
+            'pos': np.array(points),
+            'size': 3,
+            'brush': color,
+        }
 
     elif dim == 3:
-        return {'pos': np.array(points),
-                'color': color,
-                'size': 5
-                }
+        return {
+            'pos': np.array(points),
+            'color': color,
+            'size': 5
+        }
 
 
 

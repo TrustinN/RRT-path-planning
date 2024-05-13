@@ -1,7 +1,6 @@
 import math
 import numpy as np
 import pyqtgraph as pg
-import pyqtgraph.opengl as gl
 from utils.rtree.rstar_tree import RTree
 from utils.rtree.rtree_utils import IndexRecord
 from utils.rtree.rtree_utils import NCircle
@@ -54,14 +53,16 @@ class Graph(RTree):
                 lines.append(v.parent.value)
 
         if self.dim == 2:
-            lp = pg.PlotDataItem(np.array(lines),
-                                 connect='pairs',
-                                 pen=pg.mkPen("#00afcd"),
-                                 skipFiniteCheck=True,
-                                 downsample=10,
-                                 width=0.1,
-                                 )
-            # view.addItem(lp)
+            ln = np.array(lines)
+            lines = {
+                'x': ln[:, 0],
+                'y': ln[:, 1],
+                'connect': 'pairs',
+                'pen': pg.mkPen("#00afcd"),
+                'skipFiniteCheck': True,
+                'downsample': 10,
+                'width': 0.1,
+            }
         if self.dim == 3:
             lines = {
                 'pos': np.array(lines),
@@ -69,11 +70,12 @@ class Graph(RTree):
                 'width': 0.1,
                 'mode': 'lines',
             }
-        return {'points': points,
-                'lines': lines,
-                'leaves': leaves,
-                'branches': branches,
-                }
+        return {
+            'points': points,
+            'lines': lines,
+            'leaves': leaves,
+            'branches': branches,
+        }
 
 
 class vertex(IndexRecord):

@@ -4,7 +4,6 @@ from utils.quickhull.hull import QuickHull
 from utils.maps.map_utils import SampleScope
 from utils.rtree.rtree_utils import Cube
 from utils.qt.utils import plot_mesh
-import pyqtgraph.opengl as gl
 import pyqtgraph as pg
 
 
@@ -37,7 +36,7 @@ class Map3d(Map):
 
         return ints
 
-    def plot_path(self, path, view):
+    def plot_path(self, path):
         if path:
             pd = [path[0]] + [path[i // 2 + 1] for i in range(2 * (len(path) - 2))] + [path[-1]]
 

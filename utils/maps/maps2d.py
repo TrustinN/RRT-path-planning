@@ -3,6 +3,7 @@ from .map_utils import Map
 from .map_utils import SampleScope
 from utils.rtree.rtree_utils import Rect
 from utils.quickhull.hull import QuickHull
+from utils.qt.utils import plot_polygons
 import pyqtgraph as pg
 
 
@@ -36,16 +37,26 @@ class Map2d(Map):
 
         return ints
 
-    def plot(self, view):
-        for o in self.obstacles:
-            o.plot(view)
+    def plot(self):
+        vertices = [f.vertices[i // 2] for o in self.obstacles if o.is_visible_obstacle for f in o.faces for i in range(1, 2 * len(f.vertices) - 1)]
+        return plot_polygons(vertices=vertices, color="#ffffff")
 
-    def plot_path(self, path, view):
-        for i in range(len(path) - 1):
-            line = pg.PlotDataItem(np.array([path[i], path[i + 1]]),
-                                   connect="pairs",
-                                   pen=pg.mkPen("#ff00ff"),)
-            view.addItem(line)
+    def plot_path(self, path):
+        if path:
+            pd = [path[0]] + [path[i // 2 + 1] for i in range(2 * (len(path) - 2))] + [path[-1]]
+
+        pd = np.array(pd)
+
+        pd = {
+            'x': pd[:, 0],
+            'y': pd[:, 1],
+            'pen': pg.mkPen("#ff00ff"),
+            'connect': 'pairs',
+        }
+        points = {'pos': np.array(path),
+                  'size': 5,
+                  'brush': pg.mkBrush("#ff0000")}
+        return pd, points
 
 
 class RandomObsMap(Map2d):

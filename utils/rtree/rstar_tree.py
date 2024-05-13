@@ -157,19 +157,23 @@ class RTree(object):
         colors = np.array(colors)
 
         # We then plot them at the same time at the end
+        branches = None
+
         if self.dim == 2:
-            plot_points(points=pp, color=colors, dim=2)
-            plot_polygons(vertices=lp, color="#009b00")
-            plot_polygons(vertices=bp, color="#ff0000")
+
+            points = plot_points(points=pp, color=colors, dim=2)
+            leaves = plot_polygons(vertices=lp, color="#009b00")
+            if bp:
+                branches = plot_polygons(vertices=bp, color="#ff0000")
 
         elif self.dim == 3:
+
             points = plot_points(points=pp, color=colors / 255, dim=3)
             leaves = plot_mesh(vertices=lp, color="#009b00")
-            branches = None
             if bp:
                 branches = plot_mesh(vertices=bp, color="#ff0000")
 
-            return points, leaves, branches
+        return points, leaves, branches
 
     def __str__(self):
         return "Root:\n" + textwrap.indent(f"{self.root}", "    ")
