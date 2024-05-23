@@ -16,9 +16,8 @@ class RRTApp(QApplication):
 
         self.core = RRTCore(self.console, self.graph)
 
-        self.main_window.window.addWidget(self.console)
-        self.main_window.window.addWidget(self.graph)
-        self.main_window.window.setFixedSize(1200, 900)
+        self.main_window.attach(self.console)
+        self.main_window.attach(self.graph)
         self.main_window.show()
 
 

@@ -228,10 +228,11 @@ class PlotHandler():
         map = self.get_map()
         path, points = map.plot_path(solver.path)
 
-        self.updateLine('path', path, option='additive')
-        self.updateScatter('path_points', points, option='additive')
-        self.plot['path'].show()
-        self.plot['path_points'].show()
+        if solver.path:
+            self.updateLine('path', path, option='additive')
+            self.updateScatter('path_points', points, option='additive')
+            self.plot['path'].show()
+            self.plot['path_points'].show()
 
 
 
